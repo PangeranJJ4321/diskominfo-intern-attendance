@@ -12,12 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Third-party generated files from shadcn/diceui:
-    "components/ui/**/*",
-    "components/reui/**/*",
-    "lib/compose-refs.ts",
-    // Playwright:
-    "playwright-report/**",
   ]),
 ]);
 

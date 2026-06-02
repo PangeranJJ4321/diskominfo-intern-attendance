@@ -1,5 +1,0 @@
-Validasi face descriptor tetap jalan walau requireFaceVerification false
-
-  - app/api/attendances/route.ts line ~328-342: branch else if (rest.attendanceFaceDescriptor) tetap memvalidasi dan menolak attendance kalau
-  face descriptor tidak cocok, padahal face verification tidak diwajibkan.
-  - Ini inkonsisten — harusnya descriptor disimpan saja tanpa divalidasi, atau branch ini dihapus.

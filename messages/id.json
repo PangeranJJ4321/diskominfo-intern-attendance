@@ -1,0 +1,226 @@
+{
+  "landing": {
+    "hero": {
+      "badge": "Sistem Absensi Digital Terintegrasi",
+      "title": "Kelola Kehadiran Magang Secara Digital",
+      "titleHighlight": "Digital",
+      "description": "Platform absensi modern untuk Diskominfo Kota Makassar. Pantau kehadiran, kelola jadwal, dan hasilkan laporan — semua dalam satu sistem yang terintegrasi.",
+      "cta": "Masuk ke Portal",
+      "ctaSecondary": "Pelajari Fitur"
+    },
+    "features": {
+      "sectionBadge": "Fitur Unggulan",
+      "sectionTitle": "Semua yang Anda Butuhkan untuk Manajemen Absensi",
+      "sectionDescription": "Didesain untuk mempermudah administrasi dan meningkatkan akuntabilitas kehadiran peserta magang.",
+      "faceRecognition": {
+        "title": "Verifikasi Wajah",
+        "description": "Teknologi pengenalan wajah untuk memastikan keabsahan absensi secara real-time."
+      },
+      "locationTracking": {
+        "title": "Validasi Lokasi",
+        "description": "Pemeriksaan geofencing otomatis untuk memastikan absensi dilakukan di area kantor."
+      },
+      "scheduling": {
+        "title": "Jadwal Fleksibel",
+        "description": "Kelola jadwal absensi per dinas dengan pengaturan hari dan jam yang mudah dikustomisasi."
+      },
+      "reporting": {
+        "title": "Laporan & Ekspor",
+        "description": "Hasilkan laporan kehadiran lengkap dan ekspor data ke format Excel dengan sekali klik."
+      },
+      "multiRole": {
+        "title": "Multi Peran",
+        "description": "Sistem peran Superadmin, Admin Dinas, dan Peserta Magang dengan akses yang terkontrol."
+      },
+      "realtime": {
+        "title": "Monitoring Real-time",
+        "description": "Dashboard pemantauan kehadiran secara langsung dengan status hadir, terlambat, dan absen."
+      }
+    },
+    "howItWorks": {
+      "sectionBadge": "Cara Kerja",
+      "sectionTitle": "Tiga Langkah Mudah",
+      "sectionDescription": "Proses absensi yang simpel dan terintegrasi dari awal hingga akhir.",
+      "step1": {
+        "title": "Daftar & Login",
+        "description": "Buat akun atau masuk ke portal dengan kredensial yang sudah terdaftar."
+      },
+      "step2": {
+        "title": "Catat Kehadiran",
+        "description": "Lakukan absensi dengan verifikasi wajah dan lokasi sesuai jadwal yang ditentukan."
+      },
+      "step3": {
+        "title": "Pantau & Laporan",
+        "description": "Admin dapat memantau kehadiran real-time dan mengunduh laporan kapan saja."
+      }
+    },
+    "stats": {
+      "agencies": "Dinas Terhubung",
+      "interns": "Peserta Magang",
+      "attendance": "Tingkat Kehadiran",
+      "uptime": "Waktu Aktif Sistem"
+    },
+    "footer": {
+      "brand": "Diskominfo Kota Makassar",
+      "description": "Sistem absensi digital terintegrasi untuk peserta magang Pemerintah Kota Makassar.",
+      "copyright": "© 2026 Diskominfo Kota Makassar. Hak cipta dilindungi.",
+      "links": "Tautan",
+      "signIn": "Masuk",
+      "signUp": "Daftar",
+      "contact": "Kontak",
+      "contactEmail": "diskominfo@makassarkota.go.id",
+      "contactWebsite": "diskominfo.makassarkota.go.id",
+      "contactAddress": "Gedung MGC Lt. 7 Jl Sultan Hasanuddin Kota Makassar 90171"
+    },
+    "navbar": {
+      "features": "Fitur",
+      "howItWorks": "Cara Kerja",
+      "signIn": "Masuk",
+      "signUp": "Daftar"
+    }
+  },
+  "common": {
+    "home": "Beranda",
+    "settings": "Pengaturan",
+    "cancel": "Batal",
+    "name": "Nama",
+    "email": "Email",
+    "phone": "Telepon",
+    "actions": "Aksi",
+    "noDataFound": "Data tidak ditemukan",
+    "view": "Lihat"
+  },
+  "sidebar": {
+    "admin": {
+      "dashboard": "Dashboard",
+      "manageInterns": "Manajemen Intern",
+      "monitoringAttendance": "Monitoring Absensi",
+      "exportReport": "Export Laporan",
+      "agencies": "Dinas"
+    },
+    "intern": {
+      "dashboard": "Dashboard",
+      "attendance": "Absensi",
+      "attendanceHistory": "Riwayat Absensi",
+      "leaveAndSick": "Izin & Sakit"
+    },
+    "superAdmin": {
+      "dashboard": "Dashboard",
+      "manageUsers": "Manajemen Pengguna",
+      "institutions": "Institusi",
+      "agencies": "Dinas"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "welcome": "Selamat Datang",
+      "subtitle": "Masukkan kredensial akun Anda untuk melanjutkan",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "password": "Password",
+      "forgotPassword": "Lupa password?",
+      "signInButton": "Masuk ke Portal Lobi",
+      "signingIn": "Sedang masuk...",
+      "copyright": "Sistem Absensi Digital © 2026 Diskominfo Makassar",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Membangun Pelayanan Publik Digital yang Unggul.",
+      "heroDescription": "Silakan masuk untuk mencatat kehadiran Anda. Sistem ini terintegrasi dengan jaringan kantor untuk memastikan validitas absensi.",
+      "noAccount": "Belum punya akun?",
+      "signUp": "Daftar di sini",
+      "back": "Kembali Ke Beranda"
+    },
+    "signUp": {
+      "welcome": "Buat Akun",
+      "subtitle": "Bergabunglah dengan sistem absensi kami",
+      "name": "Nama Lengkap",
+      "namePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "password": "Password",
+      "confirmPassword": "Konfirmasi Password",
+      "signUpButton": "Buat Akun",
+      "signingUp": "Membuat akun...",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Membangun Pelayanan Publik Digital yang Unggul.",
+      "heroDescription": "Daftarkan diri Anda untuk memulai dengan sistem absensi kami.",
+      "haveAccount": "Sudah punya akun?",
+      "signIn": "Masuk di sini",
+      "back": "Kembali ke Beranda"
+    },
+    "forgotPassword": {
+      "title": "Lupa Password?",
+      "subtitle": "Pilih cara untuk memulihkan akun Anda",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "sendButton": "Kirim Link Reset",
+      "otpSendButton": "Kirim Kode OTP",
+      "sending": "Mengirim...",
+      "successMessage": "Link reset berhasil dikirim!",
+      "checkEmail": "Silakan periksa email Anda untuk pesan pemulihan. Link atau kode akan kedaluwarsa dalam waktu singkat.",
+      "rememberPassword": "Ingat password Anda?",
+      "backToSignIn": "Kembali ke Masuk",
+      "backHome": "Kembali ke Beranda",
+      "emailMethod": "Link email",
+      "otpMethod": "Kode OTP",
+      "emailMethodDescription": "Terima link reset aman di kotak masuk Anda",
+      "otpMethodDescription": "Terima kode sekali pakai dan lanjutkan segera",
+      "chooseMethodPrompt": "Pilih metode pemulihan untuk melanjutkan",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Membangun Pelayanan Publik Digital yang Unggul.",
+      "heroDescription": "Silakan masuk untuk mencatat kehadiran Anda. Sistem ini terintegrasi dengan jaringan kantor untuk memastikan validitas absensi."
+    },
+    "resetPassword": {
+      "title": "Buat Password Baru",
+      "subtitle": "Masukkan password baru Anda di bawah",
+      "otpTitle": "Verifikasi OTP dan Buat Password Baru",
+      "otpSubtitle": "Masukkan kode yang dikirim ke email Anda, lalu buat password baru",
+      "newPassword": "Password Baru",
+      "confirmPassword": "Konfirmasi Password",
+      "showPassword": "Tampilkan password",
+      "resetButton": "Atur Ulang Password",
+      "updating": "Memperbarui...",
+      "successTitle": "Password Berhasil Diperbarui!",
+      "successMessage": "Password Anda telah berhasil diatur ulang. Mengarahkan ke halaman masuk...",
+      "redirecting": "Mengarahkan ke halaman masuk sebentar lagi...",
+      "passwordMismatch": "Password tidak cocok",
+      "passwordTooShort": "Password minimal 8 karakter",
+      "failedToReset": "Gagal mengatur ulang password. Silakan coba lagi.",
+      "errorOccurred": "Terjadi kesalahan. Silakan coba lagi.",
+      "errorTitle": "Link Tidak Valid",
+      "otpErrorTitle": "Kode OTP Tidak Valid",
+      "requestNewLink": "Minta Link Baru",
+      "requestNewOtp": "Minta OTP Baru",
+      "otpCode": "Kode OTP",
+      "otpPlaceholder": "Masukkan kode 6 digit",
+      "verifyOtpButton": "Verifikasi OTP",
+      "verifying": "Sedang memverifikasi...",
+      "otpInvalid": "Kode OTP tidak valid atau kadaluarsa",
+      "enterOtpFirst": "Silakan verifikasi OTP terlebih dahulu",
+      "backHome": "Kembali ke Beranda",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Membangun Pelayanan Publik Digital yang Unggul.",
+      "heroDescription": "Silakan masuk untuk mencatat kehadiran Anda. Sistem ini terintegrasi dengan jaringan kantor untuk memastikan validitas absensi.",
+      "locale": "id"
+    }
+  },
+  "dashboard": {
+    "admin": {
+      "agenciesDescription": "Kelola dan pantau semua dinas pemerintah dalam sistem."
+    }
+  },
+  "Pages": {
+    "profile": {
+      "deleteFailed": "Gagal menghapus akun",
+      "deleteSuccess": "Akun berhasil dihapus",
+      "deleteAccount": "Hapus akun",
+      "deleteAccountDialogTitle": "Hapus akun",
+      "deleteAccountDialogDescription": "Tindakan ini akan menghapus akun Anda secara permanen dan tidak dapat dikembalikan. Ketik DELETE untuk konfirmasi.",
+      "deleteAccountConfirmLabel": "Ketik DELETE untuk konfirmasi",
+      "deleteAccountConfirmButton": "Konfirmasi hapus"
+    }
+  }
+}

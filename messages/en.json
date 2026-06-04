@@ -1,0 +1,226 @@
+{
+  "landing": {
+    "hero": {
+      "badge": "Integrated Digital Attendance System",
+      "title": "Manage Intern Attendance Digitally",
+      "titleHighlight": "Digitally",
+      "description": "A modern attendance platform for Diskominfo Kota Makassar. Track attendance, manage schedules, and generate reports — all in one integrated system.",
+      "cta": "Sign In to Portal",
+      "ctaSecondary": "Explore Features"
+    },
+    "features": {
+      "sectionBadge": "Key Features",
+      "sectionTitle": "Everything You Need for Attendance Management",
+      "sectionDescription": "Designed to simplify administration and improve accountability of intern attendance.",
+      "faceRecognition": {
+        "title": "Face Verification",
+        "description": "Real-time facial recognition technology to ensure the authenticity of each attendance record."
+      },
+      "locationTracking": {
+        "title": "Location Validation",
+        "description": "Automatic geofencing checks to verify that attendance is recorded within the office area."
+      },
+      "scheduling": {
+        "title": "Flexible Scheduling",
+        "description": "Manage attendance schedules per agency with easily customizable days and time slots."
+      },
+      "reporting": {
+        "title": "Reports & Export",
+        "description": "Generate comprehensive attendance reports and export data to Excel format with a single click."
+      },
+      "multiRole": {
+        "title": "Multi Role Access",
+        "description": "Superadmin, Agency Admin, and Intern role system with controlled and secure access levels."
+      },
+      "realtime": {
+        "title": "Real-time Monitoring",
+        "description": "Live attendance monitoring dashboard with present, late, and absent status tracking."
+      }
+    },
+    "howItWorks": {
+      "sectionBadge": "How It Works",
+      "sectionTitle": "Three Simple Steps",
+      "sectionDescription": "A streamlined attendance process from start to finish.",
+      "step1": {
+        "title": "Register & Login",
+        "description": "Create an account or sign in to the portal with your registered credentials."
+      },
+      "step2": {
+        "title": "Record Attendance",
+        "description": "Submit attendance with face verification and location check based on the assigned schedule."
+      },
+      "step3": {
+        "title": "Monitor & Report",
+        "description": "Admins can monitor attendance in real-time and download reports anytime."
+      }
+    },
+    "stats": {
+      "agencies": "Connected Agencies",
+      "interns": "Active Interns",
+      "attendance": "Attendance Rate",
+      "uptime": "System Uptime"
+    },
+    "footer": {
+      "brand": "Diskominfo Kota Makassar",
+      "description": "Integrated digital attendance system for interns of Makassar City Government.",
+      "copyright": "© 2026 Diskominfo Kota Makassar. All rights reserved.",
+      "links": "Links",
+      "signIn": "Sign In",
+      "signUp": "Sign Up",
+      "contact": "Contact",
+      "contactEmail": "diskominfo@makassarkota.go.id",
+      "contactWebsite": "diskominfo.makassarkota.go.id",
+      "contactAddress": "Gedung MGC Lt. 7 Jl Sultan Hasanuddin Kota Makassar 90171"
+    },
+    "navbar": {
+      "features": "Features",
+      "howItWorks": "How It Works",
+      "signIn": "Sign In",
+      "signUp": "Sign Up"
+    }
+  },
+  "common": {
+    "home": "Home",
+    "settings": "Settings",
+    "cancel": "Cancel",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "actions": "Actions",
+    "noDataFound": "No data found",
+    "view": "View"
+  },
+  "sidebar": {
+    "admin": {
+      "dashboard": "Dashboard",
+      "manageInterns": "Manage Interns",
+      "monitoringAttendance": "Attendance Monitoring",
+      "exportReport": "Export Report",
+      "agencies": "Agencies"
+    },
+    "intern": {
+      "dashboard": "Dashboard",
+      "attendance": "Attendance",
+      "attendanceHistory": "Attendance History",
+      "leaveAndSick": "Leave & Sick"
+    },
+    "superAdmin": {
+      "dashboard": "Dashboard",
+      "manageUsers": "Manage Users",
+      "institutions": "Institutions",
+      "agencies": "Agencies"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "welcome": "Welcome Back",
+      "subtitle": "Enter your credentials to continue",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "signInButton": "Sign In to Portal",
+      "signingIn": "Signing in...",
+      "copyright": "System Absensi Digital © 2026 Diskominfo Makassar",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Building Digital Public Services Excellence.",
+      "heroDescription": "Please sign in to record your attendance. This system is integrated with the office network to ensure attendance validity.",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up here",
+      "back": "Back to Home"
+    },
+    "signUp": {
+      "welcome": "Create Account",
+      "subtitle": "Join our attendance system",
+      "name": "Full Name",
+      "namePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "signUpButton": "Create Account",
+      "signingUp": "Creating account...",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Building Digital Public Services Excellence.",
+      "heroDescription": "Register to get started with our attendance system.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in here",
+      "back": "Back to Home"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "subtitle": "Choose how you want to recover your account",
+      "email": "Email",
+      "emailPlaceholder": "nama@makassar.go.id",
+      "sendButton": "Send Reset Link",
+      "otpSendButton": "Send OTP Code",
+      "sending": "Sending...",
+      "successMessage": "Reset link sent successfully!",
+      "checkEmail": "Please check your email for the recovery message. The link or code will expire shortly.",
+      "rememberPassword": "Remember your password?",
+      "backToSignIn": "Back to Sign In",
+      "backHome": "Back to Home",
+      "emailMethod": "Email link",
+      "otpMethod": "OTP code",
+      "emailMethodDescription": "Receive a secure reset link in your inbox",
+      "otpMethodDescription": "Receive a one-time code and continue immediately",
+      "chooseMethodPrompt": "Select a recovery method to continue",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Building Digital Public Services Excellence.",
+      "heroDescription": "Please sign in to record your attendance. This system is integrated with the office network to ensure attendance validity."
+    },
+    "resetPassword": {
+      "title": "Create New Password",
+      "subtitle": "Enter your new password below",
+      "otpTitle": "Verify OTP and Create New Password",
+      "otpSubtitle": "Enter the code sent to your email, then set a new password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "showPassword": "Show password",
+      "resetButton": "Reset Password",
+      "updating": "Updating...",
+      "successTitle": "Password Updated!",
+      "successMessage": "Your password has been successfully reset. Redirecting to sign in page...",
+      "redirecting": "Redirecting to sign in page in a moment...",
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "failedToReset": "Failed to reset password. Please try again.",
+      "errorOccurred": "An error occurred. Please try again.",
+      "errorTitle": "Invalid Link",
+      "otpErrorTitle": "Invalid OTP Code",
+      "requestNewLink": "Request New Link",
+      "requestNewOtp": "Request New OTP",
+      "otpCode": "OTP Code",
+      "otpPlaceholder": "Enter 6-digit code",
+      "verifyOtpButton": "Verify OTP",
+      "verifying": "Verifying...",
+      "otpInvalid": "Invalid or expired OTP code",
+      "enterOtpFirst": "Please verify the OTP first",
+      "backHome": "Back to Home",
+      "brandName": "Diskominfo Kota Makassar",
+      "brandTagline": "Akses Digital Diskominfo",
+      "heroTitle": "Building Digital Public Services Excellence.",
+      "heroDescription": "Please sign in to record your attendance. This system is integrated with the office network to ensure attendance validity.",
+      "locale": "en"
+    }
+  },
+  "dashboard": {
+    "admin": {
+      "agenciesDescription": "Manage and monitor all government agencies in the system."
+    }
+  },
+  "Pages": {
+    "profile": {
+      "deleteFailed": "Failed to delete account",
+      "deleteSuccess": "Account deleted successfully",
+      "deleteAccount": "Delete account",
+      "deleteAccountDialogTitle": "Delete account",
+      "deleteAccountDialogDescription": "This action will permanently remove your account and cannot be undone. Type DELETE to confirm.",
+      "deleteAccountConfirmLabel": "Type DELETE to confirm",
+      "deleteAccountConfirmButton": "Confirm delete"
+    }
+  }
+}

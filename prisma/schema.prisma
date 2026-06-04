@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  INTERN
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(INTERN)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  interns         Intern[]
+  agencyAccesses  AgencyAccess[]
+  faceDescriptors FaceDescriptor[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Institution {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  interns   Intern[]
+
+  @@map("institution")
+}
+
+model Agency {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interns        Intern[]
+  agencyAccesses AgencyAccess[]
+  schedules      AgencySchedule[]
+  holidays       AgencyHoliday[]
+  agencyAreas    AgencyArea?
+  rule           AgencyRule?
+
+  @@map("agency")
+}
+
+model AgencyAccess {
+  id        String   @id @default(cuid())
+  agencyId  String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@map("agency_access")
+}
+
+model AgencySchedule {
+  id                  String   @id @default(cuid())
+  agencyId            String
+  name                String // e.g., "Morning attendance", "Afternoon attendance"
+  dayOfWeek           Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  agencyScheduleStart String // e.g., "08:00"
+  agencyScheduleEnd   String // e.g., "09:00"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  agency      Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  attendances Attendance[] // Links the scan to this specific schedule slot
+
+  @@index([agencyId])
+  @@map("agency_schedule")
+}
+
+model AgencyHoliday {
+  id          String   @id @default(cuid())
+  agencyId    String
+  date        DateTime @db.Date // Ensures we only store the date (YYYY-MM-DD)
+  description String // e.g., "Hari Kemerdekaan RI", "Cuti Bersama Idul Fitri"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@map("agency_holiday")
+}
+
+model AgencyArea {
+  id        String   @id @default(cuid())
+  agencyId  String   @unique
+  // GeoJSON geometry (Point, Polygon, MultiPolygon, etc.)
+  // Example: { "type": "Polygon", "coordinates": [[[lng, lat], [lng, lat], ...]] }
+  geoData   Json // Leaflet-compatible GeoJSON
+  timezone  String   @default("Asia/Makassar") // Default timezone for the agency
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@map("agency_area")
+}
+
+model AgencyRule {
+  id                      String   @id @default(cuid())
+  agencyId                String   @unique
+  requireFaceVerification Boolean  @default(true) // Require face recognition for attendance
+  requireWithinArea       Boolean  @default(true) // Require attendance to be within agency area
+  lateToleranceMinutes    Int      @default(15) // Grace period for late attendance in minutes
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@map("agency_rule")
+}
+
+model Intern {
+  id            String    @id @default(cuid())
+  userId        String
+  agencyId      String
+  institutionId String?
+  startedAt     DateTime
+  finishedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade) // Fixed relation mapping
+  institution Institution? @relation(fields: [institutionId], references: [id])
+  agency      Agency       @relation(fields: [agencyId], references: [id])
+  attendances Attendance[]
+
+  @@index([userId])
+  @@index([agencyId])
+  @@map("intern")
+}
+
+model FaceDescriptor {
+  id         String   @id @default(cuid())
+  userId     String // Changed from internId to userId
+  descriptor Json // JSON array of 68-point face descriptors from face-api.js
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Linked to User
+
+  @@index([userId]) // Added index for better query performance
+  @@map("face_descriptor")
+}
+
+model Attendance {
+  id               String   @id @default(cuid())
+  internId         String
+  agencyScheduleId String // Links exactly to which schedule they are fulfilling
+  date             DateTime @db.Date
+
+  attendanceTime           DateTime?
+  attendanceLatitude       Float?
+  attendanceLongitude      Float?
+  attendanceFaceDescriptor Json?
+
+  status AttendanceStatus @default(ABSENT)
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  intern         Intern         @relation(fields: [internId], references: [id], onDelete: Cascade)
+  agencySchedule AgencySchedule @relation(fields: [agencyScheduleId], references: [id], onDelete: Cascade)
+
+  // Ensure an intern can only submit one attendance per specific schedule slot
+  @@unique([internId, agencyScheduleId, date])
+  @@index([internId])
+  @@index([agencyScheduleId])
+  @@index([date])
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}

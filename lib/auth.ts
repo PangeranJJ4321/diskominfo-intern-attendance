@@ -8,15 +8,21 @@ import { nextCookies } from "better-auth/next-js";
 // For production: https://your-domain.com
 // For preview deployments, Vercel sets VERCEL_URL.
 const appUrl =
-  process.env.AUTH_BASE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  process.env.VERCEL_ENV === "production" && process.env.AUTH_BASE_URL
+    ? process.env.AUTH_BASE_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
 
 const allowedHosts = Array.from(
   new Set(
     [
+      // The host for the current deployment (e.g., a specific preview URL)
       new URL(appUrl).host,
-      // Add the Vercel project URL as a fallback if you use a custom domain
-      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      // The production host, retrieved from AUTH_BASE_URL (must be set)
+      process.env.AUTH_BASE_URL ? new URL(process.env.AUTH_BASE_URL).host : undefined,
+      // The stable URL for the git branch in Vercel preview environments
+      process.env.VERCEL_BRANCH_URL,
     ].filter((host): host is string => Boolean(host)),
   ),
 );

@@ -26,6 +26,7 @@ import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { format } from "date-fns";
 import { MoreHorizontalIcon, SearchIcon, XIcon } from "lucide-react";
 import { AddAgencyDialog } from "./add-agency-dialog";
+import { DeleteAgencyDialog } from "./delete-agency-dialog";
 import {
   Card,
   CardContent,
@@ -60,7 +61,13 @@ interface AgenciesTableProps {
   initialLimit?: number;
 }
 
-function ActionsCell({ row }: { row: Row<Agency> }) {
+function ActionsCell({
+  row,
+  onSuccess,
+}: {
+  row: Row<Agency>;
+  onSuccess: () => void;
+}) {
   const { copyToClipboard } = useCopyToClipboard();
   const router = useRouter();
   const params = useParams();
@@ -87,13 +94,18 @@ function ActionsCell({ row }: { row: Row<Agency> }) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleCopyId}>Copy ID</DropdownMenuItem>
         <DropdownMenuSeparator />
-        {/* Placeholder for future Delete Action if needed */}
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={(e) => e.preventDefault()}
+        <DeleteAgencyDialog
+          agencyId={row.original.id}
+          agencyName={row.original.name}
+          onSuccess={onSuccess}
         >
-          Delete
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => e.preventDefault()}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DeleteAgencyDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -202,7 +214,7 @@ export function AgenciesTable({
         header: "",
         cell: ({ row }) => (
           <div className="w-full flex justify-end">
-            <ActionsCell row={row} />
+            <ActionsCell row={row} onSuccess={fetchAgencies} />
           </div>
         ),
         size: 60,
@@ -211,7 +223,7 @@ export function AgenciesTable({
         enableResizing: false,
       },
     ],
-    [],
+    [fetchAgencies],
   );
 
   const [columnOrder, setColumnOrder] = useState<string[]>(

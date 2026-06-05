@@ -53,12 +53,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Generate reset link
-    const baseUrl =
-      process.env.VERCEL_ENV === "production"
-        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-        : process.env.VERCEL_BRANCH_URL
-          ? `https://${process.env.VERCEL_BRANCH_URL}`
-          : "http://localhost:3000";
+    const baseUrl = process.env.AUTH_BASE_URL || "http://localhost:3000";
 
     const resetLink = `${baseUrl}/${locale}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 

@@ -19,8 +19,8 @@ const allowedHosts = Array.from(
     [
       // The host for the current deployment (e.g., a specific preview URL)
       new URL(appUrl).host,
-      // The production host, retrieved from AUTH_BASE_URL (must be set)
-      process.env.AUTH_BASE_URL ? new URL(process.env.AUTH_BASE_URL).host : undefined,
+      // The production host, retrieved from a custom env var or Vercel's system var.
+      process.env.AUTH_BASE_URL ? new URL(process.env.AUTH_BASE_URL).host : process.env.VERCEL_PROJECT_PRODUCTION_URL,
       // The stable URL for the git branch in Vercel preview environments
       process.env.VERCEL_BRANCH_URL,
     ].filter((host): host is string => Boolean(host)),

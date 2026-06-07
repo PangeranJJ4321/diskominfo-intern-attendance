@@ -33,7 +33,6 @@ async function getAccessibleInternIds(userId: string): Promise<string[]> {
 
 function parseTimeToMinutes(value: string): number {
   const [hours, minutes] = value.split(":").map(Number);
-
   return hours * 60 + minutes;
 }
 
@@ -100,7 +99,6 @@ function calculateDescriptorDistance(
   }
 
   let squaredDistance = 0;
-
   for (let index = 0; index < candidateDescriptor.length; index += 1) {
     const difference = candidateDescriptor[index] - referenceDescriptor[index];
     squaredDistance += difference * difference;
@@ -110,10 +108,7 @@ function calculateDescriptorDistance(
 }
 
 function toNumberDescriptor(descriptor: Prisma.JsonValue): number[] | null {
-  if (!Array.isArray(descriptor)) {
-    return null;
-  }
-
+  if (!Array.isArray(descriptor)) return null;
   if (
     descriptor.some(
       (value) => typeof value !== "number" || !Number.isFinite(value),
@@ -121,7 +116,6 @@ function toNumberDescriptor(descriptor: Prisma.JsonValue): number[] | null {
   ) {
     return null;
   }
-
   return descriptor as number[];
 }
 
@@ -134,7 +128,6 @@ function isFaceDescriptorMatch(
       candidateDescriptor,
       referenceDescriptor,
     );
-
     return distance !== null && distance <= FACE_DESCRIPTOR_MATCH_THRESHOLD;
   });
 }
@@ -142,7 +135,6 @@ function isFaceDescriptorMatch(
 /**
  * GET /api/attendances
  * Retrieves a paginated list of attendance records.
- * Requires an authenticated session.
  */
 export async function GET(_req: NextRequest) {
   try {
@@ -166,16 +158,17 @@ export async function GET(_req: NextRequest) {
 
     const { page, limit, sortBy, sortOrder, q } = parsedQuery.data;
 
-    // --- NEW: Extract specific query parameters ---
     const queryInternId = searchParams.get("internId");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    let allowedInternIds: string[] | null = null;
+    const where: Prisma.AttendanceWhereInput = {};
+    const userRole = session.user.role?.toUpperCase();
 
-    if (session.user.role === "SUPERADMIN") {
-      allowedInternIds = null; // Superadmin accesses all
-    } else if (session.user.role === "ADMIN") {
+    if (userRole === "SUPERADMIN") {
+      // Superadmins can look up any specific intern, or fetch everything
+      if (queryInternId) where.internId = queryInternId;
+    } else if (userRole === "ADMIN") {
       const agencyIds = await getAccessibleAgencyIds(session.user.id);
 
       if (agencyIds.length === 0) {
@@ -185,20 +178,47 @@ export async function GET(_req: NextRequest) {
         });
       }
 
-      allowedInternIds = (
-        await prisma.intern.findMany({
+      if (queryInternId) {
+        // Enforce that the requested intern belongs to an agency this Admin manages
+        const internExists = await prisma.intern.findFirst({
+          where: { id: queryInternId, agencyId: { in: agencyIds } },
+        });
+
+        if (!internExists) {
+          return NextResponse.json(
+            {
+              error: "Forbidden - tidak ada akses ke data absensi peserta ini",
+            },
+            { status: 403 },
+          );
+        }
+        where.internId = queryInternId;
+      } else {
+        const allowedInterns = await prisma.intern.findMany({
           where: { agencyId: { in: agencyIds } },
           select: { id: true },
-        })
-      ).map((intern) => intern.id);
-    } else if (session.user.role === "INTERN") {
-      allowedInternIds = await getAccessibleInternIds(session.user.id);
+        });
+        where.internId = { in: allowedInterns.map((intern) => intern.id) };
+      }
+    } else if (userRole === "INTERN") {
+      const allowedInternIds = await getAccessibleInternIds(session.user.id);
 
       if (allowedInternIds.length === 0) {
         return NextResponse.json({
           data: [],
           meta: { totalRowCount: 0, totalPages: 0 },
         });
+      }
+
+      // FAIL-SAFE OVERRIDE: If the frontend sends an incorrect or mismatched parameter,
+      // we check if it's valid. If not, we fall back to their actual database ID.
+      if (queryInternId && allowedInternIds.includes(queryInternId)) {
+        where.internId = queryInternId;
+      } else {
+        where.internId =
+          allowedInternIds.length === 1
+            ? allowedInternIds[0]
+            : { in: allowedInternIds };
       }
     } else {
       return NextResponse.json(
@@ -207,33 +227,14 @@ export async function GET(_req: NextRequest) {
       );
     }
 
-    const where: Prisma.AttendanceWhereInput = {};
-
-    // --- NEW: Securely apply the internId filter ---
-    if (queryInternId) {
-      // If not SUPERADMIN, ensure the requested queryInternId is within their allowed list
-      if (
-        allowedInternIds !== null &&
-        !allowedInternIds.includes(queryInternId)
-      ) {
-        return NextResponse.json(
-          { error: "Forbidden - tidak ada akses ke data absensi peserta ini" },
-          { status: 403 },
-        );
-      }
-      where.internId = queryInternId;
-    } else if (allowedInternIds !== null) {
-      // Fallback: If no query parameter provided, get all allowed attendances
-      where.internId = { in: allowedInternIds };
-    }
-
-    // --- NEW: Apply Date Range Filters for the calendar ---
+    // --- Apply Date Range Filters ---
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);
       if (endDate) where.date.lte = new Date(endDate);
     }
 
+    // --- Apply Search Text Filters ---
     if (q) {
       const queryFilter: Prisma.AttendanceWhereInput = {
         OR: [
@@ -318,14 +319,14 @@ export async function GET(_req: NextRequest) {
 /**
  * POST /api/attendances
  * Creates a new attendance record.
- * Requires ADMIN or SUPERADMIN role.
  */
 export async function POST(_req: NextRequest) {
   try {
     const session = await requireAuth();
-    const isSuperadmin = session.user.role === "SUPERADMIN";
-    const isAdmin = session.user.role === "ADMIN";
-    const isIntern = session.user.role === "INTERN";
+    const normalizedRole = session.user.role?.toUpperCase();
+    const isSuperadmin = normalizedRole === "SUPERADMIN";
+    const isAdmin = normalizedRole === "ADMIN";
+    const isIntern = normalizedRole === "INTERN";
 
     if (!isSuperadmin && !isAdmin && !isIntern) {
       return NextResponse.json(
@@ -490,7 +491,6 @@ export async function POST(_req: NextRequest) {
         );
       }
 
-      // Face verification and area checks only apply to PRESENT and LATE statuses
       const isExcused = parsed.data.status === "EXCUSED";
 
       if (!isExcused) {

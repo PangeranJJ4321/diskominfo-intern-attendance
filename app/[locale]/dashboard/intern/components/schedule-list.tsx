@@ -49,8 +49,35 @@ export async function ScheduleList({ intern }: { intern: Intern }) {
     );
   }
 
+  // Fetch the agency's timezone so dayOfWeek is computed in local time,
+  // not server UTC (which would show yesterday's schedule near midnight).
+  let timezone = "Asia/Makassar";
+  try {
+    const areaRes = await fetchAPI(`/api/agency-areas/${intern.agencyId}`);
+    if (areaRes?.timezone) {
+      timezone = areaRes.timezone;
+    }
+  } catch {
+    // Fall back to default
+  }
+
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+  // Compute today's day-of-week in the agency's local timezone
+  const dayOfWeekFormatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: timezone,
+  });
+  const dayOfWeekMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const dayOfWeek =
+    dayOfWeekMap[dayOfWeekFormatter.format(today)] ?? today.getDay();
 
   // 1. Fetch all schedules for this agency via API
   const scheduleRes = await fetchAPI(

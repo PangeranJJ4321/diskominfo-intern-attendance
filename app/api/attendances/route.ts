@@ -345,7 +345,26 @@ export async function POST(_req: NextRequest) {
       );
     }
 
-    const { internId, agencyScheduleId, date, ...rest } = parsed.data;
+    // Fixed linter warning by keeping constants read-only
+    const { agencyScheduleId, date, ...rest } = parsed.data;
+    let internId = parsed.data.internId;
+
+    // --- FIX: Ambil ID asli milik akun intern yang sedang login ---
+    if (isIntern) {
+      const selfIntern = await prisma.intern.findFirst({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
+      if (!selfIntern) {
+        return NextResponse.json(
+          { error: "Profil peserta magang Anda tidak ditemukan di database" },
+          { status: 404 },
+        );
+      }
+
+      internId = selfIntern.id;
+    }
 
     const [intern, agencySchedule, existing] = await Promise.all([
       prisma.intern.findUnique({

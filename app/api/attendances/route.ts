@@ -11,7 +11,7 @@ import {
 } from "@/lib/schemas/attendance";
 import { tableQuerySchema } from "@/lib/schemas/table-query-schema";
 
-const FACE_DESCRIPTOR_MATCH_THRESHOLD = 0.6;
+const FACE_DESCRIPTOR_MATCH_THRESHOLD = 0.7;
 
 async function getAccessibleAgencyIds(userId: string): Promise<string[]> {
   const accesses = await prisma.agencyAccess.findMany({

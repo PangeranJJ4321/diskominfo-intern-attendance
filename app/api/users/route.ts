@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Fetch user context for CASL evaluation
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {

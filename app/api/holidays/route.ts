@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       isSyncing = true;
       try {
         const seeds = await fetchHolidaySeeds();
-        const existingHolidays = await prisma.holiday.findMany({
+        const existingHolidays = await prisma.agencyHoliday.findMany({
           select: { date: true, description: true },
         });
         
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         );
         
         if (newSeeds.length > 0) {
-          await prisma.holiday.createMany({
+          await prisma.agencyHoliday.createMany({
             data: newSeeds.map((seed) => ({
               date: seed.date,
               description: seed.description,
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       : {};
 
     const [holidays, totalCount] = await Promise.all([
-      prisma.holiday.findMany({
+      prisma.agencyHoliday.findMany({
         where: whereCondition,
         take: limit,
         skip: skip,
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
           [sortBy]: sortOrder,
         },
       }),
-      prisma.holiday.count({
+      prisma.agencyHoliday.count({
         where: whereCondition,
       }),
     ]);
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newHoliday = await prisma.holiday.create({
+    const newHoliday = await prisma.agencyHoliday.create({
       data: parsedBody.data,
     });
 

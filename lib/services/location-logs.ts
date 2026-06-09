@@ -2,7 +2,7 @@ import { LocationLog } from "@/interfaces/models";
 import { handleError } from "./utils";
 
 export async function createLocationLog(data: {
-  userId: string;
+  internId: string;
   latitude: number;
   longitude: number;
 }): Promise<LocationLog> {

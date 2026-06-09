@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const attendance = await prisma.attendance.findUnique({
       where: { id },
-      include: { user: true, schedule: true },
+      include: { intern: { include: { user: true } }, schedule: true },
     });
 
     if (!attendance) {
@@ -62,8 +62,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Non-admin users can only read their own attendance
-    const isAdmin = dbUser.accesses.length > 0;
-    if (!isAdmin && attendance.userId !== session.user.id) {
+    const isAdmin = dbUser.agencyAccesses.length > 0;
+    if (!isAdmin && attendance.intern.userId !== session.user.id) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -163,7 +163,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updatedAttendance = await prisma.attendance.update({
       where: { id },
       data,
-      include: { user: true, schedule: true },
+      include: { intern: { include: { user: true } }, schedule: true },
     });
 
     return NextResponse.json(updatedAttendance);
@@ -194,7 +194,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {

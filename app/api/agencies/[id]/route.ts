@@ -1,17 +1,17 @@
-// app/api/holidays/[id]/route.ts
+// app/api/agencies/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { defineAbilityFor } from "@/lib/casl";
-import { updateHolidaySchema } from "@/lib/schemas/holiday-schema";
+import { updateAgencySchema } from "@/lib/schemas/agency-schema";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 /**
- * GET: Retrieve a specific Holiday by ID
+ * GET: Retrieve a specific Agency by ID.
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Holiday")) {
+    if (!ability.can("read", "Agency")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -48,20 +48,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const holiday = await prisma.agencyHoliday.findUnique({
+    const agency = await prisma.agency.findUnique({
       where: { id },
     });
 
-    if (!holiday) {
-      return NextResponse.json(
-        { error: "Holiday not found" },
-        { status: 404 },
-      );
+    if (!agency) {
+      return NextResponse.json({ error: "Agency not found" }, { status: 404 });
     }
 
-    return NextResponse.json(holiday);
+    return NextResponse.json(agency);
   } catch (error) {
-    console.error("Error fetching holiday:", error);
+    console.error("Error fetching agency:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -70,7 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
- * PATCH: Update a specific Holiday by ID
+ * PATCH: Update a specific Agency by ID.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
@@ -98,7 +95,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("update", "Holiday")) {
+    if (!ability.can("update", "Agency")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -107,19 +104,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const existingHoliday = await prisma.agencyHoliday.findUnique({
+    const existingAgency = await prisma.agency.findUnique({
       where: { id },
     });
 
-    if (!existingHoliday) {
-      return NextResponse.json(
-        { error: "Holiday not found" },
-        { status: 404 },
-      );
+    if (!existingAgency) {
+      return NextResponse.json({ error: "Agency not found" }, { status: 404 });
     }
 
     const body = await request.json();
-    const parsedBody = updateHolidaySchema.safeParse(body);
+    const parsedBody = updateAgencySchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -131,14 +125,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const updatedHoliday = await prisma.agencyHoliday.update({
+    const updatedAgency = await prisma.agency.update({
       where: { id },
       data: parsedBody.data,
     });
 
-    return NextResponse.json(updatedHoliday);
+    return NextResponse.json(updatedAgency);
   } catch (error) {
-    console.error("Error updating holiday:", error);
+    console.error("Error updating agency:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -147,7 +141,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
- * DELETE: Remove a Holiday by ID
+ * DELETE: Remove an Agency by ID.
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -175,7 +169,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("delete", "Holiday")) {
+    if (!ability.can("delete", "Agency")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -184,24 +178,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const existingHoliday = await prisma.agencyHoliday.findUnique({
+    const existingAgency = await prisma.agency.findUnique({
       where: { id },
     });
 
-    if (!existingHoliday) {
-      return NextResponse.json(
-        { error: "Holiday not found" },
-        { status: 404 },
-      );
+    if (!existingAgency) {
+      return NextResponse.json({ error: "Agency not found" }, { status: 404 });
     }
 
-    await prisma.agencyHoliday.delete({
+    await prisma.agency.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: "Holiday deleted successfully" });
+    return NextResponse.json({ message: "Agency deleted successfully" });
   } catch (error) {
-    console.error("Error deleting holiday:", error);
+    console.error("Error deleting agency:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

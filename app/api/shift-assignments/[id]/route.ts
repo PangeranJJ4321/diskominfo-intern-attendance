@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const assignment = await prisma.shiftAssignment.findUnique({
       where: { id },
-      include: { user: true, shift: true },
+      include: { intern: { include: { user: true } }, shift: true },
     });
 
     if (!assignment) {
@@ -88,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -132,15 +132,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // If userId is being changed, validate it exists
-    if (parsedBody.data.userId) {
-      const targetUser = await prisma.user.findUnique({
-        where: { id: parsedBody.data.userId },
+    // If internId is being changed, validate it exists
+    if (parsedBody.data.internId) {
+      const intern = await prisma.intern.findUnique({
+        where: { id: parsedBody.data.internId },
       });
 
-      if (!targetUser) {
+      if (!intern) {
         return NextResponse.json(
-          { error: "User not found." },
+          { error: "Data magang tidak ditemukan." },
           { status: 404 },
         );
       }
@@ -163,7 +163,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updatedAssignment = await prisma.shiftAssignment.update({
       where: { id },
       data: parsedBody.data,
-      include: { user: true, shift: true },
+      include: { intern: { include: { user: true } }, shift: true },
     });
 
     return NextResponse.json(updatedAssignment);
@@ -194,7 +194,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {

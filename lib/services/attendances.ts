@@ -9,10 +9,12 @@ export async function getAttendances(limit = 1000): Promise<Attendance[]> {
 }
 
 export async function getAttendancesForUser(
-  userId: string,
+  internId: string,
   limit = 1000,
 ): Promise<Attendance[]> {
-  const res = await fetch(`/api/users/${userId}/attendances?limit=${limit}`);
+  const res = await fetch(
+    `/api/interns/${internId}/attendances?limit=${limit}`,
+  );
   if (!res.ok) await handleError(res, "Gagal mengambil presensi pengguna");
   const json = await res.json();
   const rawList = json.data || [];

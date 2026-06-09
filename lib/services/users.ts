@@ -24,7 +24,9 @@ export async function getUsers(limit = 1000): Promise<User[]> {
  * @returns {Promise<ProfileUser>} The detailed user profile.
  */
 export async function fetchUser(userId: string): Promise<ProfileUser> {
-  const res = await fetch(`/api/users/${userId}?include=accounts,faceDescriptors`);
+  const res = await fetch(
+    `/api/users/${userId}?include=accounts,faceDescriptors`,
+  );
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || "Failed to fetch user profile data");
@@ -33,7 +35,8 @@ export async function fetchUser(userId: string): Promise<ProfileUser> {
 
   return {
     ...data,
-    role: data.accesses && data.accesses.length > 0 ? "ADMIN" : "USER",
+    role:
+      data.agencyAccesses && data.agencyAccesses.length > 0 ? "ADMIN" : "USER",
     accounts: data.accounts || [],
     faceDescriptors: data.faceDescriptors || [],
   };
@@ -48,7 +51,7 @@ export async function fetchUser(userId: string): Promise<ProfileUser> {
  */
 export async function updateUser(
   userId: string,
-  data: Partial<Omit<ProfileUser, "id" | "accounts" | "faceDescriptors">>
+  data: Partial<Omit<ProfileUser, "id" | "accounts" | "faceDescriptors">>,
 ): Promise<ProfileUser> {
   const res = await fetch(`/api/users/${userId}`, {
     method: "PATCH",
@@ -89,7 +92,7 @@ export async function deleteUser(userId: string): Promise<void> {
  */
 export async function addFaceDescriptor(
   userId: string,
-  descriptor: number[]
+  descriptor: number[],
 ): Promise<ProfileUser> {
   const res = await fetch(`/api/users/${userId}/face-descriptors`, {
     method: "POST",
@@ -111,7 +114,9 @@ export async function addFaceDescriptor(
  * @param {string} userId - The ID of the user.
  * @returns {Promise<ProfileUser>} The updated user profile.
  */
-export async function deleteFaceDescriptors(userId: string): Promise<ProfileUser> {
+export async function deleteFaceDescriptors(
+  userId: string,
+): Promise<ProfileUser> {
   const res = await fetch(`/api/users/${userId}/face-descriptors`, {
     method: "DELETE",
   });
@@ -131,13 +136,17 @@ export async function deleteFaceDescriptors(userId: string): Promise<ProfileUser
  */
 export async function unlinkAccount(
   userId: string,
-  providerId: string
+  providerId: string,
 ): Promise<ProfileUser> {
   const { error } = await authClient.unlinkAccount({
-    providerId: providerId as Parameters<typeof authClient.unlinkAccount>[0]["providerId"],
+    providerId: providerId as Parameters<
+      typeof authClient.unlinkAccount
+    >[0]["providerId"],
   });
   if (error) {
-    throw new Error(error.message || `Failed to disconnect ${providerId} account`);
+    throw new Error(
+      error.message || `Failed to disconnect ${providerId} account`,
+    );
   }
   return fetchUser(userId);
 }

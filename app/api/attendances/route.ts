@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -77,20 +77,22 @@ export async function GET(request: NextRequest) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
-    // Admins see all attendances; ordinary users only see their own
-    const isAdmin = dbUser.accesses.length > 0;
+    // Admins see all attendances; ordinary users only see their own (via intern)
+    const isAdmin = dbUser.agencyAccesses.length > 0;
 
     const whereCondition = {
-      ...(!isAdmin ? { userId: session.user.id } : {}),
+      ...(!isAdmin ? { intern: { userId: session.user.id } } : {}),
       ...(search
         ? {
             OR: [
               { date: { contains: search } },
               {
-                user: {
-                  name: {
-                    contains: search,
-                    mode: "insensitive" as const,
+                intern: {
+                  user: {
+                    name: {
+                      contains: search,
+                      mode: "insensitive" as const,
+                    },
                   },
                 },
               },
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
     const [attendances, totalCount] = await Promise.all([
       prisma.attendance.findMany({
         where: whereCondition,
-        include: { user: true, schedule: true },
+        include: { intern: { include: { user: true } }, schedule: true },
         take: limit,
         skip: skip,
         orderBy: {
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -184,24 +186,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, scheduleId } = parsedBody.data;
+    const { internId, scheduleId } = parsedBody.data;
 
-    // Non-admin users can only create attendance for themselves
-    const isAdmin = dbUser.accesses.length > 0;
-    if (!isAdmin && userId !== session.user.id) {
+    // Determine if user is admin
+    const isAdmin = dbUser.agencyAccesses.length > 0;
+
+    // Validate that the referenced intern exists and belongs to the current user
+    const intern = await prisma.intern.findUnique({
+      where: { id: internId },
+    });
+
+    if (!intern) {
+      return NextResponse.json(
+        { error: "Data magang tidak ditemukan." },
+        { status: 404 },
+      );
+    }
+
+    // Non-admin users can only create attendance for their own intern record
+    if (!isAdmin && intern.userId !== session.user.id) {
       return NextResponse.json(
         { error: "Forbidden: You can only submit your own attendance." },
         { status: 403 },
       );
-    }
-
-    // Validate that the referenced user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!targetUser) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
     // Validate that the referenced schedule exists and is active (along with its parent shift)
@@ -235,7 +242,7 @@ export async function POST(request: NextRequest) {
       } = parsedBody.data;
 
       // 1. Fetch timezone and run timing verification
-      const areas = await prisma.attendanceArea.findMany();
+      const areas = await prisma.agencyArea.findMany();
       const timezone = areas[0]?.timezone || "Asia/Makassar";
       const now = new Date();
 
@@ -254,7 +261,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if target working date is a public holiday
-      const holiday = await prisma.holiday.findFirst({
+      const holiday = await prisma.agencyHoliday.findFirst({
         where: { date: timeCheck.currentLocalDateStr },
       });
 
@@ -319,7 +326,7 @@ export async function POST(request: NextRequest) {
 
         // 3. Location velocity spoofing check (using haversine)
         const newestLog = await prisma.locationLog.findFirst({
-          where: { userId },
+          where: { internId },
           orderBy: { createdAt: "desc" },
         });
 
@@ -335,7 +342,7 @@ export async function POST(request: NextRequest) {
 
           if (!velocityCheck.isValid) {
             console.warn(
-              `GPS spoofing indication for user ${userId}. Speed: ${velocityCheck.speed.toFixed(2)} m/s, Distance: ${velocityCheck.distance.toFixed(2)} m`,
+              `GPS spoofing indication for intern ${internId}. Speed: ${velocityCheck.speed.toFixed(2)} m/s, Distance: ${velocityCheck.distance.toFixed(2)} m`,
             );
             return NextResponse.json(
               {
@@ -349,7 +356,7 @@ export async function POST(request: NextRequest) {
 
         // 4. Face Recognition Check
         const registeredFaces = await prisma.faceDescriptor.findMany({
-          where: { userId },
+          where: { userId: intern.userId },
         });
 
         if (registeredFaces.length > 0) {
@@ -410,7 +417,7 @@ export async function POST(request: NextRequest) {
             try {
               await prisma.faceDescriptor.create({
                 data: {
-                  userId,
+                  userId: intern.userId,
                   descriptor: attendanceFaceDescriptor,
                 },
               });
@@ -434,7 +441,7 @@ export async function POST(request: NextRequest) {
         ...parsedBody.data,
         status: parsedBody.data.status as AttendanceStatusType,
       },
-      include: { user: true, schedule: true },
+      include: { intern: { include: { user: true } }, schedule: true },
     });
 
     return NextResponse.json(newAttendance, { status: 201 });

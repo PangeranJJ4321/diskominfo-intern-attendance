@@ -1,17 +1,17 @@
-// app/api/holidays/[id]/route.ts
+// app/api/institutions/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { defineAbilityFor } from "@/lib/casl";
-import { updateHolidaySchema } from "@/lib/schemas/holiday-schema";
+import { updateInstitutionSchema } from "@/lib/schemas/institution-schema";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 /**
- * GET: Retrieve a specific Holiday by ID
+ * GET: Retrieve a specific Institution by ID.
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Holiday")) {
+    if (!ability.can("read", "Institution")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -48,20 +48,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const holiday = await prisma.agencyHoliday.findUnique({
+    const institution = await prisma.institution.findUnique({
       where: { id },
     });
 
-    if (!holiday) {
+    if (!institution) {
       return NextResponse.json(
-        { error: "Holiday not found" },
+        { error: "Institution not found" },
         { status: 404 },
       );
     }
 
-    return NextResponse.json(holiday);
+    return NextResponse.json(institution);
   } catch (error) {
-    console.error("Error fetching holiday:", error);
+    console.error("Error fetching institution:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
- * PATCH: Update a specific Holiday by ID
+ * PATCH: Update a specific Institution by ID.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("update", "Holiday")) {
+    if (!ability.can("update", "Institution")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -107,19 +107,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const existingHoliday = await prisma.agencyHoliday.findUnique({
+    const existingInstitution = await prisma.institution.findUnique({
       where: { id },
     });
 
-    if (!existingHoliday) {
+    if (!existingInstitution) {
       return NextResponse.json(
-        { error: "Holiday not found" },
+        { error: "Institution not found" },
         { status: 404 },
       );
     }
 
     const body = await request.json();
-    const parsedBody = updateHolidaySchema.safeParse(body);
+    const parsedBody = updateInstitutionSchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -131,14 +131,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const updatedHoliday = await prisma.agencyHoliday.update({
+    const updatedInstitution = await prisma.institution.update({
       where: { id },
       data: parsedBody.data,
     });
 
-    return NextResponse.json(updatedHoliday);
+    return NextResponse.json(updatedInstitution);
   } catch (error) {
-    console.error("Error updating holiday:", error);
+    console.error("Error updating institution:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -147,7 +147,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
- * DELETE: Remove a Holiday by ID
+ * DELETE: Remove an Institution by ID.
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -175,7 +175,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("delete", "Holiday")) {
+    if (!ability.can("delete", "Institution")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -184,24 +184,24 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const existingHoliday = await prisma.agencyHoliday.findUnique({
+    const existingInstitution = await prisma.institution.findUnique({
       where: { id },
     });
 
-    if (!existingHoliday) {
+    if (!existingInstitution) {
       return NextResponse.json(
-        { error: "Holiday not found" },
+        { error: "Institution not found" },
         { status: 404 },
       );
     }
 
-    await prisma.agencyHoliday.delete({
+    await prisma.institution.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: "Holiday deleted successfully" });
+    return NextResponse.json({ message: "Institution deleted successfully" });
   } catch (error) {
-    console.error("Error deleting holiday:", error);
+    console.error("Error deleting institution:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

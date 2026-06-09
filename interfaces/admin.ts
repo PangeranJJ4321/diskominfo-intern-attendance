@@ -1,5 +1,12 @@
 import type { GeoJsonObject } from "geojson";
-import type { Shift, Schedule, Holiday, Attendance, User, ShiftAssignment } from "./models";
+import type {
+  Shift,
+  Schedule,
+  AgencyHoliday,
+  Attendance,
+  User,
+  ShiftAssignment,
+} from "./models";
 
 export interface AttendanceAreaMapProps {
   mapCenter: [number, number];
@@ -91,8 +98,8 @@ export interface HolidaysTabProps {
 export interface HolidayEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  holiday: Holiday | null;
-  onSuccessUpdate: (holiday: Holiday) => void;
+  holiday: AgencyHoliday | null;
+  onSuccessUpdate: (holiday: AgencyHoliday) => void;
   onSuccessDelete: (id: string) => void;
 }
 
@@ -100,7 +107,7 @@ export interface HolidayCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
-  onSuccessAdd: (holiday: Holiday) => void;
+  onSuccessAdd: (holiday: AgencyHoliday) => void;
 }
 
 export interface AttendanceAreaState {

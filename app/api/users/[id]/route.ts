@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const includeClause: Record<string, boolean> = {};
     if (includeSet.has("accounts")) includeClause.accounts = true;
     if (includeSet.has("faceDescriptors")) includeClause.faceDescriptors = true;
-    if (includeSet.has("accesses")) includeClause.accesses = true;
+    if (includeSet.has("accesses")) includeClause.agencyAccesses = true;
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
@@ -121,7 +121,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -245,7 +245,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {

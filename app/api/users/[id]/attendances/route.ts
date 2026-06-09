@@ -20,7 +20,7 @@ const querySchema = createTableQuerySchema(
 
 /**
  * GET: List attendances for a specific user.
- * 
+ *
  * @param request - The incoming NextRequest.
  * @param context - Route parameters containing the user ID.
  * @returns A promise resolving to the NextResponse.
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -57,15 +57,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!targetUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Users can read their own attendances; admins can read anyone's
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", subject("User", targetUser) as unknown as "User")) {
+    if (
+      !ability.can("read", subject("User", targetUser) as unknown as "User")
+    ) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -89,8 +88,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
+    // Find all intern records for this user (a user can intern at multiple agencies)
+    const interns = await prisma.intern.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+
+    const internIds = interns.map((i) => i.id);
+
     const whereCondition = {
-      userId: id,
+      internId: { in: internIds },
       ...(search
         ? {
             OR: [
@@ -112,7 +119,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const [attendances, totalCount] = await Promise.all([
       prisma.attendance.findMany({
         where: whereCondition,
-        include: { schedule: true },
+        include: { intern: { include: { user: true } }, schedule: true },
         take: limit,
         skip: skip,
         orderBy: {

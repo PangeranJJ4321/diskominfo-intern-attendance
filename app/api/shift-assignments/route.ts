@@ -8,7 +8,7 @@ import { defineAbilityFor } from "@/lib/casl";
 import { createShiftAssignmentSchema } from "@/lib/schemas/shift-assignment-schema";
 
 const querySchema = createTableQuerySchema(
-  ["id", "userId", "shiftId", "startDate"],
+  ["id", "internId", "shiftId", "startDate"],
   "startDate",
 );
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -65,20 +65,22 @@ export async function GET(request: NextRequest) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
-    // Admins see all assignments; ordinary users only see their own
-    const isAdmin = dbUser.accesses.length > 0;
+    // Admins see all assignments; ordinary users only see their own (via intern)
+    const isAdmin = dbUser.agencyAccesses.length > 0;
 
     const whereCondition = {
       shift: {
         deletedAt: null,
       },
-      ...(!isAdmin ? { userId: session.user.id } : {}),
+      ...(!isAdmin ? { intern: { userId: session.user.id } } : {}),
       ...(search
         ? {
-            user: {
-              name: {
-                contains: search,
-                mode: "insensitive" as const,
+            intern: {
+              user: {
+                name: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
               },
             },
           }
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
     const [assignments, totalCount] = await Promise.all([
       prisma.shiftAssignment.findMany({
         where: whereCondition,
-        include: { user: true, shift: true },
+        include: { intern: { include: { user: true } }, shift: true },
         take: limit,
         skip: skip,
         orderBy: {
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -167,16 +169,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId, shiftId } = parsedBody.data;
+    const { internId, shiftId } = parsedBody.data;
 
-    // Validate that the referenced user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
+    // Validate that the referenced intern exists
+    const intern = await prisma.intern.findUnique({
+      where: { id: internId },
     });
 
-    if (!targetUser) {
+    if (!intern) {
       return NextResponse.json(
-        { error: "User not found." },
+        { error: "Data magang tidak ditemukan." },
         { status: 404 },
       );
     }
@@ -187,15 +189,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!shift) {
-      return NextResponse.json(
-        { error: "Shift not found." },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Shift not found." }, { status: 404 });
     }
 
     const newAssignment = await prisma.shiftAssignment.create({
       data: parsedBody.data,
-      include: { user: true, shift: true },
+      include: { intern: { include: { user: true } }, shift: true },
     });
 
     return NextResponse.json(newAssignment, { status: 201 });

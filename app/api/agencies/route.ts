@@ -1,19 +1,16 @@
-// app/api/accesses/route.ts
+// app/api/agencies/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
-import { createAccessSchema } from "@/lib/schemas/access-schema";
+import { createAgencySchema } from "@/lib/schemas/agency-schema";
 
-const querySchema = createTableQuerySchema(
-  ["id", "userId", "createdAt"],
-  "createdAt",
-);
+const querySchema = createTableQuerySchema(["id", "name", "createdAt"], "name");
 
 /**
- * GET: List all accesses with pagination, sorting, and search
+ * GET: List all agencies with pagination, sorting, and search.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -41,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Access")) {
+    if (!ability.can("read", "Agency")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -67,32 +64,29 @@ export async function GET(request: NextRequest) {
 
     const whereCondition = search
       ? {
-          user: {
-            name: {
-              contains: search,
-              mode: "insensitive" as const,
-            },
+          name: {
+            contains: search,
+            mode: "insensitive" as const,
           },
         }
       : {};
 
-    const [accesses, totalCount] = await Promise.all([
-      prisma.access.findMany({
+    const [agencies, totalCount] = await Promise.all([
+      prisma.agency.findMany({
         where: whereCondition,
-        include: { user: true },
         take: limit,
         skip: skip,
         orderBy: {
           [sortBy]: sortOrder,
         },
       }),
-      prisma.access.count({
+      prisma.agency.count({
         where: whereCondition,
       }),
     ]);
 
     return NextResponse.json({
-      data: accesses,
+      data: agencies,
       meta: {
         totalCount,
         page,
@@ -101,7 +95,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching accesses:", error);
+    console.error("Error fetching agencies:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -110,7 +104,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST: Create a new access record
+ * POST: Create a new agency.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -127,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -138,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Access")) {
+    if (!ability.can("create", "Agency")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -146,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsedBody = createAccessSchema.safeParse(body);
+    const parsedBody = createAgencySchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -158,40 +152,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId } = parsedBody.data;
-
-    // Validate that the target user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
+    const newAgency = await prisma.agency.create({
+      data: parsedBody.data,
     });
 
-    if (!targetUser) {
-      return NextResponse.json(
-        { error: "User not found." },
-        { status: 404 },
-      );
-    }
-
-    // Check for duplicate access
-    const existingAccess = await prisma.access.findFirst({
-      where: { userId },
-    });
-
-    if (existingAccess) {
-      return NextResponse.json(
-        { error: "User already has an access record." },
-        { status: 400 },
-      );
-    }
-
-    const newAccess = await prisma.access.create({
-      data: { userId },
-      include: { user: true },
-    });
-
-    return NextResponse.json(newAccess, { status: 201 });
+    return NextResponse.json(newAgency, { status: 201 });
   } catch (error) {
-    console.error("Error creating access:", error);
+    console.error("Error creating agency:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

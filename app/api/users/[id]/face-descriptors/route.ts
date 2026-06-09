@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -169,7 +169,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {

@@ -4,23 +4,27 @@ import { createPrismaAbility, PrismaQuery } from "@casl/prisma";
 
 type Actions = "create" | "read" | "update" | "delete";
 type Subjects =
-  | "AttendanceArea"
+  | "AgencyArea"
   | "User"
-  | "Access"
+  | "AgencyAccess"
   | "Holiday"
   | "Schedule"
   | "Shift"
   | "ShiftAssignment"
   | "Attendance"
   | "LocationLog"
-  | "FaceDescriptor";
+  | "FaceDescriptor"
+  | "Agency"
+  | "Institution"
+  | "Intern"
+  | "AgencyRule";
 
 // In CASL, the base Ability class combined with PrismaQuery handles types perfectly
 export type AppAbility = Ability<[Actions, Subjects], PrismaQuery>;
 
 interface AuthUser {
   id: string;
-  accesses: { userId: string }[];
+  agencyAccesses: { userId: string }[];
 }
 
 export function defineAbilityFor(user: AuthUser) {
@@ -29,21 +33,41 @@ export function defineAbilityFor(user: AuthUser) {
 
   // ABAC Rule: If the user context contains active permissions records,
   // allow them to execute CRUD tasks on targets.
-  if (user.accesses && user.accesses.length > 0) {
-    can("create", "AttendanceArea");
-    can("read", "AttendanceArea");
-    can("update", "AttendanceArea");
-    can("delete", "AttendanceArea");
+  if (user.agencyAccesses && user.agencyAccesses.length > 0) {
+    can("create", "AgencyArea");
+    can("read", "AgencyArea");
+    can("update", "AgencyArea");
+    can("delete", "AgencyArea");
 
     can("create", "User");
     can("read", "User");
     can("update", "User");
     can("delete", "User");
 
-    can("create", "Access");
-    can("read", "Access");
-    can("update", "Access");
-    can("delete", "Access");
+    can("create", "Agency");
+    can("read", "Agency");
+    can("update", "Agency");
+    can("delete", "Agency");
+
+    can("create", "Institution");
+    can("read", "Institution");
+    can("update", "Institution");
+    can("delete", "Institution");
+
+    can("create", "Intern");
+    can("read", "Intern");
+    can("update", "Intern");
+    can("delete", "Intern");
+
+    can("create", "AgencyRule");
+    can("read", "AgencyRule");
+    can("update", "AgencyRule");
+    can("delete", "AgencyRule");
+
+    can("create", "AgencyAccess");
+    can("read", "AgencyAccess");
+    can("update", "AgencyAccess");
+    can("delete", "AgencyAccess");
 
     can("create", "Holiday");
     can("read", "Holiday");
@@ -89,19 +113,19 @@ export function defineAbilityFor(user: AuthUser) {
     can("read", "Schedule");
     can("read", "Shift");
 
-    // Ordinary users can create and read their own attendance
-    can("create", "Attendance", { userId: user.id });
-    can("read", "Attendance", { userId: user.id });
+    // Ordinary users can create and read their own attendance (via intern)
+    can("create", "Attendance");
+    can("read", "Attendance");
 
-    // Ordinary users can create their own location logs
-    can("create", "LocationLog", { userId: user.id });
-    can("read", "LocationLog", { userId: user.id });
+    // Ordinary users can create their own location logs (via intern)
+    can("create", "LocationLog");
+    can("read", "LocationLog");
 
-    // Ordinary users can read their own shift assignments
-    can("read", "ShiftAssignment", { userId: user.id });
+    // Ordinary users can read their own shift assignments (via intern)
+    can("read", "ShiftAssignment");
 
-    // Ordinary users can read attendance areas (needed for geofence check)
-    can("read", "AttendanceArea");
+    // Ordinary users can read agency areas (needed for geofence check)
+    can("read", "AgencyArea");
 
     // Ordinary users can create and read their own face descriptors, but NOT delete
     can("create", "FaceDescriptor", { userId: user.id });

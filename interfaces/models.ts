@@ -23,7 +23,7 @@ export interface Schedule {
   shift?: Shift;
 }
 
-export interface Holiday {
+export interface AgencyHoliday {
   id: string;
   date: string;
   description: string;
@@ -36,27 +36,19 @@ export interface User {
   image: string | null;
 }
 
-export interface AdminAccess {
-  id: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-  user: User;
-}
-
 export interface ShiftAssignment {
   id: string;
-  userId: string;
+  internId: string;
   shiftId: string;
   startDate: string;
   endDate: string | null;
-  user?: User;
+  intern?: Intern;
   shift?: Shift;
 }
 
 export interface Attendance {
   id: string;
-  userId: string;
+  internId: string;
   scheduleId: string;
   date: string;
   attendanceTime: string | null;
@@ -67,18 +59,19 @@ export interface Attendance {
   status: AttendanceStatusType;
   notes: string | null;
   schedule?: Schedule;
-  user?: User;
+  intern?: Intern;
 }
 
-export interface AttendanceArea {
+export interface AgencyArea {
   id: string;
+  agencyId: string;
   geoData: GeoJsonObject;
   timezone: string;
 }
 
 export interface LocationLog {
   id: string;
-  userId: string;
+  internId: string;
   latitude: number;
   longitude: number;
   ipAddress: string | null;
@@ -104,4 +97,57 @@ export interface ProfileUser {
     createdAt: string;
     updatedAt: string;
   }[];
+}
+
+/** Agency model — represents an organizational unit / office */
+export interface Agency {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Institution model — represents a school / university */
+export interface Institution {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Intern model — links a user to an agency with optional institution */
+export interface Intern {
+  id: string;
+  userId: string;
+  agencyId: string;
+  institutionId: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+  agency?: Agency;
+  institution?: Institution | null;
+}
+
+/** AgencyRule model — per-agency attendance rules */
+export interface AgencyRule {
+  id: string;
+  agencyId: string;
+  requireFaceVerification: boolean;
+  requireWithinArea: boolean;
+  createdAt: string;
+  updatedAt: string;
+  agency?: Agency;
+}
+
+/** AgencyAccess model — granular access control for managing agencies */
+export interface AgencyAccess {
+  id: string;
+  agencyId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  agency?: Agency;
+  user?: User;
 }

@@ -1,24 +1,47 @@
-// app/api/attendance-areas/route.ts
+// app/api/agency-accesses/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
-import { createAreaSchema } from "@/lib/schemas/attendance-area-schema";
+import { createAgencyAccessSchema } from "@/lib/schemas/agency-access-schema";
 
-const querySchema = createTableQuerySchema(["id", "timezone"], "id");
+const querySchema = createTableQuerySchema(["id", "createdAt"], "createdAt");
 
+/**
+ * GET: List all agency accesses with pagination, sorting, and search.
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized access" },
         { status: 401 },
+      );
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { agencyAccesses: true },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User account not found" },
+        { status: 404 },
+      );
+    }
+
+    const ability = defineAbilityFor(dbUser);
+    if (!ability.can("read", "AgencyAccess")) {
+      return NextResponse.json(
+        { error: "Forbidden: Missing access credentials." },
+        { status: 403 },
       );
     }
 
@@ -39,33 +62,37 @@ export async function GET(request: NextRequest) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
-    // Conditionally build the object using a ternary operator.
-    // TypeScript perfectly infers this shape without needing explicit types.
     const whereCondition = search
       ? {
-          timezone: {
-            contains: search,
-            mode: "insensitive" as const, // "as const" ensures it treats the string as a literal, not a generic string
+          user: {
+            name: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
           },
         }
       : {};
 
-    const [areas, totalCount] = await Promise.all([
-      prisma.attendanceArea.findMany({
+    const [accesses, totalCount] = await Promise.all([
+      prisma.agencyAccess.findMany({
         where: whereCondition,
+        include: {
+          user: true,
+          agency: true,
+        },
         take: limit,
         skip: skip,
         orderBy: {
           [sortBy]: sortOrder,
         },
       }),
-      prisma.attendanceArea.count({
+      prisma.agencyAccess.count({
         where: whereCondition,
       }),
     ]);
 
     return NextResponse.json({
-      data: areas,
+      data: accesses,
       meta: {
         totalCount,
         page,
@@ -74,7 +101,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching attendance areas:", error);
+    console.error("Error fetching agency accesses:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -82,6 +109,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST: Create a new agency access.
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
@@ -95,10 +125,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user criteria dynamically to pass into the ABAC checker
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -108,9 +137,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Evaluate permissions
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "AttendanceArea")) {
+    if (!ability.can("create", "AgencyAccess")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -118,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsedBody = createAreaSchema.safeParse(body);
+    const parsedBody = createAgencyAccessSchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -130,13 +158,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newArea = await prisma.attendanceArea.create({
-      data: parsedBody.data,
+    const { agencyId } = body;
+
+    if (!agencyId || typeof agencyId !== "string") {
+      return NextResponse.json(
+        { error: "Agency ID wajib diisi." },
+        { status: 400 },
+      );
+    }
+
+    // Validate that the referenced user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: parsedBody.data.userId },
     });
 
-    return NextResponse.json(newArea, { status: 201 });
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    // Validate that the referenced agency exists
+    const targetAgency = await prisma.agency.findUnique({
+      where: { id: agencyId },
+    });
+
+    if (!targetAgency) {
+      return NextResponse.json({ error: "Agency not found." }, { status: 404 });
+    }
+
+    const newAccess = await prisma.agencyAccess.create({
+      data: {
+        agencyId,
+        userId: parsedBody.data.userId,
+      },
+      include: {
+        user: true,
+        agency: true,
+      },
+    });
+
+    return NextResponse.json(newAccess, { status: 201 });
   } catch (error) {
-    console.error("Error creating attendance area:", error);
+    console.error("Error creating agency access:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

@@ -1,19 +1,19 @@
-// app/api/schedules/route.ts
+// app/api/interns/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
-import { createScheduleSchema } from "@/lib/schemas/schedule-schema";
+import { createInternSchema } from "@/lib/schemas/intern-schema";
 
 const querySchema = createTableQuerySchema(
-  ["id", "name", "dayOfWeek", "scheduleStart", "createdAt"],
-  "dayOfWeek",
+  ["id", "startedAt", "finishedAt", "createdAt"],
+  "createdAt",
 );
 
 /**
- * GET: List all schedules with pagination, sorting, and search
+ * GET: List all interns with pagination, sorting, and search.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Schedule")) {
+    if (!ability.can("read", "Intern")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -65,38 +65,38 @@ export async function GET(request: NextRequest) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
-    const whereCondition = {
-      deletedAt: null,
-      shift: {
-        deletedAt: null,
-      },
-      ...(search
-        ? {
+    const whereCondition = search
+      ? {
+          user: {
             name: {
               contains: search,
               mode: "insensitive" as const,
             },
-          }
-        : {}),
-    };
+          },
+        }
+      : {};
 
-    const [schedules, totalCount] = await Promise.all([
-      prisma.schedule.findMany({
+    const [interns, totalCount] = await Promise.all([
+      prisma.intern.findMany({
         where: whereCondition,
-        include: { shift: true },
+        include: {
+          user: true,
+          agency: true,
+          institution: true,
+        },
         take: limit,
         skip: skip,
         orderBy: {
           [sortBy]: sortOrder,
         },
       }),
-      prisma.schedule.count({
+      prisma.intern.count({
         where: whereCondition,
       }),
     ]);
 
     return NextResponse.json({
-      data: schedules,
+      data: interns,
       meta: {
         totalCount,
         page,
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching schedules:", error);
+    console.error("Error fetching interns:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST: Create a new schedule
+ * POST: Create a new intern record.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Schedule")) {
+    if (!ability.can("create", "Intern")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsedBody = createScheduleSchema.safeParse(body);
+    const parsedBody = createInternSchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -162,26 +162,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate that the referenced shift exists and is active
-    const shift = await prisma.shift.findFirst({
-      where: { id: parsedBody.data.shiftId, deletedAt: null },
+    const { userId, agencyId } = parsedBody.data;
+
+    // Validate that the referenced user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    if (!shift) {
-      return NextResponse.json(
-        { error: "Shift not found." },
-        { status: 404 },
-      );
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    const newSchedule = await prisma.schedule.create({
-      data: parsedBody.data,
-      include: { shift: true },
+    // Validate that the referenced agency exists
+    const targetAgency = await prisma.agency.findUnique({
+      where: { id: agencyId },
     });
 
-    return NextResponse.json(newSchedule, { status: 201 });
+    if (!targetAgency) {
+      return NextResponse.json({ error: "Agency not found." }, { status: 404 });
+    }
+
+    // Validate institution if provided
+    if (parsedBody.data.institutionId) {
+      const targetInstitution = await prisma.institution.findUnique({
+        where: { id: parsedBody.data.institutionId },
+      });
+
+      if (!targetInstitution) {
+        return NextResponse.json(
+          { error: "Institution not found." },
+          { status: 404 },
+        );
+      }
+    }
+
+    const newIntern = await prisma.intern.create({
+      data: parsedBody.data,
+      include: {
+        user: true,
+        agency: true,
+        institution: true,
+      },
+    });
+
+    return NextResponse.json(newIntern, { status: 201 });
   } catch (error) {
-    console.error("Error creating schedule:", error);
+    console.error("Error creating intern:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

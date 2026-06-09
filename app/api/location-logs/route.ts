@@ -8,13 +8,13 @@ import { defineAbilityFor } from "@/lib/casl";
 import { createLocationLogSchema } from "@/lib/schemas/location-log-schema";
 
 const querySchema = createTableQuerySchema(
-  ["id", "userId", "createdAt"],
+  ["id", "internId", "createdAt"],
   "createdAt",
 );
 
 /**
  * GET: List location logs with pagination and sorting.
- * 
+ *
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -68,17 +68,19 @@ export async function GET(request: NextRequest) {
     const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
     const skip = (page - 1) * limit;
 
-    // Admins see all logs; ordinary users only see their own
-    const isAdmin = dbUser.accesses.length > 0;
+    // Admins see all logs; ordinary users only see their own (via intern)
+    const isAdmin = dbUser.agencyAccesses.length > 0;
 
     const whereCondition = {
-      ...(!isAdmin ? { userId: session.user.id } : {}),
+      ...(!isAdmin ? { intern: { userId: session.user.id } } : {}),
       ...(search
         ? {
-            user: {
-              name: {
-                contains: search,
-                mode: "insensitive" as const,
+            intern: {
+              user: {
+                name: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
               },
             },
           }
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
     const [logs, totalCount] = await Promise.all([
       prisma.locationLog.findMany({
         where: whereCondition,
-        include: { user: true },
+        include: { intern: { include: { user: true } } },
         take: limit,
         skip: skip,
         orderBy: {
@@ -120,7 +122,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST: Create a new location log entry.
- * 
+ *
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { accesses: true },
+      include: { agencyAccesses: true },
     });
 
     if (!dbUser) {
@@ -170,26 +172,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { userId } = parsedBody.data;
+    const { internId } = parsedBody.data;
 
-    // Non-admin users can only create logs for themselves
-    const isAdmin = dbUser.accesses.length > 0;
-    if (!isAdmin && userId !== session.user.id) {
+    // Determine if user is admin
+    const isAdmin = dbUser.agencyAccesses.length > 0;
+
+    // Validate that the referenced intern exists and belongs to the current user
+    const intern = await prisma.intern.findUnique({
+      where: { id: internId },
+    });
+
+    if (!intern) {
       return NextResponse.json(
-        { error: "Forbidden: You can only submit your own location logs." },
-        { status: 403 },
+        { error: "Data magang tidak ditemukan." },
+        { status: 404 },
       );
     }
 
-    // Validate that the referenced user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!targetUser) {
+    // Non-admin users can only create logs for their own intern record
+    if (!isAdmin && intern.userId !== session.user.id) {
       return NextResponse.json(
-        { error: "User not found." },
-        { status: 404 },
+        { error: "Forbidden: You can only submit your own location logs." },
+        { status: 403 },
       );
     }
 

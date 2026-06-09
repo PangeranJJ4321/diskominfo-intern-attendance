@@ -1,14 +1,16 @@
-import { Holiday } from "@/interfaces/models";
+import { AgencyHoliday } from "@/interfaces/models";
 import { handleError } from "./utils";
 
-export async function getHolidays(limit = 1000): Promise<Holiday[]> {
+export async function getHolidays(limit = 1000): Promise<AgencyHoliday[]> {
   const res = await fetch(`/api/holidays?limit=${limit}`);
   if (!res.ok) await handleError(res, "Gagal mengambil data libur");
   const json = await res.json();
   return json.data || [];
 }
 
-export async function createHoliday(data: Omit<Holiday, "id">): Promise<Holiday> {
+export async function createHoliday(
+  data: Omit<AgencyHoliday, "id">,
+): Promise<AgencyHoliday> {
   const res = await fetch("/api/holidays", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -20,8 +22,8 @@ export async function createHoliday(data: Omit<Holiday, "id">): Promise<Holiday>
 
 export async function updateHoliday(
   id: string,
-  data: Partial<Omit<Holiday, "id">>
-): Promise<Holiday> {
+  data: Partial<Omit<AgencyHoliday, "id">>,
+): Promise<AgencyHoliday> {
   const res = await fetch(`/api/holidays/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

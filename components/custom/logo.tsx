@@ -25,7 +25,7 @@ export function Logo({
         )}
       >
         <Image
-          src="/apple-touch-icon.png"
+          src="/logo.jpeg"
           alt="DISKOMINFO INTERN Logo"
           width={28}
           height={28}

@@ -19,9 +19,9 @@ const adminPassword = process.env.ADMIN_PASSWORD;
 if (!adminName || !adminEmail || !adminPassword) {
   throw new Error(
     "Missing required environment variables for seeding admin user:\n" +
-    `ADMIN_NAME: ${adminName ? "Set" : "Not Set"}\n` +
-    `ADMIN_EMAIL: ${adminEmail ? "Set" : "Not Set"}\n` +
-    `ADMIN_PASSWORD: ${adminPassword ? "Set" : "Not Set"}`
+      `ADMIN_NAME: ${adminName ? "Set" : "Not Set"}\n` +
+      `ADMIN_EMAIL: ${adminEmail ? "Set" : "Not Set"}\n` +
+      `ADMIN_PASSWORD: ${adminPassword ? "Set" : "Not Set"}`,
   );
 }
 
@@ -53,7 +53,9 @@ async function main() {
   let userId: string;
 
   if (existingUser) {
-    console.log(`User with email ${email} already exists. ID: ${existingUser.id}`);
+    console.log(
+      `User with email ${email} already exists. ID: ${existingUser.id}`,
+    );
     userId = existingUser.id;
 
     // Check if the user has an Account record
@@ -111,21 +113,126 @@ async function main() {
     console.log("User and account created successfully.");
   }
 
-  // 3. Add to Access data (Admin privileges)
-  const existingAccess = await prisma.access.findFirst({
-    where: { userId },
+  // 3. Create Institution
+  const institutionName = "Universitas Hasanuddin";
+  let institutionId: string;
+
+  const existingInstitution = await prisma.institution.findFirst({
+    where: { name: institutionName },
   });
 
-  if (!existingAccess) {
-    console.log("Granting admin access (creating Access record)...");
-    await prisma.access.create({
+  if (existingInstitution) {
+    console.log(
+      `Institution "${institutionName}" already exists. ID: ${existingInstitution.id}`,
+    );
+    institutionId = existingInstitution.id;
+  } else {
+    console.log(`Creating institution "${institutionName}"...`);
+    institutionId = generateCuid();
+
+    await prisma.institution.create({
       data: {
-        userId,
+        id: institutionId,
+        name: institutionName,
       },
     });
-    console.log("Admin access granted.");
+    console.log("Institution created successfully.");
+  }
+
+  // 4. Create Agency
+  const agencyName = "Diskominfo Kota Makassar";
+  let agencyId: string;
+
+  const existingAgency = await prisma.agency.findFirst({
+    where: { name: agencyName },
+  });
+
+  if (existingAgency) {
+    console.log(
+      `Agency "${agencyName}" already exists. ID: ${existingAgency.id}`,
+    );
+    agencyId = existingAgency.id;
   } else {
-    console.log("User already has admin access.");
+    console.log(`Creating agency "${agencyName}"...`);
+    agencyId = generateCuid();
+
+    await prisma.agency.create({
+      data: {
+        id: agencyId,
+        name: agencyName,
+      },
+    });
+    console.log("Agency created successfully.");
+  }
+
+  // 5. Create AgencyArea (GeoJSON geofence)
+  const existingAgencyArea = await prisma.agencyArea.findUnique({
+    where: { agencyId },
+  });
+
+  if (existingAgencyArea) {
+    console.log(`AgencyArea for "${agencyName}" already exists.`);
+  } else {
+    console.log("Creating AgencyArea...");
+    await prisma.agencyArea.create({
+      data: {
+        id: generateCuid(),
+        agencyId,
+        geoData: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [119.41, -5.15],
+              [119.43, -5.15],
+              [119.43, -5.135],
+              [119.41, -5.135],
+              [119.41, -5.15],
+            ],
+          ],
+        },
+        timezone: "Asia/Makassar",
+      },
+    });
+    console.log("AgencyArea created successfully.");
+  }
+
+  // 6. Create AgencyRule
+  const existingAgencyRule = await prisma.agencyRule.findUnique({
+    where: { agencyId },
+  });
+
+  if (existingAgencyRule) {
+    console.log(`AgencyRule for "${agencyName}" already exists.`);
+  } else {
+    console.log("Creating AgencyRule...");
+    await prisma.agencyRule.create({
+      data: {
+        id: generateCuid(),
+        agencyId,
+        requireFaceVerification: true,
+        requireWithinArea: true,
+      },
+    });
+    console.log("AgencyRule created successfully.");
+  }
+
+  // 7. Create AgencyAccess linking admin user to agency
+  const existingAgencyAccess = await prisma.agencyAccess.findFirst({
+    where: { userId, agencyId },
+  });
+
+  if (existingAgencyAccess) {
+    console.log("Admin already has agency access.");
+  } else {
+    console.log("Granting admin access to the agency...");
+    await prisma.agencyAccess.create({
+      data: {
+        id: generateCuid(),
+        userId,
+        agencyId,
+      },
+    });
+    console.log("Agency access granted successfully.");
   }
 
   console.log("Seeding finished successfully!");

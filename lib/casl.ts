@@ -127,6 +127,17 @@ export function defineAbilityFor(user: AuthUser) {
     // Ordinary users can read agency areas (needed for geofence check)
     can("read", "AgencyArea");
 
+    // Ordinary users can read their own intern records
+    can("read", "Intern");
+    can("create", "Intern");
+    can("update", "Intern");
+
+    // Ordinary users can read agencies (needed for intern card dropdowns)
+    can("read", "Agency");
+
+    // Ordinary users can read institutions (needed for intern card dropdowns)
+    can("read", "Institution");
+
     // Ordinary users can create and read their own face descriptors, but NOT delete
     can("create", "FaceDescriptor", { userId: user.id });
     can("read", "FaceDescriptor", { userId: user.id });

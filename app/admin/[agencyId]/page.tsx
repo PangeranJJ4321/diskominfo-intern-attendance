@@ -7,18 +7,20 @@ import SchedulesCard from "./components/schedules-card";
 import UserAttendancesCard from "./components/user-attendances-card";
 import ShareAccessCard from "./components/share-access-card";
 import AgencyRulesCard from "./components/agency-rules-card";
-import type { RouteParams } from "@/interfaces/models";
-
 /**
  * Multi-tenant admin page scoped to a specific agency.
  * Displays agency-specific admin controls including rules, area map, schedules,
  * user attendances, and access sharing.
  *
- * @param {RouteParams} props - The route parameters containing the agency ID.
+ * @param {{ params: Promise<{ agencyId: string }> }} props - The route parameters containing the agency ID.
  * @returns {React.JSX.Element} The rendered admin page.
  */
-export default function AgencyAdminPage({ params }: RouteParams) {
-  const { id: agencyId } = use(params);
+export default function AgencyAdminPage({
+  params,
+}: {
+  params: Promise<{ agencyId: string }>;
+}) {
+  const { agencyId } = use(params);
 
   return (
     <>

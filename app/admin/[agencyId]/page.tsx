@@ -37,12 +37,10 @@ export default function AgencyAdminPage({
           </p>
         </div>
 
-        {/* Agency Rules Card — toggles for face verification and location verification */}
-        <AgencyRulesCard agencyId={agencyId} />
-
         <AreaMapEditorCard />
         <SchedulesCard />
         <UserAttendancesCard />
+        <AgencyRulesCard agencyId={agencyId} />
         <ShareAccessCard agencyId={agencyId} />
       </main>
     </>

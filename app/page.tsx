@@ -5,35 +5,42 @@ import { useSession } from "@/lib/auth-client";
 import { Logo } from "@/components/custom/logo";
 import { NavbarAvatar } from "@/components/custom/navbar-avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollToTopButton } from "@/components/custom/scroll-to-top-button";
+import { ScrollToSectionButton } from "@/components/custom/scroll-to-section-button";
 import Link from "next/link";
 import {
+  ScanFace,
   MapPin,
-  Building2,
+  CalendarClock,
+  FileSpreadsheet,
   ShieldCheck,
-  Camera,
-  Clock,
+  Activity,
   ArrowRight,
+  Mail,
+  MapPinned,
   CheckCircle2,
-  FileText,
   Globe,
   Menu,
 } from "lucide-react";
 
 /**
- * Renders the home landing page of the application, detailing the app functionality,
- * biometrics, and shift structures for DISKOMINFO Intern.
- * Fully styled using Shadcn UI components and global theme variables.
+ * Landing page — Diskominfo Intern Attendance System.
  *
- * @returns {React.JSX.Element} The rendered Home Page.
+ * Heuristic foundations applied:
+ * - Nielsen #2 (Match real world): Government/institutional language, Makassar context
+ * - Nielsen #4 (Consistency): Reuses sign-in page gradient, same component library
+ * - Nielsen #8 (Aesthetic & minimalist): Every element serves a purpose
+ * - Fitts's Law: Primary CTAs are large & high-contrast (white on gradient)
+ * - Hick's Law: Max 2 CTA choices per section to reduce decision paralysis
+ * - Gestalt Proximity: Related content grouped with clear spacing
+ * - Gestalt Similarity: Identical card treatment across features
+ * - Visual Hierarchy: Size & color contrast guide the eye Hero→Features→Steps→CTA
+ * - F-Pattern: Left-aligned section headers, scannable feature grid
+ *
+ * @returns {React.JSX.Element} The rendered landing page.
  */
-export default function Home() {
+export default function HomePage() {
   const { data: session, isPending } = useSession();
   const user = session?.user ?? null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,13 +58,73 @@ export default function Home() {
     setMobileMenuOpen(false);
   };
 
+  const features = [
+    {
+      icon: ScanFace,
+      title: "Verifikasi Wajah",
+      description:
+        "Teknologi pengenalan wajah untuk memastikan keabsahan absensi secara real-time.",
+    },
+    {
+      icon: MapPin,
+      title: "Validasi Lokasi",
+      description:
+        "Pemeriksaan geofencing otomatis untuk memastikan absensi dilakukan di area kantor.",
+    },
+    {
+      icon: CalendarClock,
+      title: "Jadwal Fleksibel",
+      description:
+        "Kelola jadwal absensi per dinas dengan pengaturan hari dan jam yang mudah dikustomisasi.",
+    },
+    {
+      icon: FileSpreadsheet,
+      title: "Laporan & Ekspor",
+      description:
+        "Hasilkan laporan kehadiran lengkap dan ekspor data ke format Excel dengan sekali klik.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Multi Peran",
+      description:
+        "Sistem peran Superadmin, Admin Dinas, dan Peserta Magang dengan akses yang terkontrol.",
+    },
+    {
+      icon: Activity,
+      title: "Monitoring Real-time",
+      description:
+        "Dashboard pemantauan kehadiran secara langsung dengan status hadir, terlambat, dan absen.",
+    },
+  ];
+
+  const steps = [
+    {
+      number: "01",
+      title: "Daftar & Login",
+      description:
+        "Buat akun atau masuk ke portal dengan kredensial yang sudah terdaftar.",
+    },
+    {
+      number: "02",
+      title: "Catat Kehadiran",
+      description:
+        "Lakukan absensi dengan verifikasi wajah dan lokasi sesuai jadwal yang ditentukan.",
+    },
+    {
+      number: "03",
+      title: "Pantau & Laporan",
+      description:
+        "Admin dapat memantau kehadiran real-time dan mengunduh laporan kapan saja.",
+    },
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen bg-linear-to-b from-background via-muted/30 to-background font-sans text-foreground">
+    <div className="flex flex-col min-h-screen bg-background font-sans">
       {/* ── Header / Navigation ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-clear backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16">
           <div className="flex items-center gap-3">
-            <Logo textClassName="text-foreground font-bold" />
+            <Logo textClassName="text-background font-bold" />
           </div>
 
           {/* Desktop Nav */}
@@ -65,14 +132,14 @@ export default function Home() {
             <Button
               variant="ghost"
               onClick={() => scrollToSection("features")}
-              className="text-muted-foreground hover:text-foreground font-medium"
+              className="text-background hover:text-foreground font-medium"
             >
-              Fitur Utama
+              Fitur
             </Button>
             <Button
               variant="ghost"
               onClick={() => scrollToSection("how-it-works")}
-              className="text-muted-foreground hover:text-foreground font-medium"
+              className="text-background hover:text-foreground font-medium"
             >
               Cara Kerja
             </Button>
@@ -103,14 +170,14 @@ export default function Home() {
             <Button
               variant="ghost"
               onClick={() => scrollToSection("features")}
-              className="justify-start text-muted-foreground hover:text-foreground"
+              className="justify-start text-background hover:text-foreground"
             >
-              Fitur Utama
+              Fitur
             </Button>
             <Button
               variant="ghost"
               onClick={() => scrollToSection("how-it-works")}
-              className="justify-start text-muted-foreground hover:text-foreground"
+              className="justify-start text-background hover:text-foreground"
             >
               Cara Kerja
             </Button>
@@ -118,392 +185,339 @@ export default function Home() {
         )}
       </header>
 
-      {/* ── Hero Section ── */}
-      <section className="relative w-full min-h-dvh flex items-center overflow-hidden">
-        {/* Dynamic theme background base using primary and secondary colors */}
-        <div className="absolute inset-0 bg-linear-to-br from-secondary via-secondary/95 to-primary/50" />
+      {/* ════════════════════════════════════════════════════════════════
+          HERO — Full-viewport gradient matching sign-in left panel.
+          Heuristic: Nielsen #4 Consistency, Fitts's Law (large CTA),
+          Hick's Law (only 2 actions).
+          ════════════════════════════════════════════════════════════════ */}
+      <section className="w-full relative min-h-dvh flex items-center overflow-hidden">
+        {/* Background — consistent with auth pages */}
+        <div className="absolute inset-0 bg-linear-to-br from-primary via-red-900 to-secondary" />
+        {/* Subtle texture — NOT a blob, just a soft radial to add depth */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08)_0%,transparent_60%)]" />
 
-        <div className="relative z-10 max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-16 py-32">
+        <div className="relative z-10 max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32 py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left Column: Heading & CTAs */}
-            <div className="max-w-xl space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-4 py-1.5 text-xs text-primary/90">
-                <CheckCircle2 className="size-3.5 text-primary" />
-                Sistem Presensi Digital DISKOMINFO
+            {/* Left — Text content (F-pattern: users scan left first) */}
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm text-white/90 mb-8">
+                <CheckCircle2 className="size-3.5" />
+                Sistem Absensi Digital Terintegrasi
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-primary leading-[1.1] tracking-tight">
-                Kelola Presensi Karyawan Secara Mandiri
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+                Kelola Kehadiran Magang Secara Digital
               </h1>
-              <p className="text-base sm:text-lg text-primary/80 leading-relaxed max-w-md">
-                Platform presensi online modern untuk seluruh karyawan di
-                lingkungan kerja DISKOMINFO Intern. Pantau log aktivitas secara
-                real-time, kelola jadwal shift, dan hasilkan laporan otomatis.
+
+              <p className="text-lg text-white/70 leading-relaxed mb-10 max-w-md">
+                Platform absensi modern untuk Diskominfo Kota Makassar. Pantau
+                kehadiran, kelola jadwal, dan hasilkan laporan — semua dalam
+                satu sistem yang terintegrasi.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              {/* CTAs — Fitts: large targets, high contrast primary action */}
+              <div className="flex flex-wrap items-center gap-3">
                 {isPending ? (
-                  <div className="h-12 w-40 bg-primary/10 rounded-xl animate-pulse" />
+                  <div className="h-12 w-40 bg-white/10 rounded-xl animate-pulse" />
                 ) : user ? (
-                  <Button
-                    asChild
-                    size="lg"
-                    className="h-12 px-7 text-base font-semibold rounded-xl transition-all shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                  >
-                    <Link href="/dashboard">
-                      Masuk ke Portal <ArrowRight className="ml-2 size-4" />
-                    </Link>
-                  </Button>
+                  <Link href="/dashboard">
+                    <Button
+                      size="lg"
+                      className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                    >
+                      Masuk ke Portal
+                      <ArrowRight className="ml-2 size-4" />
+                    </Button>
+                  </Link>
                 ) : (
                   <>
-                    <Button
-                      asChild
-                      size="lg"
-                      className="h-12 px-7 text-base font-semibold rounded-xl transition-all shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                    >
-                      <Link href="/auth/sign-in">
-                        Masuk ke Portal <ArrowRight className="ml-2 size-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => scrollToSection("features")}
-                      className="h-12 px-7 text-base font-medium rounded-xl border-primary/20 text-primary hover:bg-primary/10 bg-transparent hover:text-primary hover:border-primary/30"
+                    <Link href="/auth/sign-in">
+                      <Button
+                        size="lg"
+                        className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                      >
+                        Masuk ke Portal
+                        <ArrowRight className="ml-2 size-4" />
+                      </Button>
+                    </Link>
+                    <ScrollToSectionButton
+                      targetId="features"
+                      className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+                      id="hero-secondary-cta"
                     >
                       Pelajari Fitur
-                    </Button>
+                    </ScrollToSectionButton>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Right Column: Unit Profile Card using Shadcn Card */}
+            {/* Right — Brand identity card (provides visual anchor) */}
             <div className="hidden lg:flex justify-end">
-              <div className="relative w-85">
-                {/* Main Card */}
-                <Card className="border border-primary/30 bg-primary/20 backdrop-blur-md shadow-2xl text-primary">
-                  <CardHeader className="p-8 pb-0">
-                    <div className="size-16 rounded-2xl overflow-hidden border border-primary/10 mb-6 bg-primary/5 flex items-center justify-center">
-                      <Building2 className="size-8 text-primary" />
-                    </div>
-                    <CardTitle className="text-xl font-bold text-primary">
-                      DISKOMINFO Intern
-                    </CardTitle>
-                    <CardDescription className="text-sm text-primary/75 leading-relaxed mt-2">
-                      Sistem validasi presensi multi-sensor terpusat untuk
-                      Satuan Pelayanan Pemenuhan Gizi Mamuju, Provinsi Sulawesi
-                      Barat.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-8 pt-6">
-                    {/* Key feature checkboxes */}
-                    <ul className="space-y-3">
-                      <li className="flex items-center gap-2.5 text-sm text-secondary-foreground/90 font-medium">
-                        <CheckCircle2 className="size-4.5 text-secondary-foreground shrink-0" />
-                        Validasi Jadwal Presensi
+              <div className="relative w-80">
+                {/* Floating card — shows the product identity */}
+                <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-8">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Diskominfo Makassar
+                  </h3>
+                  <p className="text-sm text-white/60 leading-relaxed mb-6">
+                    Sistem absensi digital terintegrasi untuk peserta magang
+                    Pemerintah Kota Makassar.
+                  </p>
+                  {/* Mini feature list for quick scanning */}
+                  <ul className="space-y-3">
+                    {[
+                      "Verifikasi Wajah",
+                      "Validasi Lokasi",
+                      "Monitoring Real-time",
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2.5 text-sm text-white/80"
+                      >
+                        <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                        {item}
                       </li>
-                      <li className="flex items-center gap-2.5 text-sm text-secondary-foreground/90 font-medium">
-                        <CheckCircle2 className="size-4.5 text-secondary-foreground shrink-0" />
-                        Validasi Area Kantor
-                      </li>
-                      <li className="flex items-center gap-2.5 text-sm text-secondary-foreground/90 font-medium">
-                        <CheckCircle2 className="size-4.5 text-secondary-foreground shrink-0" />
-                        Verifikasi Biometrik Wajah
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Decorative accent — subtle, purposeful */}
+                <div className="absolute -bottom-4 -right-4 size-32 rounded-2xl bg-secondary/30 -z-10" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Fitur Utama Section ── */}
-      <section
-        id="features"
-        className="w-full py-24 md:py-32 scroll-mt-20 border-b border-border"
-      >
-        <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-16">
-          <div className="max-w-2xl mb-16 space-y-3">
-            <p className="text-sm font-semibold text-primary uppercase tracking-wider">
+      {/* ════════════════════════════════════════════════════════════════
+          FEATURES — Card grid.
+          Heuristic: Gestalt Similarity (uniform cards), Proximity
+          (icon+title+desc grouped), Recognition > Recall (icons).
+          ════════════════════════════════════════════════════════════════ */}
+      <section id="features" className="w-full py-24 md:py-32 scroll-mt-20">
+        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+          {/* Section header — left-aligned for F-pattern scanning */}
+          <div className="max-w-xl mb-14">
+            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
               Fitur Unggulan
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-              Semua yang Anda Butuhkan untuk Manajemen Presensi
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">
+              Semua yang Anda Butuhkan untuk Manajemen Absensi
             </h2>
             <p className="text-muted-foreground text-base leading-relaxed">
-              Didesain untuk mempermudah administrasi, meminimalkan kecurangan
-              presensi, dan meningkatkan akuntabilitas waktu kerja staf.
+              Didesain untuk mempermudah administrasi dan meningkatkan
+              akuntabilitas kehadiran peserta magang.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature 1 */}
-            <Card className="border border-border/80 shadow-xs hover:border-primary/40 hover:bg-muted/10 transition-all duration-300">
-              <CardContent className="pt-6 space-y-4">
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Camera className="size-5" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">
-                    Verifikasi Wajah
+          {/* Grid — Gestalt Similarity: every card is identical in structure */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feature, i) => (
+              <Card
+                key={i}
+                className="group border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+              >
+                <CardContent className="pt-2">
+                  {/* Icon — Recognition rather than Recall */}
+                  <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
+                    <feature.icon className="size-5" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1.5">
+                    {feature.title}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Pengenalan biometrik wajah real-time menggunakan webcam atau
-                    kamera ponsel untuk memvalidasi identitas staf yang
-                    melakukan absen.
+                    {feature.description}
                   </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feature 2 */}
-            <Card className="border border-border/80 shadow-xs hover:border-primary/40 hover:bg-muted/10 transition-all duration-300">
-              <CardContent className="pt-6 space-y-4">
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <MapPin className="size-5" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">
-                    Validasi Lokasi Karyawan
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Pencocokan koordinat GPS secara akurat untuk memastikan
-                    pengiriman presensi dilakukan tepat di dalam radius wilayah
-                    kerja unit.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feature 3 */}
-            <Card className="border border-border/80 shadow-xs hover:border-primary/40 hover:bg-muted/10 transition-all duration-300">
-              <CardContent className="pt-6 space-y-4">
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Clock className="size-5" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">
-                    Fleksibilitas Shift
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Pengaturan jadwal shift kerja karyawan dengan jam masuk,
-                    batas dispensasi keterlambatan, cut-off presensi, dan
-                    deteksi hari libur.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feature 4 */}
-            <Card className="border border-border/80 shadow-xs hover:border-primary/40 hover:bg-muted/10 transition-all duration-300">
-              <CardContent className="pt-6 space-y-4">
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <FileText className="size-5" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">
-                    Ekspor Laporan
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Hasilkan laporan rekap presensi bulanan atau rentang tanggal
-                    tertentu ke format spreadsheet Excel secara cepat untuk
-                    kebutuhan audit.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feature 5 */}
-            <Card className="border border-border/80 shadow-xs hover:border-primary/40 hover:bg-muted/10 transition-all duration-300">
-              <CardContent className="pt-6 space-y-4">
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <ShieldCheck className="size-5" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">
-                    Proteksi Anti-Fraud
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Mendeteksi manipulasi presensi seperti penggunaan Mock GPS
-                    (Fake GPS), manipulasi waktu sistem, emulator, VPN, maupun
-                    akses ganda.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── Cara Kerja Section ── */}
+      {/* ════════════════════════════════════════════════════════════════
+          HOW IT WORKS — Sequential steps.
+          Heuristic: Progressive Disclosure (step by step),
+          Gestalt Continuity (visual connectors between steps).
+          ════════════════════════════════════════════════════════════════ */}
       <section
         id="how-it-works"
-        className="w-full py-24 md:py-32 bg-muted/40 scroll-mt-20 border-b border-border"
+        className="w-full py-24 md:py-32 bg-muted/40 scroll-mt-20"
       >
-        <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-16">
-          <div className="max-w-2xl mb-16 space-y-3">
-            <p className="text-sm font-semibold text-primary uppercase tracking-wider">
+        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+          <div className="max-w-xl mb-14">
+            <p className="text-sm font-semibold text-secondary uppercase tracking-wider mb-3">
               Cara Kerja
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-              Tiga Langkah Mudah Presensi
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">
+              Tiga Langkah Mudah
             </h2>
             <p className="text-muted-foreground text-base leading-relaxed">
-              Prosedur presensi harian karyawan yang cepat, mandiri, dan
-              terenkripsi aman.
+              Proses absensi yang simpel dan terintegrasi dari awal hingga
+              akhir.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10">
-            {/* Step 1 */}
-            <div className="relative space-y-4">
-              <div className="hidden md:block absolute top-5 left-12 w-[calc(100%-48px)] border-t-2 border-dashed border-border z-0" />
-              <div className="relative z-10 size-10 rounded-xl bg-linear-to-br from-primary to-secondary text-primary-foreground font-mono font-bold text-sm flex items-center justify-center shadow-md">
-                01
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-foreground">
-                  Daftar &amp; Registrasi Wajah
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Lakukan pendaftaran akun karyawan, lalu daftarkan foto wajah
-                  Anda di profil pengguna.
-                </p>
-              </div>
-            </div>
+          {/* Steps — Gestalt Continuity: the number sequence creates visual flow */}
+          <div className="grid md:grid-cols-3 gap-8">
+            {steps.map((step, i) => (
+              <div key={i} className="relative">
+                {/* Connector line — Continuity principle */}
+                {i < steps.length - 1 && (
+                  <div className="hidden md:block absolute top-5 left-[calc(100%-16px)] w-[calc(100%-32px)] border-t-2 border-dashed border-border z-0" />
+                )}
 
-            {/* Step 2 */}
-            <div className="relative space-y-4">
-              <div className="hidden md:block absolute top-5 left-12 w-[calc(100%-48px)] border-t-2 border-dashed border-border z-0" />
-              <div className="relative z-10 size-10 rounded-xl bg-linear-to-br from-primary to-secondary text-primary-foreground font-mono font-bold text-sm flex items-center justify-center shadow-md">
-                02
+                <div className="relative z-10">
+                  {/* Step number — clear sequential indicator */}
+                  <div className="size-10 rounded-xl bg-linear-to-br from-primary to-secondary text-white text-sm font-bold flex items-center justify-center mb-5">
+                    {step.number}
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-foreground">
-                  Verifikasi Kamera &amp; GPS
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Buka dashboard, izinkan perizinan kamera browser dan koordinat
-                  GPS dan tekan tombol simpan absen.
-                </p>
-              </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Step 3 */}
-            <div className="relative space-y-4">
-              <div className="relative z-10 size-10 rounded-xl bg-linear-to-br from-primary to-secondary text-primary-foreground font-mono font-bold text-sm flex items-center justify-center shadow-md">
-                03
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-foreground">
-                  Lihat Riwayat
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Anda dapat melihat data presensi harian Anda.
-                </p>
+      {/* ════════════════════════════════════════════════════════════════
+          CTA — Final conversion point.
+          Heuristic: Fitts's Law (large button area), Hick's Law (2 options),
+          Nielsen #4 Consistency (reuses same gradient).
+          ════════════════════════════════════════════════════════════════ */}
+      <section className="w-full py-24 md:py-32">
+        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+          <div className="rounded-2xl bg-linear-to-br from-primary via-red-900 to-secondary p-10 md:p-16">
+            <div className="max-w-xl mx-auto text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
+                Kelola Kehadiran Magang Secara Digital
+              </h2>
+              <p className="text-white/70 text-base leading-relaxed mb-8 max-w-md mx-auto">
+                Platform absensi modern untuk Diskominfo Kota Makassar. Pantau
+                kehadiran, kelola jadwal, dan hasilkan laporan — semua dalam
+                satu sistem yang terintegrasi.
+              </p>
+              {/* Two actions — Hick's Law: minimal choices */}
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/auth/sign-up">
+                  <Button
+                    size="lg"
+                    className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                  >
+                    Daftar
+                    <ArrowRight className="ml-2 size-4" />
+                  </Button>
+                </Link>
+                <Link href="/auth/sign-in">
+                  <Button
+                    size="lg"
+                    variant="ghost"
+                    className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-xl hover:bg-white/10"
+                  >
+                    Masuk
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* ════════════════════════════════════════════════════════════════
+          FOOTER
+          Heuristic: Nielsen #2 (Match real world — real address & email),
+          Gestalt Proximity (grouped columns).
+          ════════════════════════════════════════════════════════════════ */}
       <footer className="w-full border-t py-12 bg-card">
-        <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-16 space-y-8">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {/* Column 1: Info */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
+        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+            {/* Brand column */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
                 <Logo textClassName="text-foreground font-bold" />
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-                Sistem presensi mandiri karyawan terintegrasi berbasis koordinat
-                wilayah kantor dan pengenalan wajah biometrik pada DISKOMINFO
-                Intern.
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                Sistem absensi digital terintegrasi untuk peserta magang
+                Pemerintah Kota Makassar.
               </p>
             </div>
 
-            {/* Column 2: Navigation Links */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-foreground">
-                Navigasi Portal
+            {/* Links column */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">
+                Tautan
               </h4>
-              <ul className="space-y-2 text-xs">
+              <ul className="space-y-2">
                 <li>
                   <Link
                     href="/auth/sign-in"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Masuk Akun
+                    Masuk
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/auth/sign-up"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Daftar Akun
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/dashboard"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Dashboard Karyawan
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/admin"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Administrasi Admin
+                    Daftar
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Column 3: Contact Details */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-foreground">Kontak Unit</h4>
-              <ul className="space-y-2 text-xs text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <Building2 className="size-4 shrink-0 mt-0.5" />
-                  <span>DISKOMINFO Intern</span>
+            {/* Contact column */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">
+                Kontak
+              </h4>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="size-3.5 shrink-0" />
+                  <a
+                    href="mailto:diskominfo@makassarkota.go.id"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    diskominfo@makassarkota.go.id
+                  </a>
                 </li>
-                <li className="flex items-start gap-2">
-                  <MapPin className="size-4 shrink-0 mt-0.5" />
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Globe className="size-3.5 shrink-0" />
+                  <a
+                    href="https://diskominfo.makassarkota.go.id"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    diskominfo.makassarkota.go.id
+                  </a>
+                </li>
+                <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <MapPinned className="size-3.5 shrink-0 mt-0.5" />
                   <span>
-                    Jl. Poros Mamuju Kalukku Km. 19, Tadui, Kec. Mamuju, Kab.
-                    Mamuju, Sulawesi Barat
+                    Gedung MGC Lt. 7 Jl Sultan Hasanuddin Kota Makassar 90171
                   </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Globe className="size-4 shrink-0 mt-0.5" />
-                  <span>Provinsi Sulawesi Barat, Indonesia</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <span>
-              &copy; {new Date().getFullYear()} DISKOMINFO Intern. Hak cipta
-              dilindungi.
-            </span>
-            <div className="flex items-center gap-2 font-mono text-[10px]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>ZONA WITA (UTC+8)</span>
-            </div>
+          <div className="border-t pt-6">
+            <p className="text-xs text-muted-foreground">
+              &copy; 2026 Diskominfo Kota Makassar. Hak cipta dilindungi.
+            </p>
           </div>
         </div>
       </footer>
+
+      <ScrollToTopButton />
     </div>
   );
 }

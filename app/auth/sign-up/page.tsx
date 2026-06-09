@@ -1,33 +1,54 @@
-import Image from "next/image";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { SignUpForm } from "./components/signup-form";
 import { Logo } from "@/components/custom/logo";
+import { LogOut } from "lucide-react";
 
 /**
- * Renders the sign-up page containing the logo, sign-up form, and an illustrative background image.
+ * Renders the sign-up page with a gradient branding panel (left) and sign-up form (right).
  *
  * @returns {JSX.Element} The rendered sign-up page component.
  */
 export default function SignUpPage() {
+  const router = useRouter();
+
+  /**
+   * Navigates back to the landing page.
+   */
+  const handleBack = () => {
+    router.push("/");
+  };
+
   return (
-    <div className="grid min-h-svh lg:grid-cols-12">
-      <div className="relative hidden bg-muted lg:block lg:col-span-8">
-        <Image
-          src="/diskominfo-2.jpeg"
-          alt="Latar belakang autentikasi"
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 58vw"
-          className="object-cover dark:opacity-20 dark:grayscale"
-        />
-      </div>
-      <div className="flex flex-col gap-4 p-6 md:p-10 lg:col-span-4">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Logo className="font-medium" iconClassName="size-6" />
+    <div className="min-h-screen flex">
+      {/* Left Panel — Branding (matching landing page hero gradient) */}
+      <div className="hidden md:flex md:w-1/2 bg-linear-to-tl from-primary via-red-900 to-secondary text-white flex-col justify-between p-8 md:p-12">
+        <Logo textClassName="text-white font-bold text-lg" />
+
+        <div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            Membangun Pelayanan Publik Digital yang Unggul.
+          </h2>
+          <p className="text-base font-extralight md:text-lg opacity-90 max-w-md">
+            Daftarkan diri Anda untuk memulai dengan sistem absensi kami.
+          </p>
         </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <SignUpForm />
-          </div>
+      </div>
+
+      {/* Right Panel — Sign Up Form */}
+      <div className="w-full md:w-1/2 bg-accent flex flex-col items-center justify-center p-8 md:p-12">
+        <div className="w-full max-w-sm">
+          <SignUpForm />
+          {/* Back Button */}
+          <button
+            onClick={handleBack}
+            className="w-full mt-4 inline-flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground text-sm font-medium transition-colors py-2 hover:bg-muted rounded-md"
+            title="Kembali ke beranda"
+          >
+            <LogOut className="h-4 w-4" />
+            Kembali Ke Beranda
+          </button>
         </div>
       </div>
     </div>

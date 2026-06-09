@@ -13,6 +13,7 @@ import { createLocationLog } from "@/lib/services/location-logs";
 import TakeAttendanceList from "./components/take-attendance-list";
 import LiveLocationMapCard from "./components/live-location-map-card";
 import AttendanceHistoriesCard from "./components/attendance-histories-card";
+import InternInfoCard from "./components/intern-info-card";
 
 // Default geofence centered on User's coordinates
 const DEFAULT_GEOFENCE: GeoJsonObject = {
@@ -182,6 +183,9 @@ export default function DashboardPage() {
           <>
             {/* Card Layout: Top to Bottom */}
             <div className="flex flex-col gap-6">
+              {/* Card 0: Intern Info Card — shows start/end dates */}
+              <InternInfoCard userId={user.id} />
+
               {/* Card 1: Active Attendance Punch Card / List */}
               <TakeAttendanceList
                 userId={user.id}

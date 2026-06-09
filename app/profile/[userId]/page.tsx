@@ -9,15 +9,24 @@ import { ProfileCard } from "./components/profile-card";
 import { AccountConnectionsCard } from "./components/account-connections-card";
 import { DeleteAccountCard } from "./components/delete-account-card";
 import { FaceRegister } from "./components/face-register";
+import { InternCard } from "./components/intern-card";
+import { getInterns } from "@/lib/services/interns";
 import { fetchUser } from "@/lib/services/users";
-import { type ProfileUser } from "@/interfaces/models";
+import { type ProfileUser, type Intern } from "@/interfaces/models";
 import { type ProfilePageProps } from "@/interfaces/profile";
 
-
+/**
+ * Profile page showing user info, intern data, face registration, and settings.
+ *
+ * @param {ProfilePageProps} props - The component props.
+ * @returns {React.JSX.Element} The rendered profile page.
+ */
 export default function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = use(params);
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [interns, setInterns] = useState<Intern[]>([]);
+  const [internsLoading, setInternsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -44,13 +53,48 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     };
   }, [userId]);
 
+  /** Load interns to determine if they have internship data */
+  useEffect(() => {
+    let active = true;
+
+    async function loadInterns() {
+      try {
+        const allInterns = await getInterns();
+        const userInterns = allInterns.filter((i) => i.userId === userId);
+        if (active) {
+          setInterns(userInterns);
+        }
+      } catch (err) {
+        console.error("Failed to fetch intern data", err);
+      } finally {
+        if (active) {
+          setInternsLoading(false);
+        }
+      }
+    }
+
+    void loadInterns();
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
   const handleUserUpdate = (updatedUser: ProfileUser) => {
     setUser(updatedUser);
+  };
+
+  /** Handles interns list change from InternCard */
+  const handleInternsChange = (updatedInterns: Intern[]) => {
+    setInterns(updatedInterns);
   };
 
   const hasCredential = user
     ? user.accounts.some((acc) => acc.providerId === "credential")
     : false;
+
+  const hasInterns = interns.length > 0;
+  const hasFaceDescriptor = user ? user.faceDescriptors.length > 0 : false;
 
   return (
     <>
@@ -83,11 +127,21 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 hasCredential={hasCredential}
               />
 
-              <FaceRegister
-                user={user}
-                onUpdate={handleUserUpdate}
-                openByDefault={user.faceDescriptors.length === 0}
+              {/* Intern Card — shown first to ensure intern is created before face registration */}
+              <InternCard
+                userId={user.id}
+                onInternsChange={handleInternsChange}
               />
+
+              {/* Face Register — only show after intern data exists or if face needs registration */}
+              {!internsLoading && (
+                <FaceRegister
+                  user={user}
+                  onUpdate={handleUserUpdate}
+                  openByDefault={hasInterns && !hasFaceDescriptor}
+                />
+              )}
+
               <AccountConnectionsCard user={user} onUpdate={handleUserUpdate} />
               <DeleteAccountCard userId={user.id} />
             </div>

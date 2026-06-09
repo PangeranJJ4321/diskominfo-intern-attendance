@@ -1,4 +1,4 @@
-import type { ProfileUser } from "./models";
+import type { ProfileUser, Intern, Agency, Institution } from "./models";
 
 export interface ProfilePictureProps {
   user: ProfileUser;
@@ -76,4 +76,31 @@ export interface AccountConnectionsCardProps {
 
 export interface ProfilePageProps {
   params: Promise<{ userId: string }>;
+}
+
+/** Props for the InternCard component on the profile page */
+export interface InternCardProps {
+  userId: string;
+  onInternsChange?: (interns: Intern[]) => void;
+}
+
+/** Props for the CreateInternDialog component */
+export interface CreateInternDialogProps {
+  userId: string;
+  agencies: Agency[];
+  institutions: Institution[];
+  onSuccess: (intern: Intern) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+/** Props for the EditInternDialog component */
+export interface EditInternDialogProps {
+  intern: Intern;
+  agencies: Agency[];
+  institutions: Institution[];
+  onSuccess: (intern: Intern) => void;
+  onDelete: (internId: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }

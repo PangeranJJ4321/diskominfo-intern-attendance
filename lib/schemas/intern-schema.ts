@@ -6,7 +6,10 @@ export const createInternSchema = z.object({
   agencyId: z.string().min(1, "Agency ID tidak valid."),
   institutionId: z.string().optional().nullable(),
   startedAt: z.coerce.date({ message: "Tanggal mulai wajib diisi." }),
-  finishedAt: z.coerce.date().optional().nullable(),
+  finishedAt: z.coerce
+    .date({ message: "Tanggal selesai tidak valid." })
+    .optional()
+    .nullable(),
 });
 
 export const updateInternSchema = createInternSchema.partial();

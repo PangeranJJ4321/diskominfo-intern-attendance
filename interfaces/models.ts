@@ -151,3 +151,18 @@ export interface AgencyAccess {
   agency?: Agency;
   user?: User;
 }
+
+/** @deprecated Use AgencyHoliday instead */
+export type Holiday = AgencyHoliday;
+
+/** @deprecated Use AgencyAccess instead */
+export type AdminAccess = AgencyAccess;
+
+/** InternInfo — summarized intern data for dashboard display */
+export interface InternInfo {
+  internId: string;
+  agencyName: string;
+  institutionName: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}

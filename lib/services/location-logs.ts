@@ -1,8 +1,14 @@
 import { LocationLog } from "@/interfaces/models";
 import { handleError } from "./utils";
 
+/**
+ * Creates a new location log entry for a user.
+ *
+ * @param data - The location log data including userId, latitude, and longitude.
+ * @returns The created LocationLog.
+ */
 export async function createLocationLog(data: {
-  internId: string;
+  userId: string;
   latitude: number;
   longitude: number;
 }): Promise<LocationLog> {

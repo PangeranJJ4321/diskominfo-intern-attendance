@@ -60,14 +60,14 @@ export interface ShiftEditDialogProps {
   shift: Shift | null;
   isDefaultShift: boolean;
   agencyId: string;
-  onSuccess: (updatedShift: Shift) => void;
+  onSuccess: (updatedShift: Shift, setAsDefault: boolean) => void;
 }
 
 export interface ShiftCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   agencyId: string;
-  onSuccess: (newShift: Shift) => void;
+  onSuccess: (newShift: Shift, setAsDefault: boolean) => void;
 }
 
 export interface DayLabel {

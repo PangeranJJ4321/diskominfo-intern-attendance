@@ -51,7 +51,7 @@ export default function ShiftCreateDialog({
       if (setAsDefault && agencyId) {
         await updateAgency(agencyId, undefined, newShift.id);
       }
-      onSuccess(newShift);
+      onSuccess(newShift, setAsDefault);
       setName("");
       setWorkOnHolidays(false);
       setSetAsDefault(false);

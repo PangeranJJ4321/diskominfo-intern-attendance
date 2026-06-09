@@ -61,7 +61,7 @@ export default function ShiftEditDialog({
       if (setAsDefault && agencyId) {
         await updateAgency(agencyId, undefined, shift.id);
       }
-      onSuccess(updated);
+      onSuccess(updated, setAsDefault);
       onOpenChange(false);
       toast.success("Shift berhasil diperbarui");
     } catch (err) {

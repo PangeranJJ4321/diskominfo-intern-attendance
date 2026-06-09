@@ -123,9 +123,12 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
    *
    * @param newShift - The newly created shift.
    */
-  const handleCreateShiftSuccess = (newShift: Shift) => {
+  const handleCreateShiftSuccess = (newShift: Shift, setAsDefault: boolean) => {
     setShifts((prev) => [...prev, newShift]);
     setSelectedShiftId(newShift.id);
+    if (setAsDefault) {
+      setDefaultShiftId(newShift.id);
+    }
   };
 
   /**
@@ -133,10 +136,16 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
    *
    * @param updatedShift - The updated shift details.
    */
-  const handleEditShiftSuccess = (updatedShift: Shift) => {
+  const handleEditShiftSuccess = (
+    updatedShift: Shift,
+    setAsDefault: boolean,
+  ) => {
     setShifts((prev) =>
       prev.map((s) => (s.id === updatedShift.id ? updatedShift : s)),
     );
+    if (setAsDefault) {
+      setDefaultShiftId(updatedShift.id);
+    }
   };
 
   /**

@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Codebase Documentation & Conventions
 
-Welcome, Antigravity AI agent. This document serves as the guide for the architecture, file structure, API endpoints, and style conventions of the `sppg-tadui-attendance` project.
+Welcome, Antigravity AI agent. This document serves as the guide for the architecture, file structure, API endpoints, and style conventions of the `diskominfo-intern-attendance` project.
 
 ---
 
@@ -14,24 +14,24 @@ Welcome, Antigravity AI agent. This document serves as the guide for the archite
 
 Here is the general layout of the codebase to help you navigate:
 
-- **[`app/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/app)**: Next.js App Router containing pages and endpoints.
+- **[`app/`](file:///d:/TEST/diskominfo-intern-attendance/app)**: Next.js App Router containing pages and endpoints.
   - `admin/`: Admin panels for managing users, areas, schedules, shifts, and holidays.
   - `auth/`: Authentication routing (Better-Auth integration).
   - `dashboard/`: User punch-in dashboard containing face attendance and location checks.
   - `profile/[userId]/`: User profile management, avatar uploads, and face descriptor registration.
   - `api/`: Backend API routes handling database logic and external service interactions.
-- **[`components/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/components)**: Core UI and shared components.
+- **[`components/`](file:///d:/TEST/diskominfo-intern-attendance/components)**: Core UI and shared components.
   - `custom/`: Domain-specific components (e.g., Navbar, LocationPermissionDialog).
   - `ui/`: Reusable primitive components (e.g., Button, Map, PlaceAutocomplete).
-- **[`hooks/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/hooks)**: Custom React hooks (e.g., `use-file-upload.ts`).
-- **[`interfaces/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/interfaces)**: Centralized TypeScript interface definitions.
-- **[`lib/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/lib)**: Server and client utilities.
+- **[`hooks/`](file:///d:/TEST/diskominfo-intern-attendance/hooks)**: Custom React hooks (e.g., `use-file-upload.ts`).
+- **[`interfaces/`](file:///d:/TEST/diskominfo-intern-attendance/interfaces)**: Centralized TypeScript interface definitions.
+- **[`lib/`](file:///d:/TEST/diskominfo-intern-attendance/lib)**: Server and client utilities.
   - `services/`: API client services wrapper around fetch requests.
   - `schemas/`: Zod validation schemas.
   - `auth.ts`, `auth-client.ts`: Better-Auth configuration.
   - `prisma.ts`: Prisma Client setup and initialization.
   - Utilities for date parsing, location checks, and face recognition.
-- **[`prisma/`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/prisma)**: Database configuration.
+- **[`prisma/`](file:///d:/TEST/diskominfo-intern-attendance/prisma)**: Database configuration.
   - `schema.prisma`: Database schemas and models.
   - `seed.ts`: Database seeding script.
 
@@ -55,5 +55,5 @@ To maintain high code quality and type safety, the workspace enforces strict rul
 
 ## 🔗 API Endpoints Reference
 
-Please refer to [`api-endpoints.md`](file:///d:/SPPG-TADUI/sppg-tadui-attendance/api-endpoints.md) for the complete list of active API routes in the application.
+Please refer to [`api-endpoints.md`](file:///d:/TEST/diskominfo-intern-attendance/api-endpoints.md) for the complete list of active API routes in the application.
 

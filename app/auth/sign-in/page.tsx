@@ -12,7 +12,7 @@ export default function LoginPage() {
     <div className="grid min-h-svh lg:grid-cols-12">
       <div className="relative hidden bg-muted lg:block lg:col-span-8">
         <Image
-          src="/sppg-1.jpeg"
+          src="/diskominfo-1.jpeg"
           alt="Latar belakang autentikasi"
           fill
           priority

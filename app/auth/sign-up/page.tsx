@@ -12,7 +12,7 @@ export default function SignUpPage() {
     <div className="grid min-h-svh lg:grid-cols-12">
       <div className="relative hidden bg-muted lg:block lg:col-span-8">
         <Image
-          src="/sppg-2.jpeg"
+          src="/diskominfo-2.jpeg"
           alt="Latar belakang autentikasi"
           fill
           priority

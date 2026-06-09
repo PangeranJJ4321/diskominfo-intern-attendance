@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SPPG-TADUI",
-  description: "SPPG-TADUI Attendance System",
+  title: "DISKOMINFO-INTERN",
+  description: "DISKOMINFO Intern Attendance System",
 };
 
 export default function RootLayout({

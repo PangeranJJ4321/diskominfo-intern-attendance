@@ -28,7 +28,7 @@ import {
 
 /**
  * Renders the home landing page of the application, detailing the app functionality,
- * biometrics, and shift structures for SPPG Mamuju Tadui.
+ * biometrics, and shift structures for DISKOMINFO Intern.
  * Fully styled using Shadcn UI components and global theme variables.
  *
  * @returns {React.JSX.Element} The rendered Home Page.
@@ -129,14 +129,14 @@ export default function Home() {
             <div className="max-w-xl space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-4 py-1.5 text-xs text-primary/90">
                 <CheckCircle2 className="size-3.5 text-primary" />
-                Sistem Presensi Digital SPPG
+                Sistem Presensi Digital DISKOMINFO
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-primary leading-[1.1] tracking-tight">
                 Kelola Presensi Karyawan Secara Mandiri
               </h1>
               <p className="text-base sm:text-lg text-primary/80 leading-relaxed max-w-md">
                 Platform presensi online modern untuk seluruh karyawan di
-                lingkungan kerja SPPG Mamuju Tadui. Pantau log aktivitas secara
+                lingkungan kerja DISKOMINFO Intern. Pantau log aktivitas secara
                 real-time, kelola jadwal shift, dan hasilkan laporan otomatis.
               </p>
 
@@ -187,7 +187,7 @@ export default function Home() {
                       <Building2 className="size-8 text-primary" />
                     </div>
                     <CardTitle className="text-xl font-bold text-primary">
-                      SPPG Mamuju Tadui
+                      DISKOMINFO Intern
                     </CardTitle>
                     <CardDescription className="text-sm text-primary/75 leading-relaxed mt-2">
                       Sistem validasi presensi multi-sensor terpusat untuk
@@ -420,8 +420,8 @@ export default function Home() {
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                 Sistem presensi mandiri karyawan terintegrasi berbasis koordinat
-                wilayah kantor dan pengenalan wajah biometrik pada SPPG Mamuju
-                Tadui.
+                wilayah kantor dan pengenalan wajah biometrik pada DISKOMINFO
+                Intern.
               </p>
             </div>
 
@@ -472,7 +472,7 @@ export default function Home() {
               <ul className="space-y-2 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <Building2 className="size-4 shrink-0 mt-0.5" />
-                  <span>SPPG Mamuju Mamuju Tadui</span>
+                  <span>DISKOMINFO Intern</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <MapPin className="size-4 shrink-0 mt-0.5" />
@@ -491,8 +491,8 @@ export default function Home() {
 
           <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
             <span>
-              &copy; {new Date().getFullYear()} SPPG Mamuju Mamuju Tadui. Hak
-              cipta dilindungi.
+              &copy; {new Date().getFullYear()} DISKOMINFO Intern. Hak cipta
+              dilindungi.
             </span>
             <div className="flex items-center gap-2 font-mono text-[10px]">
               <span className="relative flex h-2 w-2">

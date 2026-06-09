@@ -26,7 +26,7 @@ export function Logo({
       >
         <Image
           src="/apple-touch-icon.png"
-          alt="SPPG TADUI Logo"
+          alt="DISKOMINFO INTERN Logo"
           width={28}
           height={28}
           className="h-full w-full object-cover"
@@ -39,7 +39,7 @@ export function Logo({
           hideTextOnMobile ? "hidden sm:inline" : "",
         )}
       >
-        SPPG TADUI
+        DISKOMINFO INTERN
       </span>
     </Link>
   );

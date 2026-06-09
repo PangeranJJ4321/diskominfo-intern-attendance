@@ -18,20 +18,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // If the user IS signed in, check their access level for role-based routing.
-  // The root "/" should redirect based on access as well.
+  // If the user IS signed in, check their AgencyAccess records for routing.
+  // The root "/" should redirect based on access level as well.
   if (pathname === "/") {
-    // Fetch the user's access records to determine their role
     const hasAccess = await checkUserAccess(session.user.id);
 
     if (hasAccess) {
       return NextResponse.redirect(new URL("/admin", request.url));
-    } else {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Prevent non-admin users from accessing /admin routes
+  // Prevent users without AgencyAccess from accessing /admin routes
   if (pathname.startsWith("/admin")) {
     const hasAccess = await checkUserAccess(session.user.id);
 
@@ -41,22 +39,27 @@ export async function proxy(request: NextRequest) {
   }
 
   // If the user is signed in and visits auth pages, redirect them away
-  if (pathname.startsWith("/auth/sign-in") || pathname.startsWith("/auth/sign-up")) {
+  if (
+    pathname.startsWith("/auth/sign-in") ||
+    pathname.startsWith("/auth/sign-up")
+  ) {
     const hasAccess = await checkUserAccess(session.user.id);
 
     if (hasAccess) {
       return NextResponse.redirect(new URL("/admin", request.url));
-    } else {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
 /**
- * Checks if a user has an Access record in the database,
+ * Checks if a user has any AgencyAccess record in the database,
  * which grants them admin-level privileges.
+ *
+ * @param {string} userId - The ID of the user to check.
+ * @returns {Promise<boolean>} Whether the user has access.
  */
 async function checkUserAccess(userId: string): Promise<boolean> {
   try {
@@ -70,7 +73,7 @@ async function checkUserAccess(userId: string): Promise<boolean> {
     });
     const prisma = new PrismaClient({ adapter });
 
-    const access = await prisma.access.findFirst({
+    const access = await prisma.agencyAccess.findFirst({
       where: { userId },
     });
 

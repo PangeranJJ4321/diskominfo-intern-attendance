@@ -1,24 +1,22 @@
-// app/api/holidays/route.ts
+// app/api/agencies/areas/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
-import { createHolidaySchema } from "@/lib/schemas/holiday-schema";
-import { fetchHolidaySeeds } from "@/lib/get-holidays";
+import { createAgencyAreaSchema } from "@/lib/schemas/agency-area-schema";
 
 const querySchema = createTableQuerySchema(
-  ["id", "date", "description", "createdAt"],
-  "date",
+  ["id", "createdAt", "timezone"],
+  "createdAt",
 );
 
-let lastSyncTime = 0;
-let isSyncing = false;
-const SYNC_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
 /**
- * GET: List all holidays with pagination, sorting, and search
+ * GET: List all agency areas with pagination, sorting, and search.
+ *
+ * @param request - The incoming NextRequest.
+ * @returns A promise resolving to the NextResponse.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -46,60 +44,14 @@ export async function GET(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Holiday")) {
+    if (!ability.can("read", "AgencyArea")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
       );
     }
 
-    // Auto-create/sync holidays if they haven't been synced within the cooldown period
-    const now = Date.now();
-    if (!isSyncing && now - lastSyncTime >= SYNC_COOLDOWN_MS) {
-      isSyncing = true;
-      try {
-        const seeds = await fetchHolidaySeeds();
-        const existingHolidays = await prisma.agencyHoliday.findMany({
-          select: { date: true, description: true },
-        });
-
-        const existingKeys = new Set(
-          existingHolidays.map((h) => `${h.date}:${h.description}`),
-        );
-
-        const newSeeds = seeds.filter(
-          (seed) => !existingKeys.has(`${seed.date}:${seed.description}`),
-        );
-
-        // Resolve a default agency to associate holidays with
-        const defaultAgency = await prisma.agency.findFirst({
-          orderBy: { createdAt: "asc" },
-        });
-
-        if (defaultAgency && newSeeds.length > 0) {
-          await prisma.agencyHoliday.createMany({
-            data: newSeeds.map((seed) => ({
-              agencyId: defaultAgency.id,
-              date: seed.date,
-              description: seed.description,
-            })),
-          });
-          console.log(`Auto-created ${newSeeds.length} public holidays.`);
-        }
-
-        lastSyncTime = now;
-      } catch (syncError) {
-        console.warn(
-          "Failed to automatically sync/create public holidays:",
-          syncError,
-        );
-      } finally {
-        isSyncing = false;
-      }
-    }
-
     const { searchParams } = new URL(request.url);
-
     const rawParams = Object.fromEntries(searchParams.entries());
 
     const parsedParams = querySchema.safeParse(rawParams);
@@ -118,29 +70,32 @@ export async function GET(request: NextRequest) {
 
     const whereCondition = search
       ? {
-          description: {
-            contains: search,
-            mode: "insensitive" as const,
+          agency: {
+            name: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
           },
         }
       : {};
 
-    const [holidays, totalCount] = await Promise.all([
-      prisma.agencyHoliday.findMany({
+    const [areas, totalCount] = await Promise.all([
+      prisma.agencyArea.findMany({
         where: whereCondition,
+        include: { agency: true },
         take: limit,
         skip: skip,
         orderBy: {
           [sortBy]: sortOrder,
         },
       }),
-      prisma.agencyHoliday.count({
+      prisma.agencyArea.count({
         where: whereCondition,
       }),
     ]);
 
     return NextResponse.json({
-      data: holidays,
+      data: areas,
       meta: {
         totalCount,
         page,
@@ -149,7 +104,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching holidays:", error);
+    console.error("Error fetching agency areas:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -158,7 +113,11 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST: Create a new holiday
+ * POST: Create a new agency area without agency context (legacy support).
+ * Accepts an optional agencyId in the body; associates the area with that agency.
+ *
+ * @param request - The incoming NextRequest.
+ * @returns A promise resolving to the NextResponse.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -186,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Holiday")) {
+    if (!ability.can("create", "AgencyArea")) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -194,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsedBody = createHolidaySchema.safeParse(body);
+    const parsedBody = createAgencyAreaSchema.safeParse(body);
 
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -206,28 +165,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve agencyId: use provided value, or fall back to user's first access
-    const agencyId =
-      parsedBody.data.agencyId || dbUser.agencyAccesses[0]?.agencyId;
+    const { geoData, timezone } = parsedBody.data;
+    // Use the first agency the user has access to, or allow explicit agencyId in body
+    const agencyId = body.agencyId || dbUser.agencyAccesses[0]?.agencyId;
 
     if (!agencyId) {
       return NextResponse.json(
-        { error: "No agency associated. Provide an agencyId." },
+        { error: "No agency associated with this user. Provide an agencyId." },
         { status: 400 },
       );
     }
 
-    const newHoliday = await prisma.agencyHoliday.create({
-      data: {
-        agencyId,
-        date: parsedBody.data.date,
-        description: parsedBody.data.description,
-      },
+    // Check for existing area (1:1 relationship)
+    const existingArea = await prisma.agencyArea.findUnique({
+      where: { agencyId },
     });
 
-    return NextResponse.json(newHoliday, { status: 201 });
+    if (existingArea) {
+      return NextResponse.json(
+        { error: "Area untuk instansi ini sudah ada." },
+        { status: 409 },
+      );
+    }
+
+    const newArea = await prisma.agencyArea.create({
+      data: {
+        agencyId,
+        geoData,
+        timezone,
+      },
+      include: { agency: true },
+    });
+
+    return NextResponse.json(newArea, { status: 201 });
   } catch (error) {
-    console.error("Error creating holiday:", error);
+    console.error("Error creating agency area:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

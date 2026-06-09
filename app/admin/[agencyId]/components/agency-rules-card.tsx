@@ -34,6 +34,7 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
     let active = true;
 
     async function loadRule() {
+      if (!agencyId) return;
       try {
         const data = await getAgencyRule(agencyId);
         if (active) {

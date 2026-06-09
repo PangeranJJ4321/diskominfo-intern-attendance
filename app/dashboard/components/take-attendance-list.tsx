@@ -108,7 +108,7 @@ export default function TakeAttendanceList({
 
     // 1. Get assignments active for yesterday and today
     const assignmentsYesterday = assignments.filter((a) => {
-      if (a.userId !== userId) return false;
+      if (a.intern?.userId !== userId) return false;
       return (
         a.startDate <= yesterdayDateStr &&
         (!a.endDate || a.endDate >= yesterdayDateStr)
@@ -116,7 +116,7 @@ export default function TakeAttendanceList({
     });
 
     const assignmentsToday = assignments.filter((a) => {
-      if (a.userId !== userId) return false;
+      if (a.intern?.userId !== userId) return false;
       return (
         a.startDate <= todayDateStr && (!a.endDate || a.endDate >= todayDateStr)
       );

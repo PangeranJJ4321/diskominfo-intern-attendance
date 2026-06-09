@@ -48,11 +48,11 @@ export function SignUpForm({
   const onSubmit = async (data: SignUpFormValues) => {
     setSubmitError("");
 
-    const { data: signUpData, error: signUpError } = await signUp.email({
+    const { error: signUpError } = await signUp.email({
       email: data.email,
       password: data.password,
       name: data.name,
-      callbackURL: "/profile", // Redirect fallback in case of automatic redirection
+      callbackURL: "/",
     });
 
     if (signUpError) {
@@ -63,11 +63,7 @@ export function SignUpForm({
     }
 
     toast.success("Akun berhasil dibuat. Selamat datang!");
-    if (signUpData?.user?.id) {
-      router.push(`/profile/${signUpData.user.id}`);
-    } else {
-      router.push("/profile");
-    }
+    router.push("/");
   };
 
   /**
@@ -79,7 +75,7 @@ export function SignUpForm({
   const handleGoogleSignUp = async () => {
     await signIn.social({
       provider: "google",
-      callbackURL: "/profile",
+      callbackURL: "/",
     });
   };
 
@@ -173,7 +169,9 @@ export function SignUpForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Konfirmasi kata sandi</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                Konfirmasi kata sandi
+              </FieldLabel>
               <Input
                 {...field}
                 id={field.name}

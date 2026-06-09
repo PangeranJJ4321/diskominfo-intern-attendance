@@ -43,7 +43,6 @@ import type { Shift, ShiftAssignment } from "@/interfaces/models";
 import type { UserShiftEditDialogProps } from "@/interfaces/admin";
 import { Spinner } from "@/components/ui/spinner";
 
-
 export default function UserShiftEditDialog({
   open,
   onOpenChange,
@@ -70,7 +69,9 @@ export default function UserShiftEditDialog({
         getShiftAssignments(),
       ]);
       setShifts(freshShifts);
-      setUserAssignments(allAssignments.filter((a) => a.userId === userId));
+      setUserAssignments(
+        allAssignments.filter((a) => a.intern?.userId === userId),
+      );
 
       // Set default form values
       if (freshShifts.length > 0) {
@@ -108,17 +109,26 @@ export default function UserShiftEditDialog({
 
     setIsSubmitting(true);
     try {
+      // Resolve internId from userId
+      const { getInterns } = await import("@/lib/services/interns");
+      const interns = await getInterns(1000);
+      const intern = interns.find((i) => i.userId === userId);
+      if (!intern) {
+        toast.error("Data magang tidak ditemukan untuk pengguna ini.");
+        return;
+      }
+
       const isSameDay =
         dateRange.to &&
         format(dateRange.from, "yyyy-MM-dd") ===
-        format(dateRange.to, "yyyy-MM-dd");
+          format(dateRange.to, "yyyy-MM-dd");
 
       const startDate = format(dateRange.from, "yyyy-MM-dd");
       const endDate =
         dateRange.to && !isSameDay ? format(dateRange.to, "yyyy-MM-dd") : null;
 
       await createShiftAssignment({
-        userId,
+        internId: intern.id,
         shiftId: selectedShiftId,
         startDate,
         endDate,
@@ -128,7 +138,10 @@ export default function UserShiftEditDialog({
       await loadData();
       onSuccess();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menambahkan penugasan shift";
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : "Gagal menambahkan penugasan shift";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -148,7 +161,8 @@ export default function UserShiftEditDialog({
       await loadData();
       onSuccess();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus penugasan shift";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal menghapus penugasan shift";
       toast.error(errorMsg);
     } finally {
       setIsDeletingId(null);
@@ -208,14 +222,22 @@ export default function UserShiftEditDialog({
                         {assign.shift?.name || "Shift Tidak Dikenal"}
                       </p>
                       <p className="text-muted-foreground font-semibold">
-                        {format(parseDateLocal(assign.startDate), "dd MMMM yyyy", {
-                          locale: id,
-                        })}{" "}
+                        {format(
+                          parseDateLocal(assign.startDate),
+                          "dd MMMM yyyy",
+                          {
+                            locale: id,
+                          },
+                        )}{" "}
                         —{" "}
                         {assign.endDate
-                          ? format(parseDateLocal(assign.endDate), "dd MMMM yyyy", {
-                            locale: id,
-                          })
+                          ? format(
+                              parseDateLocal(assign.endDate),
+                              "dd MMMM yyyy",
+                              {
+                                locale: id,
+                              },
+                            )
                           : "Tanpa batas akhir"}
                       </p>
                     </div>
@@ -299,7 +321,7 @@ export default function UserShiftEditDialog({
                     <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                     {dateRange?.from ? (
                       dateRange.to &&
-                        format(dateRange.from, "yyyy-MM-dd") !==
+                      format(dateRange.from, "yyyy-MM-dd") !==
                         format(dateRange.to, "yyyy-MM-dd") ? (
                         <>
                           {format(dateRange.from, "dd MMMM yyyy", {

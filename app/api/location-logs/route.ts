@@ -172,14 +172,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { internId } = parsedBody.data;
+    const { userId, latitude, longitude } = parsedBody.data;
 
     // Determine if user is admin
     const isAdmin = dbUser.agencyAccesses.length > 0;
 
-    // Validate that the referenced intern exists and belongs to the current user
-    const intern = await prisma.intern.findUnique({
-      where: { id: internId },
+    // Resolve internId from userId by finding the user's active intern record
+    const intern = await prisma.intern.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!intern) {
@@ -205,7 +206,9 @@ export async function POST(request: NextRequest) {
 
     const newLog = await prisma.locationLog.create({
       data: {
-        ...parsedBody.data,
+        internId: intern.id,
+        latitude,
+        longitude,
         ipAddress: parsedBody.data.ipAddress || ipAddress,
       },
     });

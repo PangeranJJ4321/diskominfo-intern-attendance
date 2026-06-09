@@ -41,7 +41,7 @@ export default function AgencyAdminPage({ params }: RouteParams) {
         <AreaMapEditorCard />
         <SchedulesCard />
         <UserAttendancesCard />
-        <ShareAccessCard />
+        <ShareAccessCard agencyId={agencyId} />
       </main>
     </>
   );

@@ -84,13 +84,19 @@ export interface ProfileUser {
   email: string;
   image: string | null;
   emailVerified: boolean;
-  role: string;
   createdAt: string;
   updatedAt: string;
   accounts: {
     id: string;
     providerId: string;
     accountId: string;
+  }[];
+  agencyAccesses: {
+    id: string;
+    agencyId: string;
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
   }[];
   faceDescriptors: {
     id: string;

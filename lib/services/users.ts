@@ -35,8 +35,7 @@ export async function fetchUser(userId: string): Promise<ProfileUser> {
 
   return {
     ...data,
-    role:
-      data.agencyAccesses && data.agencyAccesses.length > 0 ? "ADMIN" : "USER",
+    agencyAccesses: data.agencyAccesses || [],
     accounts: data.accounts || [],
     faceDescriptors: data.faceDescriptors || [],
   };

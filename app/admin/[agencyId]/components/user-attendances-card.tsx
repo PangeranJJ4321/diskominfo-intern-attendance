@@ -137,7 +137,7 @@ export default function UserAttendancesCard() {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     return assignments.filter(
       (a) =>
-        a.userId === selectedUser.id &&
+        a.intern?.userId === selectedUser.id &&
         a.startDate <= todayStr &&
         (!a.endDate || a.endDate >= todayStr),
     );
@@ -291,7 +291,7 @@ export default function UserAttendancesCard() {
               const todayStr = format(new Date(), "yyyy-MM-dd");
               const userAssigns = assignments.filter(
                 (a) =>
-                  a.userId === user.id &&
+                  a.intern?.userId === user.id &&
                   a.startDate <= todayStr &&
                   (!a.endDate || a.endDate >= todayStr),
               );

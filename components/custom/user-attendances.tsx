@@ -178,7 +178,7 @@ export default function UserAttendances({
   const getActiveAssignmentsForDate = (date: Date): ShiftAssignment[] => {
     const formattedDate = format(date, "yyyy-MM-dd");
     return assignments.filter((a) => {
-      if (a.userId !== userId) return false;
+      if (a.intern?.userId !== userId) return false;
       const startOk = a.startDate <= formattedDate;
       const endOk = !a.endDate || a.endDate >= formattedDate;
       return startOk && endOk;
@@ -216,7 +216,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.userId === userId && a.date === formattedDate,
+            (a) => a.intern?.userId === userId && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -288,7 +288,7 @@ export default function UserAttendances({
                   daySchedules.map((schedule, idx) => {
                     const attendance = attendances.find(
                       (a) =>
-                        a.userId === userId &&
+                        a.intern?.userId === userId &&
                         a.scheduleId === schedule.id &&
                         a.date === formattedDate,
                     );
@@ -431,7 +431,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.userId === userId && a.date === formattedDate,
+            (a) => a.intern?.userId === userId && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -495,7 +495,7 @@ export default function UserAttendances({
                         // Find attendance record
                         const attendance = attendances.find(
                           (a) =>
-                            a.userId === userId &&
+                            a.intern?.userId === userId &&
                             a.scheduleId === schedule.id &&
                             a.date === formattedDate,
                         );

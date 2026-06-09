@@ -165,8 +165,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve agencyId from user's access
+    const agencyId = dbUser.agencyAccesses[0]?.agencyId;
+
+    if (!agencyId) {
+      return NextResponse.json(
+        { error: "No agency associated." },
+        { status: 400 },
+      );
+    }
+
     const newShift = await prisma.shift.create({
-      data: parsedBody.data,
+      data: {
+        agencyId,
+        name: parsedBody.data.name,
+        workOnHolidays: parsedBody.data.workOnHolidays,
+      },
     });
 
     return NextResponse.json(newShift, { status: 201 });

@@ -2,6 +2,7 @@
 import { z } from "zod";
 
 export const createHolidaySchema = z.object({
+  agencyId: z.string().min(1, "Agency ID wajib diisi.").optional(),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD."),

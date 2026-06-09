@@ -103,7 +103,7 @@ export default function TakeAttendanceCard({
     return (
       attendances.find(
         (a) =>
-          a.userId === userId &&
+          a.intern?.userId === userId &&
           a.scheduleId === schedule.id &&
           a.date === todayDateStr,
       ) || null
@@ -224,8 +224,17 @@ export default function TakeAttendanceCard({
     try {
       const now = new Date();
 
+      // Resolve internId from userId
+      const { getInterns } = await import("@/lib/services/interns");
+      const interns = await getInterns(1000);
+      const intern = interns.find((i) => i.userId === userId);
+      if (!intern) {
+        toast.error("Data magang tidak ditemukan.");
+        return;
+      }
+
       await createAttendance({
-        userId,
+        internId: intern.id,
         scheduleId: schedule.id,
         date: todayDateStr,
         attendanceTime: now.toISOString(),

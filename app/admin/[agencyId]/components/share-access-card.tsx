@@ -25,11 +25,19 @@ import { Spinner } from "@/components/ui/spinner";
 import { Trash2, Search } from "lucide-react";
 
 import { useSession } from "@/lib/auth-client";
-import { getAccesses, createAccess, deleteAccess } from "@/lib/services/accesses";
+import {
+  getAccesses,
+  createAccess,
+  deleteAccess,
+} from "@/lib/services/accesses";
 import { getUsers } from "@/lib/services/users";
 import type { User, AdminAccess } from "@/interfaces/models";
 
-export default function ShareAccessCard() {
+interface ShareAccessCardProps {
+  agencyId: string;
+}
+
+export default function ShareAccessCard({ agencyId }: ShareAccessCardProps) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id || "";
   const [isLoading, setIsLoading] = useState(true);
@@ -102,12 +110,13 @@ export default function ShareAccessCard() {
     setIsUserSearchOpen(false);
 
     try {
-      const newAccess = await createAccess(admin.id);
+      const newAccess = await createAccess(agencyId, admin.id);
 
       setAccesses((currentAccesses) => [...currentAccesses, newAccess]);
       toast.success(`Akses admin untuk ${admin.name} berhasil ditambahkan`);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menambahkan akses admin";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal menambahkan akses admin";
       toast.error(errorMsg);
     } finally {
       setIsSaving(false);
@@ -135,9 +144,12 @@ export default function ShareAccessCard() {
       setAccesses((currentAccesses) =>
         currentAccesses.filter((item) => item.id !== access.id),
       );
-      toast.success(`Akses admin untuk ${access.user?.name || "Karyawan"} berhasil dihapus`);
+      toast.success(
+        `Akses admin untuk ${access.user?.name || "Karyawan"} berhasil dihapus`,
+      );
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus akses admin";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal menghapus akses admin";
       toast.error(errorMsg);
     } finally {
       setIsSaving(false);
@@ -162,7 +174,10 @@ export default function ShareAccessCard() {
               <Skeleton className="h-3 w-40" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border border-border/60 rounded-lg">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 border border-border/60 rounded-lg"
+                  >
                     <div className="flex items-center gap-3">
                       <Skeleton className="size-10 rounded-full" />
                       <div className="space-y-1.5">
@@ -187,7 +202,9 @@ export default function ShareAccessCard() {
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Akses Admin</h2>
           <p className="text-sm text-muted-foreground">
-            Kelola administrator yang dapat mengakses dan mengubah pengaturan sistem presensi. Akses Anda sendiri tidak dapat dihapus dari halaman ini.
+            Kelola administrator yang dapat mengakses dan mengubah pengaturan
+            sistem presensi. Akses Anda sendiri tidak dapat dihapus dari halaman
+            ini.
           </p>
         </div>
 
@@ -217,14 +234,24 @@ export default function ShareAccessCard() {
                     {isSaving && <Spinner className="size-4" />}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 sm:w-96 p-0 rounded-lg border border-border bg-card shadow-md" align="start">
+                <PopoverContent
+                  className="w-80 sm:w-96 p-0 rounded-lg border border-border bg-card shadow-md"
+                  align="start"
+                >
                   <Command className="rounded-lg">
-                    <CommandInput placeholder="Cari berdasarkan nama atau email..." className="border-0 focus:ring-0 text-sm" />
+                    <CommandInput
+                      placeholder="Cari berdasarkan nama atau email..."
+                      className="border-0 focus:ring-0 text-sm"
+                    />
                     <CommandList className="max-h-56">
                       <CommandEmpty className="p-3 text-xs text-center text-muted-foreground">
-                        Tidak ada admin yang cocok atau semua admin sudah diberi akses.
+                        Tidak ada admin yang cocok atau semua admin sudah diberi
+                        akses.
                       </CommandEmpty>
-                      <CommandGroup heading="Admin tersedia" className="px-1 text-xs text-muted-foreground">
+                      <CommandGroup
+                        heading="Admin tersedia"
+                        className="px-1 text-xs text-muted-foreground"
+                      >
                         {availableAdmins.map((admin) => (
                           <CommandItem
                             key={admin.id}
@@ -265,7 +292,8 @@ export default function ShareAccessCard() {
                 </PopoverContent>
               </Popover>
               <p className="text-xs text-muted-foreground/85">
-                Pilih dari daftar administrator yang tersedia di sistem untuk mendaftarkannya sebagai pengelola.
+                Pilih dari daftar administrator yang tersedia di sistem untuk
+                mendaftarkannya sebagai pengelola.
               </p>
             </div>
 
@@ -290,11 +318,11 @@ export default function ShareAccessCard() {
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar className="size-10 shrink-0 border border-border/40">
                             <AvatarImage
-                              src={access.user.image || undefined}
-                              alt={access.user.name}
+                              src={access.user?.image || undefined}
+                              alt={access.user?.name || ""}
                             />
                             <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
-                              {access.user.name
+                              {(access.user?.name || "")
                                 .split(" ")
                                 .map((part) => part[0])
                                 .filter(Boolean)
@@ -306,16 +334,19 @@ export default function ShareAccessCard() {
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-sm text-foreground/90 truncate">
-                                {access.user.name}
+                                {access.user?.name}
                               </p>
                               {isCurrentUser && (
-                                <Badge variant="outline" className="text-xs py-0">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs py-0"
+                                >
                                   Anda
                                 </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
-                              {access.user.email}
+                              {access.user?.email}
                             </p>
                           </div>
                         </div>
@@ -330,7 +361,11 @@ export default function ShareAccessCard() {
                             void removeAccess(access);
                           }}
                           className={`size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all rounded-lg shrink-0 ${isCurrentUser ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}`}
-                          title={isCurrentUser ? "Tidak dapat menghapus akses sendiri" : "Hapus Akses"}
+                          title={
+                            isCurrentUser
+                              ? "Tidak dapat menghapus akses sendiri"
+                              : "Hapus Akses"
+                          }
                         >
                           <Trash2 className="size-4" />
                         </Button>

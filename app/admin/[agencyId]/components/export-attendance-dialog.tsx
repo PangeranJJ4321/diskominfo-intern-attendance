@@ -146,7 +146,7 @@ export default function ExportAttendanceDialog({
 
           // Get active shift assignments for user on this date
           const activeAssigns = assignments.filter((a) => {
-            if (a.userId !== user.id) return false;
+            if (a.intern?.userId !== user.id) return false;
             return (
               a.startDate <= dateStr && (!a.endDate || a.endDate >= dateStr)
             );
@@ -161,7 +161,7 @@ export default function ExportAttendanceDialog({
 
           // Find attendances in fetched database list for this user and date
           const userDateAttendances = data.filter(
-            (att) => att.userId === user.id && att.date === dateStr,
+            (att) => att.intern?.userId === user.id && att.date === dateStr,
           );
 
           // Merge schedules just like calendar view to account for overrides

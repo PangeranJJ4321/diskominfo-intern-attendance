@@ -6,4 +6,7 @@ export const createAgencyRuleSchema = z.object({
   requireWithinArea: z.boolean().default(true),
 });
 
-export const updateAgencyRuleSchema = createAgencyRuleSchema.partial();
+export const updateAgencyRuleSchema = z.object({
+  requireFaceVerification: z.boolean().optional(),
+  requireWithinArea: z.boolean().optional(),
+});

@@ -125,9 +125,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const { defaultShiftId, ...restData } = parsedBody.data;
+    // Transform flat defaultShiftId into Prisma relation connect/disconnect syntax.
+    const updateData: Record<string, unknown> = { ...restData };
+
+    if (defaultShiftId !== undefined) {
+      if (defaultShiftId === null) {
+        updateData.defaultShift = { disconnect: true };
+      } else {
+        updateData.defaultShift = { connect: { id: defaultShiftId } };
+      }
+    }
+
     const updatedAgency = await prisma.agency.update({
       where: { id },
-      data: parsedBody.data,
+      data: updateData,
     });
 
     return NextResponse.json(updatedAgency);

@@ -14,6 +14,7 @@ import type { ShiftsControlProps } from "@/interfaces/admin";
 export default function ShiftsControl({
   shifts,
   selectedShiftId,
+  defaultShiftId,
   onSelectShiftId,
   onAddShiftClick,
   onEditShiftClick,
@@ -34,17 +35,23 @@ export default function ShiftsControl({
       {/* Shift Controls */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-60">
-          <Select
-            value={selectedShiftId}
-            onValueChange={onSelectShiftId}
-          >
+          <Select value={selectedShiftId} onValueChange={onSelectShiftId}>
             <SelectTrigger className="rounded-lg bg-background border-border text-sm w-full">
               <SelectValue placeholder="Pilih Shift Kerja" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border rounded-lg">
               {shifts.map((s) => (
-                <SelectItem key={s.id} value={s.id} className="rounded-md cursor-pointer text-sm">
+                <SelectItem
+                  key={s.id}
+                  value={s.id}
+                  className="rounded-md cursor-pointer text-sm"
+                >
                   {s.name}
+                  {s.id === defaultShiftId && (
+                    <span className="ml-2 text-amber-500 text-xs">
+                      (Default)
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>

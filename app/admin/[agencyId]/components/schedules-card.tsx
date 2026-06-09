@@ -28,6 +28,7 @@ import ScheduleEditDialog from "./schedule-edit-dialog";
 
 import { getShifts, deleteShift } from "@/lib/services/shifts";
 import { getSchedules } from "@/lib/services/schedules";
+import { getAgencies } from "@/lib/services/agencies";
 import type { Shift, Schedule } from "@/interfaces/models";
 
 type DayLabel = {
@@ -50,10 +51,24 @@ const DAY_LABELS: DayLabel[] = [
 /**
  * Component representing the weekly schedules and shifts management.
  */
-export default function SchedulesCard() {
+/**
+ * Props for the SchedulesCard component.
+ */
+interface SchedulesCardProps {
+  agencyId: string;
+}
+
+/**
+ * Component representing the weekly schedules and shifts management.
+ *
+ * @param props - The component props.
+ * @param props.agencyId - The current agency ID.
+ */
+export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedShiftId, setSelectedShiftId] = useState<string>("");
+  const [defaultShiftId, setDefaultShiftId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,9 +78,7 @@ export default function SchedulesCard() {
 
   // Weekly Edit Dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(
-    null,
-  );
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
 
   // Shift Dialogs state
   const [isShiftCreateOpen, setIsShiftCreateOpen] = useState(false);
@@ -83,12 +96,14 @@ export default function SchedulesCard() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [loadedShifts, loadedSchedules] = await Promise.all([
-          getShifts(),
-          getSchedules(),
-        ]);
+        const [loadedShifts, loadedSchedules, loadedAgencies] =
+          await Promise.all([getShifts(), getSchedules(), getAgencies()]);
         setShifts(loadedShifts);
         setSchedules(loadedSchedules);
+
+        const currentAgency = loadedAgencies.find((a) => a.id === agencyId);
+        setDefaultShiftId(currentAgency?.defaultShiftId ?? null);
+
         if (loadedShifts.length > 0) {
           setSelectedShiftId(loadedShifts[0].id);
         }
@@ -101,7 +116,7 @@ export default function SchedulesCard() {
     }
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [agencyId]);
 
   /**
    * Callback when a shift is successfully created.
@@ -160,7 +175,8 @@ export default function SchedulesCard() {
 
       toast.success("Shift dan jadwal terkait berhasil dihapus");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus shift";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal menghapus shift";
       toast.error(errorMsg);
     }
   };
@@ -229,7 +245,8 @@ export default function SchedulesCard() {
             Jadwal & Shift Kerja
           </h2>
           <p className="text-sm text-muted-foreground">
-            Kelola shift kerja, jadwal masuk mingguan, dan konfigurasi hari libur
+            Kelola shift kerja, jadwal masuk mingguan, dan konfigurasi hari
+            libur
           </p>
         </div>
 
@@ -245,6 +262,7 @@ export default function SchedulesCard() {
             <ShiftsControl
               shifts={shifts}
               selectedShiftId={selectedShiftId}
+              defaultShiftId={defaultShiftId}
               onSelectShiftId={setSelectedShiftId}
               onAddShiftClick={() => setIsShiftCreateOpen(true)}
               onEditShiftClick={() => setIsShiftEditOpen(true)}
@@ -281,16 +299,18 @@ export default function SchedulesCard() {
                     return (
                       <div
                         key={dayLabel.value}
-                        className={`flex min-h-40 md:min-h-56 flex-col bg-background ${dayLabel.weekend ? "bg-muted/10" : ""
-                          }`}
+                        className={`flex min-h-40 md:min-h-56 flex-col bg-background ${
+                          dayLabel.weekend ? "bg-muted/10" : ""
+                        }`}
                       >
                         <div className="flex flex-1 flex-col gap-2.5 p-3">
                           {/* Mobile Day Name Header */}
                           <div
-                            className={`text-xs font-bold uppercase tracking-wider md:hidden pb-1 border-b border-border/40 mb-1 ${dayLabel.weekend
+                            className={`text-xs font-bold uppercase tracking-wider md:hidden pb-1 border-b border-border/40 mb-1 ${
+                              dayLabel.weekend
                                 ? "text-destructive/80"
                                 : "text-muted-foreground"
-                              }`}
+                            }`}
                           >
                             {dayLabel.long}
                           </div>
@@ -404,7 +424,7 @@ export default function SchedulesCard() {
         dayName={
           editingSchedule
             ? DAY_LABELS.find((d) => d.value === editingSchedule.dayOfWeek)
-              ?.long || ""
+                ?.long || ""
             : ""
         }
       />
@@ -413,6 +433,7 @@ export default function SchedulesCard() {
       <ShiftCreateDialog
         open={isShiftCreateOpen}
         onOpenChange={setIsShiftCreateOpen}
+        agencyId={agencyId}
         onSuccess={handleCreateShiftSuccess}
       />
 
@@ -421,6 +442,8 @@ export default function SchedulesCard() {
         open={isShiftEditOpen}
         onOpenChange={setIsShiftEditOpen}
         shift={selectedShift || null}
+        isDefaultShift={(selectedShift?.id ?? "") === (defaultShiftId ?? "")}
+        agencyId={agencyId}
         onSuccess={handleEditShiftSuccess}
       />
 

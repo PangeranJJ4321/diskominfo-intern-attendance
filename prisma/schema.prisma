@@ -105,10 +105,11 @@ model Institution {
 }
 
 model Agency {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  defaultShiftId String? // The fallback shift assigned automatically to new interns
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   interns        Intern[]
   agencyAccesses AgencyAccess[]
@@ -116,7 +117,9 @@ model Agency {
   holidays       AgencyHoliday[]
   agencyArea     AgencyArea?
   rule           AgencyRule?
+  defaultShift   Shift?          @relation("DefaultShift", fields: [defaultShiftId], references: [id], onDelete: SetNull)
 
+  @@index([defaultShiftId])
   @@map("agency")
 }
 
@@ -149,9 +152,10 @@ model Shift {
   workOnHolidays Boolean   @default(false)
   deletedAt      DateTime? // Soft delete support
 
-  agency      Agency            @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  schedules   Schedule[]
-  assignments ShiftAssignment[]
+  agency          Agency            @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  schedules       Schedule[]
+  assignments     ShiftAssignment[]
+  defaultAgencies Agency[]          @relation("DefaultShift")
 
   @@index([agencyId])
   @@map("shift")

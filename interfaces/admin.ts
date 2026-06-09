@@ -47,6 +47,7 @@ export interface UserAttendanceCreateDialogProps {
 export interface ShiftsControlProps {
   shifts: Shift[];
   selectedShiftId: string;
+  defaultShiftId?: string | null;
   onSelectShiftId: (id: string) => void;
   onAddShiftClick: () => void;
   onEditShiftClick: () => void;
@@ -57,12 +58,15 @@ export interface ShiftEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shift: Shift | null;
+  isDefaultShift: boolean;
+  agencyId: string;
   onSuccess: (updatedShift: Shift) => void;
 }
 
 export interface ShiftCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  agencyId: string;
   onSuccess: (newShift: Shift) => void;
 }
 

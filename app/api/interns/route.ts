@@ -200,10 +200,34 @@ export async function POST(request: NextRequest) {
       data: parsedBody.data,
       include: {
         user: true,
-        agency: true,
+        agency: {
+          include: {
+            defaultShift: true,
+          },
+        },
         institution: true,
       },
     });
+
+    // Auto-assign the agency's default shift if one is configured
+    const defaultShiftId = newIntern.agency?.defaultShift?.id;
+    if (defaultShiftId && parsedBody.data.startedAt) {
+      const startDateStr = parsedBody.data.startedAt
+        .toISOString()
+        .split("T")[0];
+      const endDateStr = parsedBody.data.finishedAt
+        ? parsedBody.data.finishedAt.toISOString().split("T")[0]
+        : null;
+
+      await prisma.shiftAssignment.create({
+        data: {
+          internId: newIntern.id,
+          shiftId: defaultShiftId,
+          startDate: startDateStr,
+          endDate: endDateStr,
+        },
+      });
+    }
 
     return NextResponse.json(newIntern, { status: 201 });
   } catch (error) {

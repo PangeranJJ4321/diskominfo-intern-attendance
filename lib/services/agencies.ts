@@ -33,17 +33,25 @@ export async function createAgency(name: string): Promise<Agency> {
 }
 
 /**
- * Updates an existing agency.
+ * Updates an existing agency. At least one of `name` or `shiftId` must be provided.
  *
  * @param {string} id - The agency ID.
- * @param {string} name - The new agency name.
+ * @param {string} [name] - The new agency name (optional).
+ * @param {string} [shiftId] - The ID of the default shift for the agency (optional).
  * @returns {Promise<Agency>} The updated agency.
  */
-export async function updateAgency(id: string, name: string): Promise<Agency> {
+export async function updateAgency(
+  id: string,
+  name?: string,
+  shiftId?: string,
+): Promise<Agency> {
+  const body: Record<string, string> = {};
+  if (name) body.name = name;
+  if (shiftId) body.defaultShiftId = shiftId;
   const res = await fetch(`/api/agencies/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) await handleError(res, "Gagal memperbarui instansi");
   return res.json();

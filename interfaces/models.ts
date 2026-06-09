@@ -109,6 +109,8 @@ export interface ProfileUser {
 export interface Agency {
   id: string;
   name: string;
+  defaultShiftId?: string | null;
+  defaultShift?: Shift | null;
   createdAt: string;
   updatedAt: string;
 }

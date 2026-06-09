@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateShift } from "@/lib/services/shifts";
+import { updateAgency } from "@/lib/services/agencies";
 import type { ShiftEditDialogProps } from "@/interfaces/admin";
 import { Switch } from "@/components/ui/switch";
 
@@ -21,10 +22,13 @@ export default function ShiftEditDialog({
   open,
   onOpenChange,
   shift,
+  isDefaultShift,
+  agencyId,
   onSuccess,
 }: ShiftEditDialogProps) {
   const [name, setName] = useState("");
   const [workOnHolidays, setWorkOnHolidays] = useState(false);
+  const [setAsDefault, setSetAsDefault] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,10 +36,11 @@ export default function ShiftEditDialog({
       const timer = setTimeout(() => {
         setName(shift.name);
         setWorkOnHolidays(shift.workOnHolidays ?? false);
+        setSetAsDefault(isDefaultShift);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [shift, open]);
+  }, [shift, open, isDefaultShift]);
 
   /**
    * Handles form submission to update the shift details.
@@ -53,11 +58,15 @@ export default function ShiftEditDialog({
     setIsSubmitting(true);
     try {
       const updated = await updateShift(shift.id, name.trim(), workOnHolidays);
+      if (setAsDefault && agencyId) {
+        await updateAgency(agencyId, undefined, shift.id);
+      }
       onSuccess(updated);
       onOpenChange(false);
       toast.success("Shift berhasil diperbarui");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui shift";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal memperbarui shift";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -68,7 +77,9 @@ export default function ShiftEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto scrollbar-none p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold">Edit Nama Shift</DialogTitle>
+          <DialogTitle className="text-lg font-bold">
+            Edit Nama Shift
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             Ubah nama grup jadwal kerja ini.
           </DialogDescription>
@@ -90,7 +101,10 @@ export default function ShiftEditDialog({
           </div>
           <div className="flex items-center justify-between rounded-lg border border-border p-3.5 shadow-sm bg-background/50">
             <div className="space-y-0.5">
-              <Label htmlFor="edit-shift-work-on-holidays" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="edit-shift-work-on-holidays"
+                className="text-xs font-bold text-foreground"
+              >
                 Tetap Masuk Hari Libur
               </Label>
               <p className="text-[11px] text-muted-foreground font-medium leading-normal">
@@ -101,6 +115,25 @@ export default function ShiftEditDialog({
               id="edit-shift-work-on-holidays"
               checked={workOnHolidays}
               onCheckedChange={setWorkOnHolidays}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-border p-3.5 shadow-sm bg-background/50">
+            <div className="space-y-0.5">
+              <Label
+                htmlFor="edit-shift-set-default"
+                className="text-xs font-bold text-foreground"
+              >
+                Jadikan Shift Default
+              </Label>
+              <p className="text-[11px] text-muted-foreground font-medium leading-normal">
+                Otomatis digunakan untuk pengguna yang belum ditentukan shift.
+              </p>
+            </div>
+            <Switch
+              id="edit-shift-set-default"
+              checked={setAsDefault}
+              onCheckedChange={setSetAsDefault}
               disabled={isSubmitting}
             />
           </div>
@@ -119,7 +152,9 @@ export default function ShiftEditDialog({
               loading={isSubmitting}
               disabled={
                 !name.trim() ||
-                (name.trim() === shift?.name && workOnHolidays === (shift?.workOnHolidays ?? false)) ||
+                (name.trim() === shift?.name &&
+                  workOnHolidays === (shift?.workOnHolidays ?? false) &&
+                  setAsDefault === isDefaultShift) ||
                 isSubmitting
               }
               className="rounded-lg text-xs bg-primary text-primary-foreground font-semibold"

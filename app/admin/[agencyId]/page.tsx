@@ -38,7 +38,7 @@ export default function AgencyAdminPage({
         </div>
 
         <AreaMapEditorCard />
-        <SchedulesCard />
+        <SchedulesCard agencyId={agencyId} />
         <UserAttendancesCard />
         <AgencyRulesCard agencyId={agencyId} />
         <ShareAccessCard agencyId={agencyId} />

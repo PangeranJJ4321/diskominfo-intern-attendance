@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createShift } from "@/lib/services/shifts";
+import { updateAgency } from "@/lib/services/agencies";
 import type { ShiftCreateDialogProps } from "@/interfaces/admin";
 import { Switch } from "@/components/ui/switch";
 /**
@@ -24,10 +25,12 @@ import { Switch } from "@/components/ui/switch";
 export default function ShiftCreateDialog({
   open,
   onOpenChange,
+  agencyId,
   onSuccess,
 }: ShiftCreateDialogProps) {
   const [name, setName] = useState("");
   const [workOnHolidays, setWorkOnHolidays] = useState(false);
+  const [setAsDefault, setSetAsDefault] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /**
@@ -45,13 +48,18 @@ export default function ShiftCreateDialog({
     setIsSubmitting(true);
     try {
       const newShift = await createShift(name.trim(), workOnHolidays);
+      if (setAsDefault && agencyId) {
+        await updateAgency(agencyId, undefined, newShift.id);
+      }
       onSuccess(newShift);
       setName("");
       setWorkOnHolidays(false);
+      setSetAsDefault(false);
       onOpenChange(false);
       toast.success("Shift baru berhasil dibuat");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal membuat shift";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal membuat shift";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -62,14 +70,19 @@ export default function ShiftCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto scrollbar-none p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold">Tambah Shift Baru</DialogTitle>
+          <DialogTitle className="text-lg font-bold">
+            Tambah Shift Baru
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             Tentukan nama untuk grup jadwal kerja ini.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="create-shift-name" className="text-xs font-semibold">
+            <Label
+              htmlFor="create-shift-name"
+              className="text-xs font-semibold"
+            >
               Nama Shift
             </Label>
             <Input
@@ -84,7 +97,10 @@ export default function ShiftCreateDialog({
           </div>
           <div className="flex items-center justify-between rounded-lg border border-border p-3.5 shadow-sm bg-background/50">
             <div className="space-y-0.5">
-              <Label htmlFor="create-shift-work-on-holidays" className="text-xs font-bold text-foreground">
+              <Label
+                htmlFor="create-shift-work-on-holidays"
+                className="text-xs font-bold text-foreground"
+              >
                 Tetap Masuk Hari Libur
               </Label>
               <p className="text-[11px] text-muted-foreground font-medium leading-normal">
@@ -95,6 +111,25 @@ export default function ShiftCreateDialog({
               id="create-shift-work-on-holidays"
               checked={workOnHolidays}
               onCheckedChange={setWorkOnHolidays}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-border p-3.5 shadow-sm bg-background/50">
+            <div className="space-y-0.5">
+              <Label
+                htmlFor="create-shift-set-default"
+                className="text-xs font-bold text-foreground"
+              >
+                Jadikan Shift Default
+              </Label>
+              <p className="text-[11px] text-muted-foreground font-medium leading-normal">
+                Otomatis digunakan untuk pengguna yang belum ditentukan shift.
+              </p>
+            </div>
+            <Switch
+              id="create-shift-set-default"
+              checked={setAsDefault}
+              onCheckedChange={setSetAsDefault}
               disabled={isSubmitting}
             />
           </div>

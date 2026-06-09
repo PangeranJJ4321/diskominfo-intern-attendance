@@ -61,6 +61,7 @@ export default function TakeAttendanceCard({
   refreshTrigger,
   workDate,
   className,
+  agencyRule,
 }: TakeAttendanceCardProps) {
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
@@ -205,7 +206,8 @@ export default function TakeAttendanceCard({
     const isExcusedOrSick =
       status === AttendanceStatus.EXCUSED || status === AttendanceStatus.SICK;
 
-    if (!isExcusedOrSick) {
+    // Geofence check — only if agency rule requires it (default: true)
+    if (!isExcusedOrSick && agencyRule?.requireWithinArea !== false) {
       if (isWithinGeofence === null) {
         toast.error(
           "GPS belum terdeteksi. Silakan aktifkan GPS atau tunggu sebentar.",
@@ -405,7 +407,26 @@ export default function TakeAttendanceCard({
                   getAttendanceStatusButtonStyles(attendanceRecord.status),
               )}
               disabled={!canSubmitAttendance}
-              onClick={() => setIsFaceCameraOpen(true)}
+              onClick={() => {
+                // Face verification only needed if rule requires it (default: true)
+                // and user has face registered
+                const needFace =
+                  agencyRule?.requireFaceVerification !== false &&
+                  userHasFaceRegistered;
+                if (needFace) {
+                  setIsFaceCameraOpen(true);
+                } else if (isLateNow) {
+                  setSelectedStatus(AttendanceStatus.LATE);
+                  setNotes("");
+                } else {
+                  void handleSubmitAttendance(
+                    AttendanceStatus.PRESENT,
+                    "",
+                    null,
+                    null,
+                  );
+                }
+              }}
               loading={isSubmitting}
               type="button"
               variant={

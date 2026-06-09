@@ -8,6 +8,9 @@ import { isLocationWithinArea } from "@/lib/location-within-area";
 import type { GeoJsonObject } from "geojson";
 import { getAttendanceAreas } from "@/lib/services/attendance-areas";
 import { createLocationLog } from "@/lib/services/location-logs";
+import { getInterns } from "@/lib/services/interns";
+import { getAgencyRule } from "@/lib/services/agencies";
+import type { AgencyRule } from "@/interfaces/models";
 
 // Import subcomponents
 import TakeAttendanceList from "./components/take-attendance-list";
@@ -56,6 +59,7 @@ export default function DashboardPage() {
   const [geofence, setGeofence] = useState<GeoJsonObject | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
+  const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
 
   // Resolve user info from session
   const user = useMemo(() => {
@@ -86,6 +90,26 @@ export default function DashboardPage() {
   }, [currentLocation, user?.id, hasLoggedLocation]);
 
   // Load geofence from the backend
+  // Load agency rule for the user's intern
+  useEffect(() => {
+    if (!user?.id) return;
+
+    async function loadAgencyRule() {
+      try {
+        const interns = await getInterns();
+        const intern = interns.find((i) => i.userId === user?.id);
+        if (intern) {
+          const rule = await getAgencyRule(intern.agencyId);
+          setAgencyRule(rule);
+        }
+      } catch (err) {
+        console.error("Gagal memuat aturan instansi:", err);
+      }
+    }
+
+    void loadAgencyRule();
+  }, [user?.id]);
+
   // 2. Update the useEffect
   useEffect(() => {
     // If a fetch has already started or finished, block any duplicate calls entirely
@@ -194,6 +218,7 @@ export default function DashboardPage() {
                 isWithinGeofence={isWithinGeofence}
                 onAttendanceSuccess={handleAttendanceSuccess}
                 refreshTrigger={refreshTrigger}
+                agencyRule={agencyRule}
               />
 
               {/* Card 2: Interactive Geolocation Map */}
@@ -202,6 +227,7 @@ export default function DashboardPage() {
                 currentLocation={currentLocation}
                 onLocationChange={setCurrentLocation}
                 isWithinGeofence={isWithinGeofence}
+                agencyRule={agencyRule}
               />
             </div>
 

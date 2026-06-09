@@ -1,5 +1,5 @@
 import type { GeoJsonObject } from "geojson";
-import type { Schedule, Attendance } from "./models";
+import type { Schedule, Attendance, AgencyRule } from "./models";
 import { AttendanceStatus, type AttendanceStatusType } from "./enums";
 
 export interface TakeAttendanceListProps {
@@ -13,6 +13,7 @@ export interface TakeAttendanceListProps {
   isWithinGeofence: boolean | null;
   onAttendanceSuccess: () => void;
   refreshTrigger: number;
+  agencyRule: AgencyRule | null;
 }
 
 export interface TakeAttendanceFaceCameraProps {
@@ -40,6 +41,8 @@ export interface TakeAttendanceCardProps {
   refreshTrigger: number;
   workDate?: string;
   className?: string;
+  /** Agency rule to control whether face & geofence validations are enforced on the client side */
+  agencyRule: AgencyRule | null;
 }
 
 export interface TakeAttendanceButtonGroupProps {
@@ -76,6 +79,8 @@ export interface LiveLocationMapCardProps {
     accuracy: number;
   }) => void;
   isWithinGeofence: boolean | null;
+  /** Agency rule to control whether geofence warnings are shown */
+  agencyRule: AgencyRule | null;
 }
 
 export interface AttendanceNotesDialogProps {

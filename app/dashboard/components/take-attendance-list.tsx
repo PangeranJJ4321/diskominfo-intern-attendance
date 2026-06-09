@@ -38,6 +38,7 @@ export default function TakeAttendanceList({
   isWithinGeofence,
   onAttendanceSuccess,
   refreshTrigger,
+  agencyRule,
 }: TakeAttendanceListProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -250,6 +251,7 @@ export default function TakeAttendanceList({
               onAttendanceSuccess={onAttendanceSuccess}
               refreshTrigger={refreshTrigger}
               className="min-w-0 flex-1 w-full"
+              agencyRule={agencyRule}
             />
           ))}
         </div>
@@ -269,6 +271,7 @@ export default function TakeAttendanceList({
               onAttendanceSuccess={onAttendanceSuccess}
               refreshTrigger={refreshTrigger}
               className="min-w-[320px] shrink-0 snap-start flex-1"
+              agencyRule={agencyRule}
             />
           ))}
         </div>

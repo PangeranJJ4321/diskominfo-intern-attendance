@@ -21,7 +21,10 @@ export default function LiveLocationMapCard({
   geoData,
   onLocationChange,
   isWithinGeofence,
+  agencyRule,
 }: LiveLocationMapCardProps) {
+  const enforceGeo = agencyRule?.requireWithinArea !== false;
+
   return (
     <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-md border border-border/60 bg-card/45 backdrop-blur-md">
       <CardHeader className="flex flex-row items-center justify-between pb-4 space-y-0">
@@ -51,10 +54,18 @@ export default function LiveLocationMapCard({
               </span>
               Di Dalam Area
             </Badge>
-          ) : (
+          ) : enforceGeo ? (
             <Badge className="bg-destructive/10 border-destructive/25 text-destructive gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold">
               <AlertTriangle className="size-3" />
               Di Luar Area
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold"
+            >
+              <Navigation className="size-3" />
+              Wajib Area Dinonaktifkan
             </Badge>
           )}
         </div>
@@ -66,7 +77,7 @@ export default function LiveLocationMapCard({
           onLocationChange={onLocationChange}
         />
 
-        {isWithinGeofence === false && (
+        {enforceGeo && isWithinGeofence === false && (
           <div className="flex items-start gap-2 text-xs bg-destructive/5 border border-destructive/10 rounded-xl p-3 text-destructive">
             <Info className="size-4 shrink-0 mt-0.5" />
             <p className="leading-relaxed font-medium">

@@ -241,9 +241,18 @@ export async function POST(request: NextRequest) {
         attendanceFaceDescriptor,
       } = parsedBody.data;
 
+      // Fetch agency rule and area for this intern's agency
+      const [rule, agencyArea] = await Promise.all([
+        prisma.agencyRule.findUnique({
+          where: { agencyId: intern.agencyId },
+        }),
+        prisma.agencyArea.findUnique({
+          where: { agencyId: intern.agencyId },
+        }),
+      ]);
+
       // 1. Fetch timezone and run timing verification
-      const areas = await prisma.agencyArea.findMany();
-      const timezone = areas[0]?.timezone || "Asia/Makassar";
+      const timezone = agencyArea?.timezone || "Asia/Makassar";
       const now = new Date();
 
       const timeCheck = verifyAttendanceTime(
@@ -289,149 +298,148 @@ export async function POST(request: NextRequest) {
         status === AttendanceStatus.PRESENT ||
         status === AttendanceStatus.LATE
       ) {
-        // 2. Geofence Check
-        if (
-          attendanceLatitude === null ||
-          attendanceLatitude === undefined ||
-          attendanceLongitude === null ||
-          attendanceLongitude === undefined
-        ) {
-          return NextResponse.json(
-            { error: "Koordinat GPS diperlukan untuk presensi ini." },
-            { status: 400 },
-          );
-        }
+        // 2. Geofence Check — only if agency rule requires it
+        if (rule?.requireWithinArea !== false) {
+          if (
+            attendanceLatitude === null ||
+            attendanceLatitude === undefined ||
+            attendanceLongitude === null ||
+            attendanceLongitude === undefined
+          ) {
+            return NextResponse.json(
+              { error: "Koordinat GPS diperlukan untuk presensi ini." },
+              { status: 400 },
+            );
+          }
 
-        if (areas.length > 0) {
-          let withinAnyArea = false;
-          for (const area of areas) {
+          if (agencyArea) {
             const isWithin = isLocationWithinArea(
               attendanceLatitude,
               attendanceLongitude,
-              area.geoData as unknown as GeoJsonObject,
+              agencyArea.geoData as unknown as GeoJsonObject,
             );
-            if (isWithin) {
-              withinAnyArea = true;
-              break;
-            }
-          }
 
-          if (!withinAnyArea) {
-            return NextResponse.json(
-              { error: "Presensi wajib dilakukan di dalam area kantor." },
-              { status: 400 },
-            );
-          }
-        }
-
-        // 3. Location velocity spoofing check (using haversine)
-        const newestLog = await prisma.locationLog.findFirst({
-          where: { internId },
-          orderBy: { createdAt: "desc" },
-        });
-
-        if (newestLog) {
-          const velocityCheck = verifyLocationVelocity(
-            newestLog.latitude,
-            newestLog.longitude,
-            newestLog.createdAt,
-            attendanceLatitude,
-            attendanceLongitude,
-            now,
-          );
-
-          if (!velocityCheck.isValid) {
-            console.warn(
-              `GPS spoofing indication for intern ${internId}. Speed: ${velocityCheck.speed.toFixed(2)} m/s, Distance: ${velocityCheck.distance.toFixed(2)} m`,
-            );
-            return NextResponse.json(
-              {
-                error:
-                  "Terdeteksi indikasi pemalsuan lokasi (GPS spoofing). Silakan hubungi admin atau coba lagi.",
-              },
-              { status: 400 },
-            );
-          }
-        }
-
-        // 4. Face Recognition Check
-        const registeredFaces = await prisma.faceDescriptor.findMany({
-          where: { userId: intern.userId },
-        });
-
-        if (registeredFaces.length > 0) {
-          if (
-            !attendanceFaceDescriptor ||
-            !Array.isArray(attendanceFaceDescriptor)
-          ) {
-            return NextResponse.json(
-              {
-                error:
-                  "Verifikasi wajah diperlukan. Harap sertakan data verifikasi wajah Anda.",
-              },
-              { status: 400 },
-            );
-          }
-
-          // Compare with registered face descriptors (Euclidean distance <= 0.6)
-          const euclideanDistance = (
-            arr1: number[],
-            arr2: number[],
-          ): number => {
-            if (arr1.length !== arr2.length) return Infinity;
-            let sum = 0;
-            for (let i = 0; i < arr1.length; i++) {
-              const diff = arr1[i] - arr2[i];
-              sum += diff * diff;
-            }
-            return Math.sqrt(sum);
-          };
-
-          let minDistance = Infinity;
-          for (const rf of registeredFaces) {
-            const regDescriptor = rf.descriptor as number[];
-            const dist = euclideanDistance(
-              attendanceFaceDescriptor,
-              regDescriptor,
-            );
-            if (dist < minDistance) {
-              minDistance = dist;
-            }
-          }
-
-          if (minDistance > 0.6) {
-            return NextResponse.json(
-              {
-                error:
-                  "Verifikasi wajah gagal. Wajah tidak cocok dengan data terdaftar.",
-              },
-              { status: 400 },
-            );
-          }
-
-          // Auto-improve face recognition if similarity is close to the limit (e.g. > 0.4 and <= 0.6)
-          if (minDistance > 0.4 && minDistance <= 0.6) {
-            console.log(
-              `Face similarity distance (${minDistance.toFixed(3)}) is close to limit (0.6). Adding face descriptor to improve recognition.`,
-            );
-            try {
-              await prisma.faceDescriptor.create({
-                data: {
-                  userId: intern.userId,
-                  descriptor: attendanceFaceDescriptor,
-                },
-              });
-            } catch (dbErr) {
-              console.error(
-                "Gagal menambahkan face descriptor cadangan:",
-                dbErr,
+            if (!isWithin) {
+              return NextResponse.json(
+                { error: "Presensi wajib dilakukan di dalam area kantor." },
+                { status: 400 },
               );
             }
           }
+        }
 
-          console.log(
-            "Face verified successfully on client-provided descriptor!",
-          );
+        // 3. Location velocity spoofing check (using haversine) — only if location data is available
+        if (attendanceLatitude != null && attendanceLongitude != null) {
+          const newestLog = await prisma.locationLog.findFirst({
+            where: { internId },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (newestLog) {
+            const velocityCheck = verifyLocationVelocity(
+              newestLog.latitude,
+              newestLog.longitude,
+              newestLog.createdAt,
+              attendanceLatitude,
+              attendanceLongitude,
+              now,
+            );
+
+            if (!velocityCheck.isValid) {
+              console.warn(
+                `GPS spoofing indication for intern ${internId}. Speed: ${velocityCheck.speed.toFixed(2)} m/s, Distance: ${velocityCheck.distance.toFixed(2)} m`,
+              );
+              return NextResponse.json(
+                {
+                  error:
+                    "Terdeteksi indikasi pemalsuan lokasi (GPS spoofing). Silakan hubungi admin atau coba lagi.",
+                },
+                { status: 400 },
+              );
+            }
+          }
+        }
+
+        // 4. Face Recognition Check — only if agency rule requires it
+        if (rule?.requireFaceVerification !== false) {
+          const registeredFaces = await prisma.faceDescriptor.findMany({
+            where: { userId: intern.userId },
+          });
+
+          if (registeredFaces.length > 0) {
+            if (
+              !attendanceFaceDescriptor ||
+              !Array.isArray(attendanceFaceDescriptor)
+            ) {
+              return NextResponse.json(
+                {
+                  error:
+                    "Verifikasi wajah diperlukan. Harap sertakan data verifikasi wajah Anda.",
+                },
+                { status: 400 },
+              );
+            }
+
+            // Compare with registered face descriptors (Euclidean distance <= 0.6)
+            const euclideanDistance = (
+              arr1: number[],
+              arr2: number[],
+            ): number => {
+              if (arr1.length !== arr2.length) return Infinity;
+              let sum = 0;
+              for (let i = 0; i < arr1.length; i++) {
+                const diff = arr1[i] - arr2[i];
+                sum += diff * diff;
+              }
+              return Math.sqrt(sum);
+            };
+
+            let minDistance = Infinity;
+            for (const rf of registeredFaces) {
+              const regDescriptor = rf.descriptor as number[];
+              const dist = euclideanDistance(
+                attendanceFaceDescriptor,
+                regDescriptor,
+              );
+              if (dist < minDistance) {
+                minDistance = dist;
+              }
+            }
+
+            if (minDistance > 0.6) {
+              return NextResponse.json(
+                {
+                  error:
+                    "Verifikasi wajah gagal. Wajah tidak cocok dengan data terdaftar.",
+                },
+                { status: 400 },
+              );
+            }
+
+            // Auto-improve face recognition if similarity is close to the limit (e.g. > 0.4 and <= 0.6)
+            if (minDistance > 0.4 && minDistance <= 0.6) {
+              console.log(
+                `Face similarity distance (${minDistance.toFixed(3)}) is close to limit (0.6). Adding face descriptor to improve recognition.`,
+              );
+              try {
+                await prisma.faceDescriptor.create({
+                  data: {
+                    userId: intern.userId,
+                    descriptor: attendanceFaceDescriptor,
+                  },
+                });
+              } catch (dbErr) {
+                console.error(
+                  "Gagal menambahkan face descriptor cadangan:",
+                  dbErr,
+                );
+              }
+            }
+
+            console.log(
+              "Face verified successfully on client-provided descriptor!",
+            );
+          }
         }
       }
     }

@@ -138,6 +138,9 @@ export function defineAbilityFor(user: AuthUser) {
     // Ordinary users can read institutions (needed for intern card dropdowns)
     can("read", "Institution");
 
+    // Ordinary users can read agency rules (needed for face/geofence enforcement)
+    can("read", "AgencyRule");
+
     // Ordinary users can create and read their own face descriptors, but NOT delete
     can("create", "FaceDescriptor", { userId: user.id });
     can("read", "FaceDescriptor", { userId: user.id });

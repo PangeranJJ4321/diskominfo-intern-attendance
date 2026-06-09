@@ -28,7 +28,8 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
   const [loading, setLoading] = useState(true);
   const [rule, setRule] = useState<AgencyRule | null>(null);
   const [error, setError] = useState("");
-  const [toggling, setToggling] = useState<"face" | "area" | null>(null);
+  const [togglingFace, setTogglingFace] = useState(false);
+  const [togglingArea, setTogglingArea] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -66,29 +67,24 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
   }, [agencyId]);
 
   /**
-   * Handles toggling a specific rule field.
-   *
-   * @param field - The field to toggle.
+   * Handles toggling the requireFaceVerification rule.
    */
-  async function handleToggle(
-    field: "requireFaceVerification" | "requireWithinArea",
-  ) {
-    setToggling(field === "requireFaceVerification" ? "face" : "area");
+  async function handleToggleFace() {
+    setTogglingFace(true);
 
     try {
       if (rule?.id) {
-        const currentValue = rule[field];
         const updated = await updateAgencyRule(agencyId, {
-          [field]: !currentValue,
+          requireFaceVerification: !rule.requireFaceVerification,
         });
         setRule(updated);
-        toast.success("Aturan instansi berhasil diperbarui");
+        toast.success("Aturan berhasil diperbarui");
       } else {
         const created = await createAgencyRule(agencyId, {
-          [field]: true,
+          requireFaceVerification: true,
         });
         setRule(created);
-        toast.success("Aturan instansi berhasil dibuat");
+        toast.success("Aturan berhasil dibuat");
       }
     } catch (err) {
       toast.error(
@@ -97,7 +93,38 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
           : "Gagal memperbarui aturan instansi",
       );
     } finally {
-      setToggling(null);
+      setTogglingFace(false);
+    }
+  }
+
+  /**
+   * Handles toggling the requireWithinArea rule.
+   */
+  async function handleToggleArea() {
+    setTogglingArea(true);
+
+    try {
+      if (rule?.id) {
+        const updated = await updateAgencyRule(agencyId, {
+          requireWithinArea: !rule.requireWithinArea,
+        });
+        setRule(updated);
+        toast.success("Aturan berhasil diperbarui");
+      } else {
+        const created = await createAgencyRule(agencyId, {
+          requireWithinArea: true,
+        });
+        setRule(created);
+        toast.success("Aturan berhasil dibuat");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Gagal memperbarui aturan instansi",
+      );
+    } finally {
+      setTogglingArea(false);
     }
   }
 
@@ -153,8 +180,8 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
           <Switch
             id="toggle-face"
             checked={rule?.requireFaceVerification ?? false}
-            onCheckedChange={() => handleToggle("requireFaceVerification")}
-            disabled={toggling === "face"}
+            onCheckedChange={handleToggleFace}
+            disabled={togglingFace}
           />
         </div>
 
@@ -174,8 +201,8 @@ export default function AgencyRulesCard({ agencyId }: AgencyRulesCardProps) {
           <Switch
             id="toggle-area"
             checked={rule?.requireWithinArea ?? false}
-            onCheckedChange={() => handleToggle("requireWithinArea")}
-            disabled={toggling === "area"}
+            onCheckedChange={handleToggleArea}
+            disabled={togglingArea}
           />
         </div>
       </CardContent>

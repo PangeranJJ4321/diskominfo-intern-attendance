@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  email            String
+  emailVerified    Boolean           @default(false)
+  image            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  faceDescriptors  FaceDescriptor[]
+  attendances      Attendance[]
+  accesses         Access[]
+  shiftAssignments ShiftAssignment[]
+  locationLogs     LocationLog[] // Relation to track continuous location history
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Access {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("access")
+}
+
+model Schedule {
+  id            String   @id @default(cuid())
+  shiftId       String
+  name          String // e.g., "Morning attendance", "Afternoon attendance"
+  dayOfWeek     Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  windowStart   String // "07:00:00" -> Buttons appear; earliest they can scan
+  scheduleStart String // "08:00:00" -> The official start time
+  lateCutoff    String // "08:15:00" -> Grace period ends (marked LATE after this)
+  scheduleEnd   String // "09:00:00" -> Window closes; scanning is blocked / ABSENT
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime? // Added for soft delete
+
+  attendances Attendance[] // Links the scan to this specific schedule slot
+  shift       Shift        @relation(fields: [shiftId], references: [id])
+
+  @@map("schedule")
+}
+
+model Shift {
+  id   String @id @default(cuid())
+  name String // e.g., "Security 1 (Day)", "Security 2 (Night)", "Chef Morning Shift"
+  workOnHolidays Boolean @default(false)
+  deletedAt DateTime? // Added for soft delete
+
+  schedules   Schedule[]
+  assignments ShiftAssignment[]
+
+  @@map("shift")
+}
+
+model ShiftAssignment {
+  id        String  @id @default(cuid())
+  userId    String
+  shiftId   String
+  startDate String // YYYY-MM-DD
+  endDate   String? // YYYY-MM-DD (Null means active indefinitely until the admin sets an end date)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate, endDate, shiftId])
+  @@map("shift_assignment")
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  date        String // Ensures we only store the date (YYYY-MM-DD)
+  description String // e.g., "Hari Kemerdekaan RI", "Cuti Bersama Idul Fitri"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("holiday")
+}
+
+model AttendanceArea {
+  id        String   @id @default(cuid())
+  // GeoJSON geometry (Point, Polygon, MultiPolygon, etc.)
+  // Example: { "type": "Polygon", "coordinates": [[[lng, lat], [lng, lat], ...]] }
+  geoData   Json // Leaflet-compatible GeoJSON
+  timezone  String   @default("Asia/Makassar") // Default timezone for the area
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("attendance_area")
+}
+
+model FaceDescriptor {
+  id         String   @id @default(cuid())
+  userId     String
+  descriptor Json // JSON array of 68-point face descriptors from face-api.js
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Linked to User
+
+  @@index([userId]) // Added index for better query performance
+  @@map("face_descriptor")
+}
+
+model Attendance {
+  id         String @id @default(cuid())
+  userId     String
+  scheduleId String // Links exactly to which schedule they are fulfilling
+  date       String // Ensures we only store the date (YYYY-MM-DD)
+
+  attendanceTime           DateTime?
+  attendanceLatitude       Float?
+  attendanceLongitude      Float?
+  attendancePhotoUrl       String?
+  attendanceFaceDescriptor Json?
+
+  status AttendanceStatus @default(ABSENT)
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  // Ensure a user can only submit one attendance per specific schedule slot
+  @@unique([userId, scheduleId, date])
+  @@index([userId])
+  @@index([scheduleId])
+  @@index([date])
+  @@map("attendance")
+}
+
+// Location History Model with Network Verification
+model LocationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  latitude  Float
+  longitude Float
+  ipAddress String? // Added: Optional IP Address for fraud and VPN detection
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("location_log")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  SICK
+  EXCUSED
+  ABSENT
+}

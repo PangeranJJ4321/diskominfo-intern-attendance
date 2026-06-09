@@ -1,0 +1,265 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { updateSchedule, deleteSchedule } from "@/lib/services/schedules";
+import type { ScheduleEditDialogProps } from "@/interfaces/admin";
+import { TimePicker } from "@/components/custom/time-picker";
+/**
+ * Component for editing and deleting an existing weekly schedule.
+ *
+ * @param props - Component properties.
+ */
+export default function ScheduleEditDialog({
+  open,
+  onOpenChange,
+  editingSchedule,
+  onSuccessUpdate,
+  onSuccessDelete,
+  dayName,
+}: ScheduleEditDialogProps) {
+  const [name, setName] = useState("");
+  const [windowStart, setWindowStart] = useState("07:00");
+  const [scheduleStart, setScheduleStart] = useState("08:00");
+  const [lateCutoff, setLateCutoff] = useState("08:15");
+  const [scheduleEnd, setScheduleEnd] = useState("17:00");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (editingSchedule && open) {
+      const timer = setTimeout(() => {
+        setName(editingSchedule.name);
+        setWindowStart(editingSchedule.windowStart);
+        setScheduleStart(editingSchedule.scheduleStart);
+        setLateCutoff(editingSchedule.lateCutoff);
+        setScheduleEnd(editingSchedule.scheduleEnd);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [editingSchedule, open]);
+
+  /**
+   * Handles saving the schedule.
+   *
+   * @param e - Form event.
+   */
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSchedule) return;
+    if (!name.trim()) {
+      toast.error("Nama jadwal tidak boleh kosong");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const scheduleData = await updateSchedule(editingSchedule.id, {
+        name: name.trim(),
+        windowStart,
+        scheduleStart,
+        lateCutoff,
+        scheduleEnd,
+      });
+
+      onSuccessUpdate(scheduleData);
+      toast.success("Jadwal mingguan berhasil diperbarui");
+      onOpenChange(false);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Gagal menyimpan jadwal";
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Handles deleting the schedule.
+   */
+  const handleDelete = async () => {
+    if (!editingSchedule) return;
+
+    setIsSubmitting(true);
+    try {
+      await deleteSchedule(editingSchedule.id);
+      onSuccessDelete(editingSchedule.id);
+      toast.success("Jadwal mingguan berhasil dihapus");
+      onOpenChange(false);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus jadwal";
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto scrollbar-none p-4 sm:p-6">
+          <DialogHeader className="space-y-1.5">
+            <DialogTitle className="text-xl font-bold tracking-tight bg-linear-to-r from-foreground to-foreground/80 bg-clip-text">
+              Edit Jadwal Mingguan
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground font-medium">
+              Hari: {dayName}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSave} className="space-y-5 pt-2">
+            <div className="space-y-2">
+              <Label
+                htmlFor="edit-sched-name"
+                className="text-xs font-semibold text-foreground/90 uppercase tracking-wide"
+              >
+                Nama Jadwal / Slot Absen
+              </Label>
+              <Input
+                id="edit-sched-name"
+                placeholder="Misal: Absen Pagi"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isSubmitting}
+                autoFocus
+                className="w-full bg-background border-border hover:border-foreground/20 focus-visible:ring-primary/40 rounded-lg px-4 py-2 transition-all text-sm shadow-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/85">
+                  Tombol Absen Muncul
+                </Label>
+                <TimePicker
+                  value={windowStart}
+                  onChange={setWindowStart}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/85">
+                  Jam Masuk Resmi
+                </Label>
+                <TimePicker
+                  value={scheduleStart}
+                  onChange={setScheduleStart}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/85">
+                  Batas Toleransi Telat
+                </Label>
+                <TimePicker
+                  value={lateCutoff}
+                  onChange={setLateCutoff}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/85">
+                  Batas Akhir Absen
+                </Label>
+                <TimePicker
+                  value={scheduleEnd}
+                  onChange={setScheduleEnd}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between items-stretch sm:items-center pt-2">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setIsConfirmDeleteOpen(true)}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto rounded-lg hover:bg-destructive/95 font-medium transition-all flex items-center justify-center gap-1.5 order-last sm:order-first shadow-sm"
+              >
+                <Trash2 className="size-4" />
+                Hapus
+              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto rounded-lg hover:bg-muted font-medium transition-all"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  disabled={!name.trim() || isSubmitting}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-medium rounded-lg shadow-sm transition-all"
+                >
+                  Simpan
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Delete Schedule Alert Dialog */}
+      <AlertDialog
+        open={isConfirmDeleteOpen}
+        onOpenChange={setIsConfirmDeleteOpen}
+      >
+        <AlertDialogContent className="border border-border bg-card/90 backdrop-blur-md shadow-lg rounded-lg p-6">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-bold">
+              Hapus Jadwal Kerja
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground">
+              Apakah Anda yakin ingin menghapus jadwal
+              <strong> {editingSchedule?.name}</strong>? Jadwal ini tidak akan
+              berlaku lagi untuk shift terkait.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex sm:justify-end gap-2 pt-2">
+            <AlertDialogCancel className="rounded-lg text-xs h-9">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDelete}
+              loading={isSubmitting}
+              className="rounded-lg text-xs h-9 font-semibold"
+            >
+              Hapus Jadwal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

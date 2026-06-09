@@ -47,20 +47,71 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
   const [editingIntern, setEditingIntern] = useState<Intern | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  async function loadData() {
+  /**
+   * Fetches all required data from the API without setting state.
+   *
+   * @returns The fetched interns, agencies, and institutions.
+   */
+  async function fetchAllData() {
+    const [internsData, agenciesData, institutionsData] = await Promise.all([
+      getInterns(),
+      getAgencies(),
+      getInstitutions(),
+    ]);
+    const userInterns = internsData.filter((i) => i.userId === userId);
+    return { userInterns, agenciesData, institutionsData };
+  }
+
+  /**
+   * Applies fetched data to component state.
+   *
+   * @param data - The fetched data to apply.
+   */
+  function applyData(data: {
+    userInterns: Intern[];
+    agenciesData: Agency[];
+    institutionsData: Institution[];
+  }) {
+    setInterns(data.userInterns);
+    setAgencies(data.agenciesData);
+    setInstitutions(data.institutionsData);
+    onInternsChange?.(data.userInterns);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchAllData()
+      .then((data) => {
+        if (cancelled) return;
+        applyData(data);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err.message : "Gagal memuat data magang",
+        );
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  /**
+   * Refreshes all data after a mutation (create, update, or delete).
+   */
+  async function refreshData() {
+    setError("");
+    setLoading(true);
     try {
-      const [internsData, agenciesData, institutionsData] = await Promise.all([
-        getInterns(),
-        getAgencies(),
-        getInstitutions(),
-      ]);
-      const userInterns = internsData.filter((i) => i.userId === userId);
-      setInterns(userInterns);
-      setAgencies(agenciesData);
-      setInstitutions(institutionsData);
-      if (onInternsChange) {
-        onInternsChange(userInterns);
-      }
+      const data = await fetchAllData();
+      applyData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat data magang");
     } finally {
@@ -68,32 +119,29 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
     }
   }
 
-  useEffect(() => {
-    void loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
   /**
    * Handles successful intern creation.
    *
-   * @param intern - The created intern.
+   * @param _intern - The created intern (unused, kept for callback compatibility).
    */
-  function handleCreate(intern: Intern) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function handleCreate(_intern: Intern) {
     setCreateOpen(false);
     toast.success("Data magang berhasil ditambahkan");
-    void loadData();
+    void refreshData();
   }
 
   /**
    * Handles successful intern update.
    *
-   * @param intern - The updated intern.
+   * @param _intern - The updated intern (unused, kept for callback compatibility).
    */
-  function handleUpdate(intern: Intern) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function handleUpdate(_intern: Intern) {
     setEditOpen(false);
     setEditingIntern(null);
     toast.success("Data magang berhasil diperbarui");
-    void loadData();
+    void refreshData();
   }
 
   /**
@@ -107,7 +155,7 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
       toast.success("Data magang berhasil dihapus");
       setEditOpen(false);
       setEditingIntern(null);
-      void loadData();
+      void refreshData();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Gagal menghapus data magang",
@@ -136,7 +184,11 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={() => void loadData()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshData()}
+            >
               Coba lagi
             </Button>
           </div>

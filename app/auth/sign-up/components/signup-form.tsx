@@ -62,7 +62,7 @@ export function SignUpForm({
     }
 
     toast.success("Akun berhasil dibuat. Selamat datang!");
-    router.push(signUpData?.user.id ? "/dashboard" : "/");
+    router.push(signUpData?.user.id ? "/" : "/");
   };
 
   /**
@@ -74,7 +74,7 @@ export function SignUpForm({
   const handleGoogleSignUp = async () => {
     await signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/",
     });
   };
 

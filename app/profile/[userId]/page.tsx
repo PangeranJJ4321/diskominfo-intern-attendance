@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/custom/navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,7 @@ import { type ProfilePageProps } from "@/interfaces/profile";
  */
 export default function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = use(params);
+  const router = useRouter();
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [interns, setInterns] = useState<Intern[]>([]);
@@ -137,7 +139,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               {!internsLoading && (
                 <FaceRegister
                   user={user}
-                  onUpdate={handleUserUpdate}
+                  onUpdate={(updatedUser: ProfileUser) => {
+                    handleUserUpdate(updatedUser);
+                    router.push("/dashboard");
+                  }}
                   openByDefault={hasInterns && !hasFaceDescriptor}
                 />
               )}

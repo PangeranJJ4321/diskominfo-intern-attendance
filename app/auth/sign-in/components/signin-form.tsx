@@ -49,14 +49,14 @@ export function SignInForm({
       return;
     }
 
-    router.push(signInData?.user.id ? "/dashboard" : "/");
+    router.push(signInData?.user.id ? "/" : "/");
   };
 
   // 4. Google OAuth Handler
   const handleGoogleSignIn = async () => {
     await signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/",
     });
   };
 

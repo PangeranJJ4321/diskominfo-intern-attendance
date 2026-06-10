@@ -103,7 +103,7 @@ export default function UserAttendancesCard() {
         }
       } catch (err) {
         console.error("Gagal memuat data", err);
-        toast.error("Gagal memuat data karyawan");
+        toast.error("Gagal memuat data peserta magang");
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -195,12 +195,12 @@ export default function UserAttendancesCard() {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Column Skeleton */}
-        <Card className="lg:col-span-1 flex flex-col p-4 gap-4">
+        <Card className="lg:col-span-1 flex flex-col p-4 gap-4 h-87.5 lg:h-auto">
           <div className="space-y-2">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-9 w-full rounded-lg" />
           </div>
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 pt-2 overflow-hidden">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
@@ -246,100 +246,103 @@ export default function UserAttendancesCard() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Left Sidebar: Employee List */}
-      <Card className="lg:col-span-1 flex flex-col overflow-hidden p-4">
-        <div className="space-y-3 pb-3 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-foreground">
-              Daftar Karyawan
-            </h3>
-            <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={() => setIsExportOpen(true)}
-                className="h-7 rounded-lg border-border text-xs flex items-center gap-1 font-semibold px-2"
-                title="Ekspor Data Presensi"
-              >
-                <Download className="size-3.5" />
-                Ekspor
-              </Button>
-            </div>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
-            <Input
-              placeholder="Cari nama atau email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-background/50 border-border rounded-lg text-xs h-9"
-            />
-          </div>
-        </div>
-
-        {/* Scrollable List */}
-        <div className="flex-1 overflow-y-auto pt-3 space-y-1.5 pr-1">
-          {filteredUsers.length === 0 ? (
-            <div className="text-center text-xs text-muted-foreground py-8">
-              Tidak ada karyawan ditemukan
-            </div>
-          ) : (
-            filteredUsers.map((user) => {
-              const isSelected = selectedUser?.id === user.id;
-              const todayStr = format(new Date(), "yyyy-MM-dd");
-              const userAssigns = assignments.filter(
-                (a) =>
-                  a.intern?.userId === user.id &&
-                  a.startDate <= todayStr &&
-                  (!a.endDate || a.endDate >= todayStr),
-              );
-              const userShiftNames = userAssigns
-                .map((a) => shifts.find((s) => s.id === a.shiftId)?.name)
-                .filter(Boolean)
-                .join(", ");
-
-              return (
-                <div
-                  key={user.id}
-                  onClick={() => setSelectedUser(user)}
-                  className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none border text-left ${
-                    isSelected
-                      ? "bg-primary/10 border-primary/25"
-                      : "bg-transparent border-transparent hover:bg-muted/40"
-                  }`}
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
+      {/* Left Sidebar: Employee List Wrapper */}
+      {/* Added h-[350px] for mobile constraint, reverting to lg:h-auto for desktop */}
+      <div className="lg:col-span-1 relative h-87.5 lg:h-auto lg:min-h-0">
+        <Card className="flex flex-col overflow-hidden p-4 w-full h-full lg:absolute lg:inset-0">
+          <div className="space-y-3 pb-3 border-b border-border/40 shrink-0">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-foreground">
+                Daftar Peserta Magang
+              </h3>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsExportOpen(true)}
+                  className="h-7 rounded-lg border-border text-xs flex items-center gap-1 font-semibold px-2"
+                  title="Ekspor Data Presensi"
                 >
-                  <Avatar className="size-8.5 shrink-0 border border-border/45">
-                    <AvatarImage
-                      src={user.image || undefined}
-                      alt={user.name}
-                    />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-extrabold">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate text-xs font-bold text-foreground">
-                      {user.name}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {userShiftNames || "Belum ada shift"}
-                    </span>
+                  <Download className="size-3.5" />
+                  Ekspor
+                </Button>
+              </div>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
+              <Input
+                placeholder="Cari nama atau email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background/50 border-border rounded-lg text-xs h-9"
+              />
+            </div>
+          </div>
+
+          {/* Scrollable List with Custom Thin Scrollbar */}
+          <div className="flex-1 overflow-y-auto pt-3 space-y-1.5 pr-2 -mr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full scrollbar-thin">
+            {filteredUsers.length === 0 ? (
+              <div className="text-center text-xs text-muted-foreground py-8">
+                Tidak ada peserta magang ditemukan
+              </div>
+            ) : (
+              filteredUsers.map((user) => {
+                const isSelected = selectedUser?.id === user.id;
+                const todayStr = format(new Date(), "yyyy-MM-dd");
+                const userAssigns = assignments.filter(
+                  (a) =>
+                    a.intern?.userId === user.id &&
+                    a.startDate <= todayStr &&
+                    (!a.endDate || a.endDate >= todayStr),
+                );
+                const userShiftNames = userAssigns
+                  .map((a) => shifts.find((s) => s.id === a.shiftId)?.name)
+                  .filter(Boolean)
+                  .join(", ");
+
+                return (
+                  <div
+                    key={user.id}
+                    onClick={() => setSelectedUser(user)}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none border text-left ${
+                      isSelected
+                        ? "bg-primary/10 border-primary/25"
+                        : "bg-transparent border-transparent hover:bg-muted/40"
+                    }`}
+                  >
+                    <Avatar className="size-8.5 shrink-0 border border-border/45">
+                      <AvatarImage
+                        src={user.image || undefined}
+                        alt={user.name}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-extrabold">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="truncate text-xs font-bold text-foreground">
+                        {user.name}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {userShiftNames || "Belum ada shift"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </Card>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      </div>
 
       {/* Right Column: Attendance & Shift Controls */}
-      <Card className="lg:col-span-3 overflow-hidden p-6 flex flex-col">
+      <Card className="lg:col-span-3 overflow-hidden p-6 flex flex-col min-h-0">
         {selectedUser ? (
           <div className="space-y-5 flex-1 flex flex-col min-h-0">
             {/* Top Bar: User Details + Shift Assignment Action */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/20 p-4 rounded-lg border border-border">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/20 p-4 rounded-lg border border-border shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar className="size-11 shrink-0 border border-border/60">
                   <AvatarImage
@@ -401,7 +404,7 @@ export default function UserAttendancesCard() {
                       : "Riwayat Presensi Bulanan"}
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    Klik hari kerja untuk mengoverride presensi karyawan.
+                    Klik hari kerja untuk mengoverride presensi peserta magang.
                   </p>
                 </div>
 
@@ -476,7 +479,7 @@ export default function UserAttendancesCard() {
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
             <CalendarDays className="size-10 text-muted-foreground/40" />
             <p className="text-xs">
-              Silakan pilih karyawan di sebelah kiri untuk melihat detail
+              Silakan pilih peserta magang di sebelah kiri untuk melihat detail
               presensi.
             </p>
           </div>

@@ -48,11 +48,10 @@ export function SignUpForm({
   const onSubmit = async (data: SignUpFormValues) => {
     setSubmitError("");
 
-    const { error: signUpError } = await signUp.email({
+    const { data: signUpData, error: signUpError } = await signUp.email({
       email: data.email,
       password: data.password,
       name: data.name,
-      callbackURL: "/",
     });
 
     if (signUpError) {
@@ -63,7 +62,7 @@ export function SignUpForm({
     }
 
     toast.success("Akun berhasil dibuat. Selamat datang!");
-    router.push("/");
+    router.push(signUpData?.user.id ? "/dashboard" : "/");
   };
 
   /**
@@ -75,7 +74,7 @@ export function SignUpForm({
   const handleGoogleSignUp = async () => {
     await signIn.social({
       provider: "google",
-      callbackURL: "/",
+      callbackURL: "/dashboard",
     });
   };
 

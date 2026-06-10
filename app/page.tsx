@@ -170,14 +170,14 @@ export default function HomePage() {
             <Button
               variant="ghost"
               onClick={() => scrollToSection("features")}
-              className="justify-start text-background hover:text-foreground"
+              className="justify-start text-foreground hover:text-foreground/90"
             >
               Fitur
             </Button>
             <Button
               variant="ghost"
               onClick={() => scrollToSection("how-it-works")}
-              className="justify-start text-background hover:text-foreground"
+              className="justify-start text-foreground hover:text-foreground/90"
             >
               Cara Kerja
             </Button>

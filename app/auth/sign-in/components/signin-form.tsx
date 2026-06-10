@@ -16,12 +16,14 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { signInSchema, type SignInFormValues } from "@/lib/schemas/auth-schema";
 
 export function SignInForm({
   className,
   ...props
 }: Omit<React.ComponentProps<"form">, "onSubmit">) {
+  const router = useRouter();
   const [submitError, setSubmitError] = useState("");
 
   // 2. Initialize React Hook Form using the Zod resolver
@@ -37,23 +39,24 @@ export function SignInForm({
   const onSubmit = async (data: SignInFormValues) => {
     setSubmitError("");
 
-    const { error: signInError } = await signIn.email({
+    const { data: signInData, error: signInError } = await signIn.email({
       email: data.email,
       password: data.password,
-      callbackURL: "/",
     });
 
     if (signInError) {
       setSubmitError(signInError.message || "Email atau kata sandi salah.");
       return;
     }
+
+    router.push(signInData?.user.id ? "/dashboard" : "/");
   };
 
   // 4. Google OAuth Handler
   const handleGoogleSignIn = async () => {
     await signIn.social({
       provider: "google",
-      callbackURL: "/",
+      callbackURL: "/dashboard",
     });
   };
 

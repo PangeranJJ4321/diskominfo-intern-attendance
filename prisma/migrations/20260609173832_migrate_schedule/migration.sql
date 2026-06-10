@@ -79,11 +79,11 @@ SELECT
     s.id,
     ags.name,
     ags."dayOfWeek",
-    ags."agencyScheduleStart" || ':00' AS "windowStart",
-    ags."agencyScheduleStart" || ':00' AS "scheduleStart",
-    ags."agencyScheduleEnd" || ':00'   AS "lateCutoff",
+    SPLIT_PART(ags."agencyScheduleStart", ':', 1) || ':' || SPLIT_PART(ags."agencyScheduleStart", ':', 2) || ':00' AS "windowStart",
+    SPLIT_PART(ags."agencyScheduleStart", ':', 1) || ':' || SPLIT_PART(ags."agencyScheduleStart", ':', 2) || ':00' AS "scheduleStart",
+    SPLIT_PART(ags."agencyScheduleEnd", ':', 1)   || ':' || SPLIT_PART(ags."agencyScheduleEnd", ':', 2)   || ':00' AS "lateCutoff",
     TO_CHAR(
-        (ags."agencyScheduleEnd" || ':00')::time
+        (SPLIT_PART(ags."agencyScheduleEnd", ':', 1) || ':' || SPLIT_PART(ags."agencyScheduleEnd", ':', 2) || ':00')::time
         + (COALESCE(ar."lateToleranceMinutes", 0) * INTERVAL '1 minute'),
         'HH24:MI:SS'
     )                                  AS "scheduleEnd",

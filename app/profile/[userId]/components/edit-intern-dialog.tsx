@@ -18,16 +18,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { updateIntern } from "@/lib/services/interns";
 import { toast } from "sonner";
 import type { EditInternDialogProps } from "@/interfaces/profile";
+import type { DateRange } from "react-day-picker";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Dialog for editing an existing intern record with agency, institution, and date range selection.
@@ -48,14 +50,13 @@ export function EditInternDialog({
   const [institutionId, setInstitutionId] = useState(
     intern.institutionId ?? "",
   );
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    intern.startedAt ? new Date(intern.startedAt) : undefined,
-  );
-  const [endDate, setEndDate] = useState<Date | undefined>(
-    intern.finishedAt ? new Date(intern.finishedAt) : undefined,
-  );
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: intern.startedAt ? new Date(intern.startedAt) : undefined,
+    to: intern.finishedAt ? new Date(intern.finishedAt) : undefined,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const isMobile = useIsMobile();
 
   /** Handles form submission */
   async function handleSubmit() {
@@ -63,7 +64,7 @@ export function EditInternDialog({
       setError("Pilih instansi tujuan magang.");
       return;
     }
-    if (!startDate) {
+    if (!dateRange?.from) {
       setError("Pilih tanggal mulai magang.");
       return;
     }
@@ -75,8 +76,8 @@ export function EditInternDialog({
       const payload: Record<string, unknown> = {
         agencyId,
         institutionId: institutionId || null,
-        startedAt: startDate.toISOString(),
-        finishedAt: endDate ? endDate.toISOString() : null,
+        startedAt: dateRange.from.toISOString(),
+        finishedAt: dateRange.to ? dateRange.to.toISOString() : null,
       };
 
       const result = await updateIntern(intern.id, payload);
@@ -89,6 +90,21 @@ export function EditInternDialog({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  /**
+   * Formats the date range for display.
+   *
+   * @param range - The date range to format.
+   * @returns The formatted date range string.
+   */
+  function formatDateRange(range: DateRange | undefined): string {
+    if (!range?.from) return "Pilih durasi magang";
+    const fmt = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
+    if (range.to && range.from.getTime() !== range.to.getTime()) {
+      return `${fmt.format(range.from)} — ${fmt.format(range.to)}`;
+    }
+    return fmt.format(range.from);
   }
 
   return (
@@ -106,7 +122,7 @@ export function EditInternDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-agency-select">Instansi Tujuan</Label>
             <Select value={agencyId} onValueChange={setAgencyId}>
-              <SelectTrigger id="edit-agency-select">
+              <SelectTrigger id="edit-agency-select" className="w-full">
                 <SelectValue placeholder="Pilih instansi tujuan" />
               </SelectTrigger>
               <SelectContent>
@@ -123,7 +139,7 @@ export function EditInternDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-institution-select">Institusi Asal</Label>
             <Select value={institutionId} onValueChange={setInstitutionId}>
-              <SelectTrigger id="edit-institution-select">
+              <SelectTrigger id="edit-institution-select" className="w-full">
                 <SelectValue placeholder="Pilih institusi asal (opsional)" />
               </SelectTrigger>
               <SelectContent>
@@ -136,62 +152,31 @@ export function EditInternDialog({
             </Select>
           </div>
 
-          {/* Date Range: Start Date */}
+          {/* Date Range Picker */}
           <div className="space-y-2">
-            <Label>Tanggal Mulai Magang</Label>
+            <Label>Durasi Magang</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !startDate && "text-muted-foreground",
+                    !dateRange?.from && "text-muted-foreground",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate
-                    ? new Intl.DateTimeFormat("id-ID", {
-                        dateStyle: "medium",
-                      }).format(startDate)
-                    : "Pilih tanggal mulai"}
+                  {formatDateRange(dateRange)}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-auto max-w-[calc(100vw-3rem)] overflow-auto p-0"
+                align="start"
+              >
                 <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={setStartDate}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Date Range: End Date */}
-          <div className="space-y-2">
-            <Label>Tanggal Selesai Magang (Opsional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !endDate && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate
-                    ? new Intl.DateTimeFormat("id-ID", {
-                        dateStyle: "medium",
-                      }).format(endDate)
-                    : "Pilih tanggal selesai"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={setEndDate}
-                  disabled={startDate ? { before: startDate } : undefined}
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={isMobile ? 1 : 2}
                 />
               </PopoverContent>
             </Popover>

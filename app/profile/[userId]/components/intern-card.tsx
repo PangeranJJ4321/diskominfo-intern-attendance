@@ -4,18 +4,42 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { getInterns } from "@/lib/services/interns";
 import { getAgencies } from "@/lib/services/agencies";
 import { getInstitutions } from "@/lib/services/institutions";
+import { deleteIntern } from "@/lib/services/interns";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
 import { CreateInternDialog } from "./create-intern-dialog";
+import { EditInternDialog } from "./edit-intern-dialog";
 import { toast } from "sonner";
 import type { Intern, Agency, Institution } from "@/interfaces/models";
 import type { InternCardProps } from "@/interfaces/profile";
 
 /**
+ * Checks whether the given intern record is currently active (today is within its date range).
+ *
+ * @param intern - The intern to check.
+ * @returns True if the current date falls between startedAt and finishedAt (inclusive), or if finishedAt is null and today is on or after startedAt.
+ */
+function isInternActive(intern: Intern): boolean {
+  const now = new Date();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const started = new Date(intern.startedAt).getTime();
+  if (intern.finishedAt) {
+    const finished = new Date(intern.finishedAt).getTime();
+    return today >= started && today <= finished;
+  }
+  return today >= started;
+}
+
+/**
  * Displays intern data for a user and allows create/edit/delete operations.
+ * Shows "Edit" button when there is an active intern, "Tambah" button otherwise.
  *
  * @param {InternCardProps} props - The component props.
  * @param {string} props.userId - The user ID.
@@ -29,6 +53,10 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  /** The currently active intern, if any */
+  const activeIntern = interns.find((i) => isInternActive(i)) ?? null;
 
   /**
    * Fetches all required data from the API without setting state.
@@ -107,14 +135,49 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
 
   /**
    * Handles successful intern creation.
-   *
-   * @param _intern - The created intern (unused, kept for callback compatibility).
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function handleCreate(_intern: Intern) {
+  function handleCreate() {
     setCreateOpen(false);
     toast.success("Data magang berhasil ditambahkan");
     void refreshData();
+  }
+
+  /**
+   * Handles successful intern update.
+   */
+  function handleEdit() {
+    setEditOpen(false);
+    toast.success("Data magang berhasil diperbarui");
+    void refreshData();
+  }
+
+  /**
+   * Handles intern deletion with confirmation.
+   *
+   * @param internId - The ID of the intern to delete.
+   */
+  async function handleDelete(internId: string) {
+    try {
+      await deleteIntern(internId);
+      setEditOpen(false);
+      toast.success("Data magang berhasil dihapus");
+      void refreshData();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Gagal menghapus data magang",
+      );
+    }
+  }
+
+  /**
+   * Opens the appropriate dialog based on whether there is an active intern.
+   */
+  function openDialog() {
+    if (activeIntern) {
+      setEditOpen(true);
+    } else {
+      setCreateOpen(true);
+    }
   }
 
   if (loading) {
@@ -161,13 +224,18 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
               Kelola institusi dan instansi magang Anda.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Tambah
+          <Button variant="outline" size="sm" onClick={openDialog}>
+            {activeIntern ? (
+              <>
+                <Pencil className="mr-1.5 h-4 w-4" />
+                Edit
+              </>
+            ) : (
+              <>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Tambah
+              </>
+            )}
           </Button>
         </div>
 
@@ -193,6 +261,19 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
           open={createOpen}
           onOpenChange={setCreateOpen}
         />
+
+        {/* Edit Intern Dialog (only when there is an active intern) */}
+        {activeIntern && (
+          <EditInternDialog
+            intern={activeIntern}
+            agencies={agencies}
+            institutions={institutions}
+            onSuccess={handleEdit}
+            onDelete={handleDelete}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+          />
+        )}
       </CardContent>
     </Card>
   );

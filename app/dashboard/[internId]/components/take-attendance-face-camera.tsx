@@ -238,6 +238,7 @@ export default function TakeAttendanceFaceCamera({
                     src={fileState.files[0].preview ?? ""}
                     alt="Captured face snapshot"
                     fill
+                    sizes="(max-width: 640px) calc(95vw - 2rem), 26rem"
                     unoptimized
                     className="w-full h-full object-cover"
                   />

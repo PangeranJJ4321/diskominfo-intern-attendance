@@ -197,6 +197,7 @@ export default function UserAttendanceEditDialog({
                 src={existingAttendance.attendancePhotoUrl}
                 alt="Foto Presensi"
                 fill
+                sizes="(max-width: 640px) calc(95vw - 2rem), 26rem"
                 className="object-cover animate-in fade-in zoom-in-95 duration-200"
               />
             </div>

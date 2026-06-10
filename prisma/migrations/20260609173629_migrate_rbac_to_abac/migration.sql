@@ -1,7 +1,7 @@
 -- Give SUPERADMIN users access to all agencies (RBAC to ABAC data migration)
 INSERT INTO "agency_access" ("id", "agencyId", "userId", "createdAt", "updatedAt")
 SELECT 
-  gen_random_uuid()::text,
+  'c' || SUBSTR(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT), 1, 24),
   a.id,
   u.id,
   NOW(),

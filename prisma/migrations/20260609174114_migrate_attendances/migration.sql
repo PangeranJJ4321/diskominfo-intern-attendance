@@ -63,7 +63,7 @@ ALTER TABLE "shift_assignment" ADD CONSTRAINT "shift_assignment_shiftId_fkey"
 --     using intern.startedAt as startDate and intern.finishedAt as endDate
 INSERT INTO "shift_assignment" ("id", "internId", "shiftId", "startDate", "endDate")
 SELECT
-    gen_random_uuid()::text,
+    'c' || SUBSTR(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT), 1, 24),
     i.id,
     s.id,
     TO_CHAR(i."startedAt", 'YYYY-MM-DD'),

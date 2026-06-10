@@ -52,7 +52,7 @@ ALTER TABLE "schedule" ADD CONSTRAINT "schedule_shiftId_fkey"
 -- 6. Create one default shift per agency
 INSERT INTO "shift" ("id", "agencyId", "name", "workOnHolidays")
 SELECT
-    gen_random_uuid()::text,
+    'c' || SUBSTR(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT), 1, 24),
     id,
     'Default Shift',
     false

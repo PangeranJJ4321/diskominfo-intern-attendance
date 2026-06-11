@@ -48,7 +48,7 @@ export function SignUpForm({
   const onSubmit = async (data: SignUpFormValues) => {
     setSubmitError("");
 
-    const { data: signUpData, error: signUpError } = await signUp.email({
+    const { error: signUpError } = await signUp.email({
       email: data.email,
       password: data.password,
       name: data.name,

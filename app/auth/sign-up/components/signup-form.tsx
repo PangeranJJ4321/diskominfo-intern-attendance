@@ -62,7 +62,7 @@ export function SignUpForm({
     }
 
     toast.success("Akun berhasil dibuat. Selamat datang!");
-    router.push(signUpData?.user.id ? "/" : "/");
+    router.push("/");
   };
 
   /**

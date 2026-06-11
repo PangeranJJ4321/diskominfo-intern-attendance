@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { getAgencyAccesses } from "@/lib/services/agency-accesses";
 import { Logo } from "@/components/custom/logo";
 import { NavbarAvatar } from "@/components/custom/navbar-avatar";
 import { Button } from "@/components/ui/button";
@@ -41,9 +43,35 @@ import {
  * @returns {React.JSX.Element} The rendered landing page.
  */
 export default function HomePage() {
+  const router = useRouter();
   const { data: session, isPending } = useSession();
   const user = session?.user ?? null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  /**
+   * Redirects authenticated users to /admin or /dashboard
+   * based on whether they have AgencyAccess records.
+   */
+  useEffect(() => {
+    if (isPending) return;
+    if (!session?.user) return;
+
+    async function redirectBasedOnAccess() {
+      try {
+        const accesses = await getAgencyAccesses();
+        if (accesses.length > 0) {
+          router.replace("/admin");
+        } else {
+          router.replace("/dashboard");
+        }
+      } catch {
+        // If the access check fails, default to dashboard.
+        router.replace("/dashboard");
+      }
+    }
+
+    void redirectBasedOnAccess();
+  }, [isPending, session, router]);
 
   /**
    * Scrolls smoothly to a specific page section.

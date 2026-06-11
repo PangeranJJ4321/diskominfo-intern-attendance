@@ -49,7 +49,7 @@ export function SignInForm({
       return;
     }
 
-    router.push(signInData?.user.id ? "/" : "/");
+    router.push("/");
   };
 
   // 4. Google OAuth Handler

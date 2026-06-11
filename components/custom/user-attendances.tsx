@@ -8,16 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeFromApi } from "@/lib/time-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-import { getSchedules } from "@/lib/services/schedules";
-import { getShiftAssignments } from "@/lib/services/shift-assignments";
-import { getAttendancesForUser } from "@/lib/services/attendances";
-import { getHolidays } from "@/lib/services/holidays";
-import type {
-  Schedule,
-  ShiftAssignment,
-  Attendance,
-  Holiday,
-} from "@/interfaces/models";
+import { useScheduleStore } from "@/stores/schedule-store";
+import { useAssignmentStore } from "@/stores/assignment-store";
+import { useAttendanceStore } from "@/stores/attendance-store";
+import { useHolidayStore } from "@/stores/holiday-store";
+import type { ShiftAssignment } from "@/interfaces/models";
 import type { UserAttendancesProps } from "@/interfaces/custom";
 import {
   AttendanceStatus,
@@ -26,25 +21,28 @@ import {
 
 /**
  * Renders the calendar of user attendance history for the specified user and month.
+ * Data is read from granular Zustand stores: schedule-store, assignment-store,
+ * attendance-store, and holiday-store. Zustand reactivity handles re-renders.
  *
  * @param {UserAttendancesProps} props - The component props.
- * @param {string} props.userId - The ID of the user.
- * @param {Date} props.currentMonth - The current month to display.
- * @param {function} [props.onDayClick] - Callback called when a day cell is clicked.
- * @param {number} [props.refreshTrigger=0] - A trigger value to reload the data.
  * @returns {React.JSX.Element} The rendered user attendance calendar.
  */
 export default function UserAttendances({
   userId,
   currentMonth,
   onDayClick,
-  refreshTrigger = 0,
 }: UserAttendancesProps) {
+  // ── Granular Zustand stores ──
+  const schedules = useScheduleStore((s) => s.schedules);
+  const fetchSchedules = useScheduleStore((s) => s.fetchSchedules);
+  const assignments = useAssignmentStore((s) => s.assignments);
+  const fetchAssignments = useAssignmentStore((s) => s.fetchAssignments);
+  const attendances = useAttendanceStore((s) => s.attendances);
+  const fetchAttendances = useAttendanceStore((s) => s.fetchAttendances);
+  const holidays = useHolidayStore((s) => s.holidays);
+  const fetchHolidays = useHolidayStore((s) => s.fetchHolidays);
+
   const isMobile = useIsMobile();
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -78,34 +76,37 @@ export default function UserAttendances({
     async function loadData() {
       setLoading(true);
       try {
-        const [schedsData, assignsData, attsData, holsData] = await Promise.all(
-          [
-            getSchedules(),
-            getShiftAssignments(1000, startDate, endDate),
-            getAttendancesForUser(userId, 1000, startDate, endDate),
-            getHolidays(1000, startDate, endDate),
-          ],
-        );
+        const relevantDays = Array.from({ length: 7 }, (_, i) => i);
+        await Promise.all([
+          fetchSchedules(1000, relevantDays),
+          fetchAssignments(1000, startDate, endDate),
+          fetchAttendances(userId, 1000, startDate, endDate),
+          fetchHolidays(1000, startDate, endDate),
+        ]);
         if (!cancelled) {
-          setSchedules(schedsData);
-          setAssignments(assignsData);
-          setAttendances(attsData);
-          setHolidays(holsData);
+          setLoading(false);
         }
       } catch (err) {
         console.error("Gagal memuat data presensi pengguna", err);
-      } finally {
         if (!cancelled) {
           setLoading(false);
         }
       }
     }
-    loadData();
+    void loadData();
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [userId, refreshTrigger, currentMonth, isMobile]);
+  }, [
+    userId,
+    currentMonth,
+    isMobile,
+    fetchSchedules,
+    fetchAssignments,
+    fetchAttendances,
+    fetchHolidays,
+  ]);
 
   if (!isClient || loading) {
     if (isMobile) {

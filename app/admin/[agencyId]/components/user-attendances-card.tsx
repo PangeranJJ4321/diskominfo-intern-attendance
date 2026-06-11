@@ -447,7 +447,6 @@ export default function UserAttendancesCard() {
                 userId={selectedUser.id}
                 currentMonth={currentMonth}
                 onDayClick={handleCalendarDayClick}
-                refreshTrigger={refreshCounter}
               />
 
               {/* Attendance Legend */}

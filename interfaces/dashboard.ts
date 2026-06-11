@@ -4,7 +4,22 @@ import { AttendanceStatus, type AttendanceStatusType } from "./enums";
 /** Props for the AttendanceHistoriesCard component. */
 export interface AttendanceHistoriesCardProps {
   userId: string;
-  refreshTrigger: number;
+}
+
+/** Props for the TakeAttendanceList component. */
+export interface TakeAttendanceListProps {
+  userId: string;
+  userName: string;
+  agencyRule: AgencyRule | null;
+}
+
+/** Props for the TakeAttendanceCard component. */
+export interface TakeAttendanceCardProps {
+  schedule: Schedule;
+  userId: string;
+  userName: string;
+  workDate?: string;
+  className?: string;
   agencyRule: AgencyRule | null;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -37,48 +37,44 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import { createAttendance } from "@/lib/services/attendances";
-import type { Schedule, Attendance, AgencyRule } from "@/interfaces/models";
 import {
   AttendanceStatus,
   getAttendanceStatusLabel,
   getAttendanceStatusButtonStyles,
   type AttendanceStatusType,
 } from "@/interfaces/enums";
+import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import { useLocationStore } from "@/stores/location-store";
+import { useAttendanceStore } from "@/stores/attendance-store";
 import TakeAttendanceFaceCamera from "./take-attendance-face-camera";
-
-/** Props for TakeAttendanceCard (location comes from Zustand store) */
-interface TakeAttendanceCardProps {
-  schedule: Schedule;
-  attendances: Attendance[];
-  userId: string;
-  userName: string;
-  userHasFaceRegistered: boolean;
-  onAttendanceSuccess: () => void;
-  refreshTrigger: number;
-  workDate?: string;
-  className?: string;
-  /** Agency rule to control whether face & geofence validations are enforced on the client side */
-  agencyRule: AgencyRule | null;
-}
 
 function formatTimeLabel(value: string): string {
   return value.length >= 5 ? value.slice(0, 5) : value;
 }
 
+/**
+ * Renders a single attendance card for a specific schedule.
+ * Reads attendances, face status, and location from Zustand stores.
+ *
+ * @returns The rendered card.
+ */
 export default function TakeAttendanceCard({
   schedule,
-  attendances,
   userId,
-  userHasFaceRegistered,
-  onAttendanceSuccess,
-  refreshTrigger,
   workDate,
   className,
   agencyRule,
 }: TakeAttendanceCardProps) {
+  // ── Location store ──
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
+
+  // ── Attendance store ──
+  const attendances = useAttendanceStore((s) => s.attendances);
+  const userHasFaceRegistered = useAttendanceStore(
+    (s) => s.userHasFaceRegistered,
+  );
+  const refreshAttendances = useAttendanceStore((s) => s.refreshAttendances);
 
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
@@ -106,16 +102,13 @@ export default function TakeAttendanceCard({
     };
   }, []);
 
-  // Fetch database records
-  useEffect(() => {}, [refreshTrigger]);
-
   const todayDateStr = useMemo(() => {
     if (workDate) return workDate;
     if (!time) return "";
     return format(time, "yyyy-MM-dd");
   }, [time, workDate]);
 
-  // Find if today's attendance has already been recorded
+  // ── Find if today's attendance has already been recorded ──
   const attendanceRecord = useMemo(() => {
     if (!schedule || !todayDateStr) return null;
     return (
@@ -128,7 +121,7 @@ export default function TakeAttendanceCard({
     );
   }, [attendances, schedule, userId, todayDateStr]);
 
-  // Timing states
+  // ── Timing states ──
   const timingStates = useMemo(() => {
     if (!time) {
       return {
@@ -212,114 +205,132 @@ export default function TakeAttendanceCard({
 
   const canOpenAttendanceMenu = !isAttendanceRecorded && !isSubmitting;
 
-  async function handleSubmitAttendance(
-    status: AttendanceStatusType,
-    attendanceNotes: string,
-    attendanceFaceDescriptor: number[] | null = null,
-    photoUrl: string | null = null,
-  ) {
-    if (!time) return;
+  /**
+   * Submits an attendance record, then invalidates the attendance store.
+   */
+  const handleSubmitAttendance = useCallback(
+    async (
+      status: AttendanceStatusType,
+      attendanceNotes: string,
+      attendanceFaceDescriptor: number[] | null = null,
+      photoUrl: string | null = null,
+    ) => {
+      if (!time) return;
 
-    const isExcusedOrSick =
-      status === AttendanceStatus.EXCUSED || status === AttendanceStatus.SICK;
+      const isExcusedOrSick =
+        status === AttendanceStatus.EXCUSED || status === AttendanceStatus.SICK;
 
-    // Geofence check — only if agency rule requires it (default: true)
-    if (!isExcusedOrSick && agencyRule?.requireWithinArea !== false) {
-      if (isWithinGeofence === null) {
-        toast.error(
-          "GPS belum terdeteksi. Silakan aktifkan GPS atau tunggu sebentar.",
+      if (!isExcusedOrSick) {
+        if (isWithinGeofence === null) {
+          toast.error(
+            "GPS belum terdeteksi. Silakan aktifkan GPS atau tunggu sebentar.",
+          );
+          return;
+        }
+
+        if (isWithinGeofence === false) {
+          toast.error("Presensi wajib dilakukan di dalam area kantor.");
+          return;
+        }
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        const now = new Date();
+
+        // Resolve internId from userId (required by this repo's schema)
+        const { getInterns } = await import("@/lib/services/interns");
+        const interns = await getInterns(1000);
+        const intern = interns.find((i) => i.userId === userId);
+        if (!intern) {
+          toast.error("Data magang tidak ditemukan.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        await createAttendance({
+          internId: intern.id,
+          scheduleId: schedule.id,
+          date: todayDateStr,
+          attendanceTime: now.toISOString(),
+          attendanceLatitude:
+            !isExcusedOrSick && currentLocation
+              ? currentLocation.latitude
+              : null,
+          attendanceLongitude:
+            !isExcusedOrSick && currentLocation
+              ? currentLocation.longitude
+              : null,
+          attendancePhotoUrl:
+            status === AttendanceStatus.PRESENT ||
+            status === AttendanceStatus.LATE
+              ? (photoUrl ?? null)
+              : null,
+          attendanceFaceDescriptor:
+            status === AttendanceStatus.PRESENT ||
+            status === AttendanceStatus.LATE
+              ? (attendanceFaceDescriptor ?? null)
+              : null,
+          status,
+          notes: attendanceNotes.trim() ? attendanceNotes.trim() : null,
+        });
+
+        toast.success(
+          `Presensi ${getAttendanceStatusLabel(status)} berhasil dikirim!`,
         );
-        return;
+
+        // Invalidate the attendance store so calendar components re-render
+        void refreshAttendances(userId, 1000, todayDateStr, todayDateStr);
+
+        setSelectedStatus(null);
+        setNotes("");
+        setCapturedPhotoUrl(null);
+        setCapturedDescriptor(null);
+      } catch (err) {
+        const errorMsg =
+          err instanceof Error ? err.message : "Gagal mengirim presensi.";
+        toast.error(errorMsg);
+      } finally {
+        setIsSubmitting(false);
       }
+    },
+    [
+      time,
+      isWithinGeofence,
+      currentLocation,
+      userId,
+      schedule.id,
+      todayDateStr,
+      refreshAttendances,
+    ],
+  );
 
-      if (isWithinGeofence === false) {
-        toast.error("Presensi wajib dilakukan di dalam area kantor.");
-        return;
+  const handleFaceDescriptorCaptured = useCallback(
+    (photoUrl: string, faceDescriptor: number[]) => {
+      setIsFaceCameraOpen(false);
+      setCapturedPhotoUrl(photoUrl);
+      setCapturedDescriptor(faceDescriptor);
+
+      if (isLateNow) {
+        setSelectedStatus(AttendanceStatus.LATE);
+        setNotes("");
+      } else {
+        void handleSubmitAttendance(
+          AttendanceStatus.PRESENT,
+          "",
+          faceDescriptor,
+          photoUrl,
+        );
       }
-    }
+    },
+    [handleSubmitAttendance, isLateNow],
+  );
 
-    setIsSubmitting(true);
-
-    try {
-      const now = new Date();
-
-      // Resolve internId from userId
-      const { getInterns } = await import("@/lib/services/interns");
-      const interns = await getInterns(1000);
-      const intern = interns.find((i) => i.userId === userId);
-      if (!intern) {
-        toast.error("Data magang tidak ditemukan.");
-        return;
-      }
-
-      await createAttendance({
-        internId: intern.id,
-        scheduleId: schedule.id,
-        date: todayDateStr,
-        attendanceTime: now.toISOString(),
-        attendanceLatitude:
-          !isExcusedOrSick && currentLocation ? currentLocation.latitude : null,
-        attendanceLongitude:
-          !isExcusedOrSick && currentLocation
-            ? currentLocation.longitude
-            : null,
-        attendancePhotoUrl:
-          status === AttendanceStatus.PRESENT ||
-          status === AttendanceStatus.LATE
-            ? (photoUrl ?? null)
-            : null,
-        attendanceFaceDescriptor:
-          status === AttendanceStatus.PRESENT ||
-          status === AttendanceStatus.LATE
-            ? (attendanceFaceDescriptor ?? null)
-            : null,
-        status,
-        notes: attendanceNotes.trim() ? attendanceNotes.trim() : null,
-      });
-
-      toast.success(
-        `Presensi ${getAttendanceStatusLabel(status)} berhasil dikirim!`,
-      );
-
-      onAttendanceSuccess();
-      setSelectedStatus(null);
-      setNotes("");
-      setCapturedPhotoUrl(null);
-      setCapturedDescriptor(null);
-    } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal mengirim presensi.";
-      toast.error(errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function handleFaceDescriptorCaptured(
-    photoUrl: string,
-    faceDescriptor: number[],
-  ) {
-    setIsFaceCameraOpen(false);
-    setCapturedPhotoUrl(photoUrl);
-    setCapturedDescriptor(faceDescriptor);
-
-    if (isLateNow) {
-      setSelectedStatus(AttendanceStatus.LATE);
-      setNotes("");
-    } else {
-      void handleSubmitAttendance(
-        AttendanceStatus.PRESENT,
-        "",
-        faceDescriptor,
-        photoUrl,
-      );
-    }
-  }
-
-  function openStatusDialog(status: AttendanceStatusType) {
+  const openStatusDialog = useCallback((status: AttendanceStatusType) => {
     setSelectedStatus(status);
     setNotes("");
-  }
+  }, []);
 
   if (!time) {
     return (

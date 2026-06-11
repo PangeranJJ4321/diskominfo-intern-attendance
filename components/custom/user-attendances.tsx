@@ -238,6 +238,11 @@ export default function UserAttendances({
             }
           }
 
+          // Sort schedules from earliest to latest scheduleStart
+          daySchedules.sort((a, b) =>
+            a.scheduleStart.localeCompare(b.scheduleStart),
+          );
+
           return (
             <div
               key={`${formattedDate}-${index}`}
@@ -452,6 +457,11 @@ export default function UserAttendances({
               }
             }
           }
+
+          // Sort schedules from earliest to latest scheduleStart
+          daySchedules.sort((a, b) =>
+            a.scheduleStart.localeCompare(b.scheduleStart),
+          );
 
           return (
             <div

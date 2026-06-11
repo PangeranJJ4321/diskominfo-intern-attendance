@@ -56,7 +56,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           deletedAt: null,
         },
       },
-      include: { shift: true },
+      select: {
+        id: true,
+        shiftId: true,
+        name: true,
+        dayOfWeek: true,
+        windowStart: true,
+        scheduleStart: true,
+        lateCutoff: true,
+        scheduleEnd: true,
+        shift: {
+          select: { id: true, name: true, workOnHolidays: true },
+        },
+      },
     });
 
     if (!schedule) {
@@ -155,7 +167,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updatedSchedule = await prisma.schedule.update({
       where: { id },
       data: parsedBody.data,
-      include: { shift: true },
+      select: {
+        id: true,
+        shiftId: true,
+        name: true,
+        dayOfWeek: true,
+        windowStart: true,
+        scheduleStart: true,
+        lateCutoff: true,
+        scheduleEnd: true,
+        shift: {
+          select: { id: true, name: true, workOnHolidays: true },
+        },
+      },
     });
 
     return NextResponse.json(updatedSchedule);

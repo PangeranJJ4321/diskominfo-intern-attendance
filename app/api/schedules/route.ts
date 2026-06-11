@@ -83,7 +83,19 @@ export async function GET(request: NextRequest) {
     const [schedules, totalCount] = await Promise.all([
       prisma.schedule.findMany({
         where: whereCondition,
-        include: { shift: true },
+        select: {
+          id: true,
+          shiftId: true,
+          name: true,
+          dayOfWeek: true,
+          windowStart: true,
+          scheduleStart: true,
+          lateCutoff: true,
+          scheduleEnd: true,
+          shift: {
+            select: { id: true, name: true, workOnHolidays: true },
+          },
+        },
         take: limit,
         skip: skip,
         orderBy: {
@@ -168,15 +180,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!shift) {
-      return NextResponse.json(
-        { error: "Shift not found." },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Shift not found." }, { status: 404 });
     }
 
     const newSchedule = await prisma.schedule.create({
       data: parsedBody.data,
-      include: { shift: true },
+      select: {
+        id: true,
+        shiftId: true,
+        name: true,
+        dayOfWeek: true,
+        windowStart: true,
+        scheduleStart: true,
+        lateCutoff: true,
+        scheduleEnd: true,
+        shift: {
+          select: { id: true, name: true, workOnHolidays: true },
+        },
+      },
     });
 
     return NextResponse.json(newSchedule, { status: 201 });

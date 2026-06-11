@@ -12,6 +12,22 @@ const querySchema = createTableQuerySchema(
   "createdAt",
 );
 
+/** Shape used consistently for reading/returning location log objects. */
+const locationLogSelect = {
+  id: true,
+  internId: true,
+  latitude: true,
+  longitude: true,
+  ipAddress: true,
+  createdAt: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
 /**
  * GET: List location logs with pagination and sorting.
  *
@@ -90,7 +106,7 @@ export async function GET(request: NextRequest) {
     const [logs, totalCount] = await Promise.all([
       prisma.locationLog.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } } },
+        select: locationLogSelect,
         take: limit,
         skip: skip,
         orderBy: {

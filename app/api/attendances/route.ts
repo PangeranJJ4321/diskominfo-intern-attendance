@@ -21,6 +21,32 @@ const querySchema = createTableQuerySchema(
   "date",
 );
 
+const attendanceSelect = {
+  id: true,
+  internId: true,
+  scheduleId: true,
+  date: true,
+  attendanceTime: true,
+  attendanceLatitude: true,
+  attendanceLongitude: true,
+  attendancePhotoUrl: true,
+  status: true,
+  notes: true,
+  createdAt: true,
+  intern: {
+    select: {
+      id: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+  schedule: true,
+} as const;
+
 /**
  * GET: List all attendances with pagination, sorting, and search.
  *
@@ -104,7 +130,7 @@ export async function GET(request: NextRequest) {
     const [attendances, totalCount] = await Promise.all([
       prisma.attendance.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } }, schedule: true },
+        select: attendanceSelect,
         take: limit,
         skip: skip,
         orderBy: {
@@ -449,7 +475,7 @@ export async function POST(request: NextRequest) {
         ...parsedBody.data,
         status: parsedBody.data.status as AttendanceStatusType,
       },
-      include: { intern: { include: { user: true } }, schedule: true },
+      select: attendanceSelect,
     });
 
     return NextResponse.json(newAttendance, { status: 201 });

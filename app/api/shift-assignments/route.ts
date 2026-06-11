@@ -12,6 +12,24 @@ const querySchema = createTableQuerySchema(
   "startDate",
 );
 
+/** Shape used consistently for reading/returning shift assignment objects. */
+const assignmentSelect = {
+  id: true,
+  internId: true,
+  shiftId: true,
+  startDate: true,
+  endDate: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true } },
+    },
+  },
+  shift: {
+    select: { id: true, name: true },
+  },
+} as const;
+
 /**
  * GET: List all shift assignments with pagination, sorting, and search
  */
@@ -90,7 +108,7 @@ export async function GET(request: NextRequest) {
     const [assignments, totalCount] = await Promise.all([
       prisma.shiftAssignment.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } }, shift: true },
+        select: assignmentSelect,
         take: limit,
         skip: skip,
         orderBy: {
@@ -194,7 +212,7 @@ export async function POST(request: NextRequest) {
 
     const newAssignment = await prisma.shiftAssignment.create({
       data: parsedBody.data,
-      include: { intern: { include: { user: true } }, shift: true },
+      select: assignmentSelect,
     });
 
     return NextResponse.json(newAssignment, { status: 201 });

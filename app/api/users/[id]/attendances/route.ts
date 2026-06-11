@@ -18,6 +18,21 @@ const querySchema = createTableQuerySchema(
   "date",
 );
 
+const attendanceSelect = {
+  id: true,
+  internId: true,
+  scheduleId: true,
+  date: true,
+  attendanceTime: true,
+  attendanceLatitude: true,
+  attendanceLongitude: true,
+  attendancePhotoUrl: true,
+  status: true,
+  notes: true,
+  createdAt: true,
+  schedule: true,
+} as const;
+
 /**
  * GET: List attendances for a specific user.
  *
@@ -119,7 +134,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const [attendances, totalCount] = await Promise.all([
       prisma.attendance.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } }, schedule: true },
+        select: attendanceSelect,
         take: limit,
         skip: skip,
         orderBy: {

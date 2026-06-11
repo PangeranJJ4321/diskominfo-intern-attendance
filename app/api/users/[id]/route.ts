@@ -57,16 +57,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .filter(Boolean),
     );
 
-    const includeClause: Record<string, boolean> = {};
-    if (includeSet.has("accounts")) includeClause.accounts = true;
-    if (includeSet.has("faceDescriptors")) includeClause.faceDescriptors = true;
-    if (includeSet.has("accesses")) includeClause.agencyAccesses = true;
-
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      ...(Object.keys(includeClause).length > 0
-        ? { include: includeClause }
-        : {}),
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        ...(includeSet.has("accounts") ? { accounts: true } : {}),
+        ...(includeSet.has("faceDescriptors") ? { faceDescriptors: true } : {}),
+        ...(includeSet.has("accesses") ? { agencyAccesses: true } : {}),
+      },
     });
 
     if (!targetUser) {

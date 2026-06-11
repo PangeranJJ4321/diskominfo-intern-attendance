@@ -53,15 +53,37 @@ export default function UserAttendances({
       setIsClient(true);
     }, 0);
     let cancelled = false;
+
+    // Compute date range from the calendar grid to limit data fetching
+    const calendarDays = isMobile
+      ? (() => {
+          const start = new Date(currentMonth);
+          start.setDate(currentMonth.getDate() - currentMonth.getDay());
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
+          return { start, end };
+        })()
+      : (() => {
+          const allDays = getCalendarDays(currentMonth);
+          return {
+            start: allDays[0],
+            end: allDays[allDays.length - 1],
+          };
+        })();
+
+    const formatDate = (d: Date) => format(d, "yyyy-MM-dd");
+    const startDate = formatDate(calendarDays.start);
+    const endDate = formatDate(calendarDays.end);
+
     async function loadData() {
       setLoading(true);
       try {
         const [schedsData, assignsData, attsData, holsData] = await Promise.all(
           [
             getSchedules(),
-            getShiftAssignments(),
-            getAttendancesForUser(userId),
-            getHolidays(),
+            getShiftAssignments(1000, startDate, endDate),
+            getAttendancesForUser(userId, 1000, startDate, endDate),
+            getHolidays(1000, startDate, endDate),
           ],
         );
         if (!cancelled) {
@@ -83,7 +105,7 @@ export default function UserAttendances({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [userId, refreshTrigger]);
+  }, [userId, refreshTrigger, currentMonth, isMobile]);
 
   if (!isClient || loading) {
     if (isMobile) {

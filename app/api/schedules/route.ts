@@ -3,14 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
-import { createScheduleSchema } from "@/lib/schemas/schedule-schema";
-
-const querySchema = createTableQuerySchema(
-  ["id", "name", "dayOfWeek", "scheduleStart", "createdAt"],
-  "dayOfWeek",
-);
+import {
+  createScheduleSchema,
+  scheduleQuerySchema,
+} from "@/lib/schemas/schedule-schema";
 
 /**
  * GET: List all schedules with pagination, sorting, and search
@@ -51,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
 
-    const parsedParams = querySchema.safeParse(rawParams);
+    const parsedParams = scheduleQuerySchema.safeParse(rawParams);
     if (!parsedParams.success) {
       return NextResponse.json(
         {
@@ -62,10 +59,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, dayOfWeek } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
-    const whereCondition = {
+    const whereCondition: Record<string, unknown> = {
       deletedAt: null,
       shift: {
         deletedAt: null,
@@ -78,6 +76,7 @@ export async function GET(request: NextRequest) {
             },
           }
         : {}),
+      ...(dayOfWeek.length > 0 ? { dayOfWeek: { in: dayOfWeek } } : {}),
     };
 
     const [schedules, totalCount] = await Promise.all([

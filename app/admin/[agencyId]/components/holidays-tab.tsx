@@ -31,10 +31,30 @@ export default function HolidaysTab({ dayLabels }: HolidaysTabProps) {
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
 
   useEffect(() => {
+    // Compute the visible date range from the calendar grid
+    const visibleDays = isMobile
+      ? (() => {
+          const start = new Date(currentMonth);
+          start.setDate(currentMonth.getDate() - currentMonth.getDay());
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
+          return { start, end };
+        })()
+      : (() => {
+          const allDays = getCalendarDays(currentMonth);
+          return {
+            start: allDays[0],
+            end: allDays[allDays.length - 1],
+          };
+        })();
+    const formatDate = (d: Date) => format(d, "yyyy-MM-dd");
+    const startDate = formatDate(visibleDays.start);
+    const endDate = formatDate(visibleDays.end);
+
     async function loadHolidays() {
       setIsLoading(true);
       try {
-        const data = await getHolidays();
+        const data = await getHolidays(1000, startDate, endDate);
         setHolidays(data);
       } catch (err) {
         console.error("Gagal memuat data hari libur", err);
@@ -44,7 +64,7 @@ export default function HolidaysTab({ dayLabels }: HolidaysTabProps) {
       }
     }
     loadHolidays();
-  }, []);
+  }, [currentMonth, isMobile]);
 
   // Month navigation helpers
   const handleNextMonth = () => {

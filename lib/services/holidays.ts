@@ -1,8 +1,25 @@
 import { AgencyHoliday } from "@/interfaces/models";
 import { handleError } from "./utils";
 
-export async function getHolidays(limit = 1000): Promise<AgencyHoliday[]> {
-  const res = await fetch(`/api/holidays?limit=${limit}`);
+/**
+ * Fetches holidays with optional date range filtering.
+ *
+ * @param {number} [limit=1000] - Limit the number of returned records.
+ * @param {string} [startDate] - Optional start date (YYYY-MM-DD) for filtering.
+ * @param {string} [endDate] - Optional end date (YYYY-MM-DD) for filtering.
+ * @returns {Promise<AgencyHoliday[]>} A promise that resolves to an array of AgencyHoliday.
+ */
+export async function getHolidays(
+  limit = 1000,
+  startDate?: string,
+  endDate?: string,
+): Promise<AgencyHoliday[]> {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+
+  const res = await fetch(`/api/holidays?${params.toString()}`);
   if (!res.ok) await handleError(res, "Gagal mengambil data libur");
   const json = await res.json();
   return json.data || [];

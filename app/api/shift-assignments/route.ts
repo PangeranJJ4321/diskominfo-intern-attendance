@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
+import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
 import { createShiftAssignmentSchema } from "@/lib/schemas/shift-assignment-schema";
 
-const querySchema = createTableQuerySchema(
+const querySchema = createDatedQuerySchema(
   ["id", "internId", "shiftId", "startDate"],
   "startDate",
 );
@@ -26,12 +26,15 @@ const assignmentSelect = {
     },
   },
   shift: {
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+    },
   },
 } as const;
 
 /**
- * GET: List all shift assignments with pagination, sorting, and search
+ * GET: List all shift assignments with pagination, sorting, search, and optional date range filtering.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -80,7 +83,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, startDate, endDate } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
     // Admins see all assignments; ordinary users only see their own (via intern)
@@ -100,6 +104,14 @@ export async function GET(request: NextRequest) {
                   mode: "insensitive" as const,
                 },
               },
+            },
+          }
+        : {}),
+      ...(startDate || endDate
+        ? {
+            startDate: {
+              ...(startDate ? { gte: startDate } : {}),
+              ...(endDate ? { lte: endDate } : {}),
             },
           }
         : {}),

@@ -103,16 +103,27 @@ export default function ExportAttendanceDialog({
       let data: Attendance[] = [];
       const fetchLimit = 100000; // Fetch all records within a very high limit to ensure completeness
 
-      // 1. Fetch attendance records
+      // 1. Compute date range strings for API filtering
+      const startDateStr = format(dateRange.from, "yyyy-MM-dd");
+      const endDateStr = dateRange.to
+        ? format(dateRange.to, "yyyy-MM-dd")
+        : startDateStr;
+
+      // 2. Fetch attendance records with date range filtering
       if (exportTarget === "all") {
-        data = await getAttendances(fetchLimit);
+        data = await getAttendances(fetchLimit, startDateStr, endDateStr);
       } else {
         if (!selectedUserId) {
           toast.error("Silakan pilih karyawan terlebih dahulu.");
           setIsExporting(false);
           return;
         }
-        data = await getAttendancesForUser(selectedUserId, fetchLimit);
+        data = await getAttendancesForUser(
+          selectedUserId,
+          fetchLimit,
+          startDateStr,
+          endDateStr,
+        );
       }
 
       // 2. Fetch latest schedules

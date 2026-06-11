@@ -48,14 +48,19 @@ export default function TakeAttendanceList({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const todayDateStr = format(new Date(), "yyyy-MM-dd");
+    const yesterdayDateStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+    const todayDay = new Date().getDay();
+    const yesterdayDay = subDays(new Date(), 1).getDay();
+    const relevantDays = [...new Set([todayDay, yesterdayDay])];
     async function loadData() {
       setIsLoading(true);
       try {
         const [scheds, atts, assigns, hols] = await Promise.all([
-          getSchedules(),
-          getAttendancesForUser(userId),
-          getShiftAssignments(),
-          getHolidays(),
+          getSchedules(1000, relevantDays),
+          getAttendancesForUser(userId, 1000, yesterdayDateStr, todayDateStr),
+          getShiftAssignments(1000, yesterdayDateStr, todayDateStr),
+          getHolidays(1000, yesterdayDateStr, todayDateStr),
         ]);
         setSchedules(scheds);
         setAttendances(atts);

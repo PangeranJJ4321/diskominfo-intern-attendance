@@ -37,14 +37,30 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import { createAttendance } from "@/lib/services/attendances";
-import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
+import type { Schedule, Attendance, AgencyRule } from "@/interfaces/models";
 import {
   AttendanceStatus,
   getAttendanceStatusLabel,
   getAttendanceStatusButtonStyles,
   type AttendanceStatusType,
 } from "@/interfaces/enums";
+import { useLocationStore } from "@/stores/location-store";
 import TakeAttendanceFaceCamera from "./take-attendance-face-camera";
+
+/** Props for TakeAttendanceCard (location comes from Zustand store) */
+interface TakeAttendanceCardProps {
+  schedule: Schedule;
+  attendances: Attendance[];
+  userId: string;
+  userName: string;
+  userHasFaceRegistered: boolean;
+  onAttendanceSuccess: () => void;
+  refreshTrigger: number;
+  workDate?: string;
+  className?: string;
+  /** Agency rule to control whether face & geofence validations are enforced on the client side */
+  agencyRule: AgencyRule | null;
+}
 
 function formatTimeLabel(value: string): string {
   return value.length >= 5 ? value.slice(0, 5) : value;
@@ -55,14 +71,15 @@ export default function TakeAttendanceCard({
   attendances,
   userId,
   userHasFaceRegistered,
-  currentLocation,
-  isWithinGeofence,
   onAttendanceSuccess,
   refreshTrigger,
   workDate,
   className,
   agencyRule,
 }: TakeAttendanceCardProps) {
+  const currentLocation = useLocationStore((s) => s.currentLocation);
+  const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
+
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
 

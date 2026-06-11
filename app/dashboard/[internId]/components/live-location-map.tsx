@@ -7,7 +7,7 @@ import { MapIcon, Satellite } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Map, MapLocateControl, MapTileLayer } from "@/components/ui/map";
 import { LocationPermissionDialog } from "@/components/custom/location-permission-dialog";
-import { type LiveLocationMapProps } from "@/interfaces/dashboard";
+import { useLocationStore } from "@/stores/location-store";
 
 /**
  * Helper component to auto-trigger the MapLocateControl button once it mounts.
@@ -34,14 +34,13 @@ function AutoClickLocate({ enabled }: { enabled: boolean }) {
 }
 
 /**
- * Main map component that tracks and displays user location relative to geofence area.
- *
- * @param props - Component properties.
+ * Main map component that tracks and displays user location relative to the
+ * geofence area. Reads geofence data and writes location updates through the
+ * Zustand store.
  */
-export default function LiveLocationMap({
-  geoData,
-  onLocationChange,
-}: LiveLocationMapProps) {
+export default function LiveLocationMap() {
+  const geoData = useLocationStore((s) => s.geofence);
+  const setCurrentLocation = useLocationStore((s) => s.setCurrentLocation);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const [permissionState, setPermissionState] = useState<
@@ -70,7 +69,7 @@ export default function LiveLocationMap({
         open={showPermissionDialog}
         onOpenChange={setShowPermissionDialog}
         onGranted={(position) => {
-          onLocationChange({
+          setCurrentLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
@@ -125,7 +124,7 @@ export default function LiveLocationMap({
             watch
             position="right-3 bottom-3"
             onLocationFound={(e) => {
-              onLocationChange({
+              setCurrentLocation({
                 latitude: e.latlng.lat,
                 longitude: e.latlng.lng,
                 accuracy: e.accuracy,

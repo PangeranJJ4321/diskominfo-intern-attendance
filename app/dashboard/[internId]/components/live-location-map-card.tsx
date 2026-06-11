@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Navigation, Info, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { type LiveLocationMapCardProps } from "@/interfaces/dashboard";
+import { useLocationStore } from "@/stores/location-store";
+import type { AgencyRule } from "@/interfaces/models";
 
 const LiveLocationMap = dynamic(() => import("./live-location-map"), {
   ssr: false,
@@ -13,18 +14,25 @@ const LiveLocationMap = dynamic(() => import("./live-location-map"), {
 });
 
 /**
+ * Props for the LiveLocationMapCard component.
+ * Location and geofence state are read from the Zustand store,
+ * but agency rule is passed in to control geofence enforcement display.
+ */
+interface LiveLocationMapCardProps {
+  /** Agency rule to control whether geofence warnings are shown */
+  agencyRule: AgencyRule | null;
+}
+
+/**
  * Card component containing the live location map and geofence status.
- *
- * @param props - Component properties.
+ * Reads location state from the Zustand store instead of receiving props,
+ * but accepts agencyRule to control geofence enforcement UI.
  */
 export default function LiveLocationMapCard({
-  geoData,
-  onLocationChange,
-  isWithinGeofence,
   agencyRule,
 }: LiveLocationMapCardProps) {
+  const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
   const enforceGeo = agencyRule?.requireWithinArea !== false;
-
   return (
     <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-md border border-border/60 bg-card/45 backdrop-blur-md">
       <CardHeader className="flex flex-row items-center justify-between pb-4 space-y-0">
@@ -72,10 +80,7 @@ export default function LiveLocationMapCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Map Container */}
-        <LiveLocationMap
-          geoData={geoData}
-          onLocationChange={onLocationChange}
-        />
+        <LiveLocationMap />
 
         {enforceGeo && isWithinGeofence === false && (
           <div className="flex items-start gap-2 text-xs bg-destructive/5 border border-destructive/10 rounded-xl p-3 text-destructive">

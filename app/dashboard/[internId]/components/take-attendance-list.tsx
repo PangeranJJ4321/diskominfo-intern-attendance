@@ -15,27 +15,29 @@ import type {
   Attendance,
   ShiftAssignment,
   Holiday,
+  AgencyRule,
 } from "@/interfaces/models";
-import type { TakeAttendanceListProps } from "@/interfaces/dashboard";
 import TakeAttendanceCard from "./take-attendance-card";
+
+/** Props for TakeAttendanceList (location now comes from Zustand store) */
+interface TakeAttendanceListProps {
+  userId: string;
+  userName: string;
+  onAttendanceSuccess: () => void;
+  refreshTrigger: number;
+  /** Agency rule to control whether face & geofence validations are enforced */
+  agencyRule: AgencyRule | null;
+}
 
 /**
  * Renders the list of attendance cards for the user's scheduled shifts of the day.
+ * Location state is read from the Zustand store.
  *
- * @param {TakeAttendanceListProps} props - The component props.
- * @param {string} props.userId - The user ID.
- * @param {string} props.userName - The name of the user.
- * @param {{ latitude: number; longitude: number; accuracy: number } | null} props.currentLocation - Current GPS location of the user.
- * @param {boolean | null} props.isWithinGeofence - Whether the user is within the geofence area.
- * @param {function} props.onAttendanceSuccess - Callback when attendance is successfully updated.
- * @param {number} props.refreshTrigger - Trigger to reload attendance data.
- * @returns {React.JSX.Element} The rendered list of cards.
+ * @returns The rendered list of cards.
  */
 export default function TakeAttendanceList({
   userId,
   userName,
-  currentLocation,
-  isWithinGeofence,
   onAttendanceSuccess,
   refreshTrigger,
   agencyRule,
@@ -251,8 +253,6 @@ export default function TakeAttendanceList({
               userId={userId}
               userName={userName}
               userHasFaceRegistered={userHasFaceRegistered}
-              currentLocation={currentLocation}
-              isWithinGeofence={isWithinGeofence}
               onAttendanceSuccess={onAttendanceSuccess}
               refreshTrigger={refreshTrigger}
               className="min-w-0 flex-1 w-full"
@@ -271,8 +271,6 @@ export default function TakeAttendanceList({
               userId={userId}
               userName={userName}
               userHasFaceRegistered={userHasFaceRegistered}
-              currentLocation={currentLocation}
-              isWithinGeofence={isWithinGeofence}
               onAttendanceSuccess={onAttendanceSuccess}
               refreshTrigger={refreshTrigger}
               className="min-w-[320px] shrink-0 snap-start flex-1"

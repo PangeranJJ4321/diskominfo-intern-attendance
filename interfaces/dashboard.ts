@@ -1,21 +1,14 @@
-import type { GeoJsonObject } from "geojson";
 import type { Schedule, Attendance, AgencyRule } from "./models";
 import { AttendanceStatus, type AttendanceStatusType } from "./enums";
 
-export interface TakeAttendanceListProps {
+/** Props for the AttendanceHistoriesCard component. */
+export interface AttendanceHistoriesCardProps {
   userId: string;
-  userName: string;
-  currentLocation: {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  } | null;
-  isWithinGeofence: boolean | null;
-  onAttendanceSuccess: () => void;
   refreshTrigger: number;
   agencyRule: AgencyRule | null;
 }
 
+/** Props for the TakeAttendanceFaceCamera component. */
 export interface TakeAttendanceFaceCameraProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,26 +18,7 @@ export interface TakeAttendanceFaceCameraProps {
   onSuccess: (photoUrl: string, faceDescriptor: number[]) => void;
 }
 
-export interface TakeAttendanceCardProps {
-  schedule: Schedule;
-  attendances: Attendance[];
-  userId: string;
-  userName: string;
-  userHasFaceRegistered: boolean;
-  currentLocation: {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  } | null;
-  isWithinGeofence: boolean | null;
-  onAttendanceSuccess: () => void;
-  refreshTrigger: number;
-  workDate?: string;
-  className?: string;
-  /** Agency rule to control whether face & geofence validations are enforced on the client side */
-  agencyRule: AgencyRule | null;
-}
-
+/** Props for the TakeAttendanceButtonGroup component. */
 export interface TakeAttendanceButtonGroupProps {
   onClockIn: () => void;
   onStatusSelect: (
@@ -57,32 +31,7 @@ export interface TakeAttendanceButtonGroupProps {
   isSubmitting: boolean;
 }
 
-export interface LiveLocationMapProps {
-  geoData: GeoJsonObject | null;
-  onLocationChange: (location: {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  }) => void;
-}
-
-export interface LiveLocationMapCardProps {
-  geoData: GeoJsonObject | null;
-  currentLocation: {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  } | null;
-  onLocationChange: (location: {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  }) => void;
-  isWithinGeofence: boolean | null;
-  /** Agency rule to control whether geofence warnings are shown */
-  agencyRule: AgencyRule | null;
-}
-
+/** Props for the AttendanceNotesDialog component. */
 export interface AttendanceNotesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -91,11 +40,7 @@ export interface AttendanceNotesDialogProps {
   isSubmitting: boolean;
 }
 
-export interface AttendanceHistoriesCardProps {
-  userId: string;
-  refreshTrigger: number;
-}
-
+/** Props for the UserAttendanceDetailDialog component. */
 export interface UserAttendanceDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

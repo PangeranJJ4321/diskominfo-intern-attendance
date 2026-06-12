@@ -39,7 +39,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAttendanceStore } from "@/stores/useAttendanceStore";
 import { useAgencyStore } from "@/stores/useAgencyStore";
 import { useLocationStore } from "@/stores/useLocationStore";
-import { useUserStore } from "@/stores/useUserStore";
 import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import {
   AttendanceStatus,
@@ -68,8 +67,6 @@ export default function TakeAttendanceCard({
   const agencyRule = useAgencyStore((s) => s.rule);
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
-  const profile = useUserStore((s) => s.profile);
-  const userHasFaceRegistered = (profile?.faceDescriptors?.length ?? 0) > 0;
 
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
@@ -349,7 +346,7 @@ export default function TakeAttendanceCard({
             {schedule.name}
           </h3>
 
-          <div className="flex items-center text-xs md:text-sm text-muted-foreground gap-2 bg-muted/60 w-fit px-2.5 py-1 rounded-xl">
+          <div className="flex items-center text-xs md:text-sm text-muted-foreground gap-2 bg-muted/60 w-fit py-1 rounded-xl">
             <Clock className="size-4 text-primary" />
             <span className="font-semibold text-foreground">
               {formatTimeLabel(schedule.scheduleStart)} -{" "}
@@ -413,10 +410,7 @@ export default function TakeAttendanceCard({
               disabled={!canSubmitAttendance}
               onClick={() => {
                 // Face verification only needed if rule requires it (default: true)
-                // and user has face registered
-                const needFace =
-                  agencyRule?.requireFaceVerification !== false &&
-                  userHasFaceRegistered;
+                const needFace = agencyRule?.requireFaceVerification !== false;
                 if (needFace) {
                   setIsFaceCameraOpen(true);
                 } else if (isLateNow) {
@@ -608,7 +602,6 @@ export default function TakeAttendanceCard({
       <TakeAttendanceFaceCamera
         open={isFaceCameraOpen}
         onOpenChange={setIsFaceCameraOpen}
-        userHasFaceRegistered={userHasFaceRegistered}
         onSuccess={handleFaceDescriptorCaptured}
       />
     </Card>

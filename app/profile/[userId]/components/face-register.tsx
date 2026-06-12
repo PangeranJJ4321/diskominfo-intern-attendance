@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { FaceRegisterDialog } from "./face-register-dialog";
-import { type FaceRegisterProps } from "@/interfaces/profile";
+import { useProfileStore } from "@/stores/profile-store";
 
 function SectionRow({ label, value }: { label: string; value?: string }) {
   return (
@@ -27,11 +27,17 @@ function formatDate(dateStr: string | null | undefined, locale = "id") {
   }).format(new Date(dateStr));
 }
 
-export function FaceRegister({
-  user,
-  onUpdate,
-  openByDefault = false,
-}: FaceRegisterProps) {
+/**
+ * Renders the face registration card with status and registration dialog.
+ * Reads user data from the Zustand profile store.
+ *
+ * @returns {React.JSX.Element | null} The rendered card, or null if no user or already max descriptors.
+ */
+export function FaceRegister() {
+  const user = useProfileStore((s) => s.user);
+
+  if (!user) return null;
+
   const descriptorCount = user.faceDescriptors.length;
   const latestDescriptor = user.faceDescriptors[0] ?? null;
 
@@ -51,17 +57,7 @@ export function FaceRegister({
           </div>
 
           <div className="flex gap-2">
-            <FaceRegisterDialog
-              key={
-                openByDefault
-                  ? "face-registration-auto-open"
-                  : "face-registration"
-              }
-              userId={user.id}
-              userName={user.name}
-              openByDefault={openByDefault}
-              onSuccess={onUpdate}
-            />
+            <FaceRegisterDialog openByDefault={descriptorCount === 0} />
           </div>
         </div>
 

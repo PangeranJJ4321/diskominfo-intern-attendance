@@ -12,14 +12,21 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { unlinkAccount } from "@/lib/services/users";
 import { authClient } from "@/lib/auth-client";
-import { type AccountConnectionsCardProps } from "@/interfaces/profile";
+import { useProfileStore } from "@/stores/profile-store";
 import { Key, Globe2, Link2Off, CheckCircle2 } from "lucide-react";
 
-export function AccountConnectionsCard({
-  user,
-  onUpdate,
-}: AccountConnectionsCardProps) {
+/**
+ * Renders the account connections card for managing external auth providers.
+ * Reads user data from the Zustand profile store.
+ *
+ * @returns {React.JSX.Element | null} The rendered card, or null if no user is loaded.
+ */
+export function AccountConnectionsCard() {
+  const user = useProfileStore((s) => s.user);
+  const updateStoreUser = useProfileStore((s) => s.updateUser);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+
+  if (!user) return null;
 
   const hasCredential = user.accounts.some(
     (acc) => acc.providerId === "credential",
@@ -44,7 +51,7 @@ export function AccountConnectionsCard({
     setLoadingProvider(providerId);
     try {
       const updatedUser = await unlinkAccount(user.id, providerId);
-      onUpdate(updatedUser);
+      updateStoreUser(updatedUser);
       toast.success(
         `Akun ${providerId === "google" ? "Google" : "Password"} berhasil diputuskan`,
       );

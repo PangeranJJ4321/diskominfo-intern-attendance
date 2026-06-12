@@ -7,11 +7,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { getInitials } from "@/lib/string-utils";
 import { useTheme } from "next-themes";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,11 +23,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { LogOut, LogIn, UserPlus, User, Sun, Moon, Monitor } from "lucide-react";
-
+import {
+  LogOut,
+  LogIn,
+  UserPlus,
+  User,
+  Sun,
+  Moon,
+  Monitor,
+} from "lucide-react";
+import { useProfileStore } from "@/stores/profile-store";
 
 /**
  * Renders the navigation bar avatar component containing user profile info and actions.
+ * Reads session from Better-Auth and supplements with the Zustand profile store
+ * so that profile picture updates are reflected immediately without a page reload.
  *
  * @returns {React.JSX.Element} The rendered NavbarAvatar component.
  */
@@ -42,6 +48,10 @@ export function NavbarAvatar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Read the stored profile user to get the latest avatar image / name.
+  // Falls back to session data when the store is not populated (e.g. on non-profile pages).
+  const storeUser = useProfileStore((s) => s.user);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
@@ -49,12 +59,19 @@ export function NavbarAvatar() {
     return () => clearTimeout(timer);
   }, []);
 
-  const user = session?.user ?? null;
-  const initials = user?.name ? getInitials(user.name) : null;
+  const sessionUser = session?.user ?? null;
+
+  // Prefer store values when available (they reflect the most recent edits),
+  // otherwise fall back to the session-provided values
+  const avatarImage = storeUser?.image ?? sessionUser?.image ?? undefined;
+  const displayName = storeUser?.name ?? sessionUser?.name;
+  const displayEmail = storeUser?.email ?? sessionUser?.email;
+  const userId = storeUser?.id ?? sessionUser?.id;
+  const initials = displayName ? getInitials(displayName) : null;
 
   const handleProfileClick = () => {
-    if (user?.id) {
-      router.push(`/profile/${user.id}`);
+    if (userId) {
+      router.push(`/profile/${userId}`);
     }
   };
 
@@ -92,8 +109,8 @@ export function NavbarAvatar() {
               >
                 <Avatar>
                   <AvatarImage
-                    src={user?.image || undefined}
-                    alt={user?.name ?? "User avatar"}
+                    src={avatarImage}
+                    alt={displayName ?? "User avatar"}
                   />
                   <AvatarFallback>
                     {initials ?? <User className="size-4" />}
@@ -102,13 +119,11 @@ export function NavbarAvatar() {
               </button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {user?.name || "Akun"}
-          </TooltipContent>
+          <TooltipContent side="bottom">{displayName || "Akun"}</TooltipContent>
         </Tooltip>
 
         <DropdownMenuContent align="end" className="w-56">
-          {user && (
+          {sessionUser && (
             <>
               <DropdownMenuItem asChild>
                 <button
@@ -118,16 +133,16 @@ export function NavbarAvatar() {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={user.image || undefined}
-                      alt={user.name ?? "User avatar"}
+                      src={avatarImage}
+                      alt={displayName ?? "User avatar"}
                     />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-left">
-                    <span className="text-sm font-medium">{user.name}</span>
-                    {user.email && (
+                    <span className="text-sm font-medium">{displayName}</span>
+                    {displayEmail && (
                       <span className="text-xs text-muted-foreground">
-                        {user.email}
+                        {displayEmail}
                       </span>
                     )}
                   </div>
@@ -147,15 +162,24 @@ export function NavbarAvatar() {
             value={mounted ? (theme ?? "system") : "system"}
             onValueChange={setTheme}
           >
-            <DropdownMenuRadioItem value="system" className="gap-2 cursor-pointer">
+            <DropdownMenuRadioItem
+              value="system"
+              className="gap-2 cursor-pointer"
+            >
               <Monitor className="size-4" />
               <span>Sistem</span>
             </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="light" className="gap-2 cursor-pointer">
+            <DropdownMenuRadioItem
+              value="light"
+              className="gap-2 cursor-pointer"
+            >
               <Sun className="size-4" />
               <span>Terang</span>
             </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="dark" className="gap-2 cursor-pointer">
+            <DropdownMenuRadioItem
+              value="dark"
+              className="gap-2 cursor-pointer"
+            >
               <Moon className="size-4" />
               <span>Gelap</span>
             </DropdownMenuRadioItem>
@@ -163,7 +187,7 @@ export function NavbarAvatar() {
 
           <DropdownMenuSeparator />
 
-          {user ? (
+          {sessionUser ? (
             <DropdownMenuItem
               id="navbar-sign-out"
               onClick={handleLogout}

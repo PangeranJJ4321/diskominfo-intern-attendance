@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EditProfileDialog } from "./edit-profile-dialog";
-import type { ProfileCardProps } from "@/interfaces/profile";
+import { useProfileStore } from "@/stores/profile-store";
 
 function SectionRow({
   label,
@@ -30,11 +30,21 @@ function formatDate(dateStr: string, locale = "id") {
   }).format(new Date(dateStr));
 }
 
-export function ProfileCard({
-  user,
-  onUpdate,
-  hasCredential,
-}: ProfileCardProps) {
+/**
+ * Renders the profile detail card with user info and edit dialog.
+ * Reads user data from the Zustand profile store.
+ *
+ * @returns {React.JSX.Element | null} The rendered card, or null if no user is loaded.
+ */
+export function ProfileCard() {
+  const user = useProfileStore((s) => s.user);
+
+  if (!user) return null;
+
+  const hasCredential = user.accounts.some(
+    (acc) => acc.providerId === "credential",
+  );
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -47,12 +57,7 @@ export function ProfileCard({
           </div>
 
           <div className="flex gap-2">
-            <EditProfileDialog
-              userId={user.id}
-              initialName={user.name}
-              hasCredentialAccount={hasCredential}
-              onSuccess={onUpdate}
-            />
+            <EditProfileDialog hasCredentialAccount={hasCredential} />
           </div>
         </div>
 

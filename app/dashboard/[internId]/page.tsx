@@ -16,6 +16,7 @@ import TakeAttendanceList from "./components/take-attendance-list";
 import LiveLocationMapCard from "./components/live-location-map-card";
 import AttendanceHistoriesCard from "./components/attendance-histories-card";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
+import { LazyCard } from "@/components/custom/lazy-card";
 
 // Default geofence centered on User's coordinates
 const DEFAULT_GEOFENCE: GeoJsonObject = {
@@ -193,15 +194,22 @@ export default function InternDashboardPage({
         ) : (
           <>
             <div className="flex flex-col gap-6">
-              <TakeAttendanceList internId={internId} />
+              <LazyCard skeletonHeight="h-[220px] md:h-[180px]">
+                <TakeAttendanceList internId={internId} />
+              </LazyCard>
 
-              <LiveLocationMapCard geoData={geoData} />
+              <LazyCard skeletonHeight="h-[480px]">
+                <LiveLocationMapCard geoData={geoData} />
+              </LazyCard>
             </div>
 
-            <div className="pt-2">
+            <LazyCard skeletonHeight="h-[580px]">
               <AttendanceHistoriesCard internId={internId} />
-            </div>
-            <InternInfoCard userId={user.id} />
+            </LazyCard>
+
+            <LazyCard skeletonHeight="h-64">
+              <InternInfoCard userId={user.id} />
+            </LazyCard>
           </>
         )}
       </main>

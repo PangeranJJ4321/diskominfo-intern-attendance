@@ -4,21 +4,13 @@ import { id } from "date-fns/locale";
 /**
  * Generates a list of Dates for a monthly calendar grid, including padding days
  * from the previous and next months to complete the start/end weeks.
- *
+ * 
  * @param currentMonth The month to generate the calendar grid for
  * @returns Array of Date objects representing the grid
  */
 export function getCalendarDays(currentMonth: Date): Date[] {
-  const monthStart = new Date(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth(),
-    1,
-  );
-  const monthEnd = new Date(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth() + 1,
-    0,
-  );
+  const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
   const startDate = new Date(monthStart);
   startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of first week
@@ -37,7 +29,7 @@ export function getCalendarDays(currentMonth: Date): Date[] {
 
 /**
  * Parses a date string formatted as YYYY-MM-DD locally to avoid timezone shifts.
- *
+ * 
  * @param str The local date string formatted as YYYY-MM-DD
  * @returns Date object representing the local date
  */
@@ -47,32 +39,8 @@ export function parseDateLocal(str: string): Date {
 }
 
 /**
- * Formats a date string using Intl.DateTimeFormat for consistent locale-aware display.
- *
- * @param dateStr - The date string to format, or null/undefined
- * @param locale - The locale string (default "id")
- * @returns A formatted date string, or "—" if the date string is falsy
- */
-export function formatDateLocale(
-  dateStr: string | null | undefined,
-  locale = "id",
-): string {
-  if (!dateStr) {
-    return "—";
-  }
-  try {
-    return new Intl.DateTimeFormat(locale, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(dateStr));
-  } catch {
-    return dateStr;
-  }
-}
-
-/**
  * Formats a weekly range starting from the week of the given date.
- *
+ * 
  * @param date The reference date within the week
  * @returns The formatted weekly range string
  */
@@ -98,3 +66,4 @@ export function formatWeekRange(date: Date): string {
   }
   return `${startDay} - ${endDay} ${startMonth} ${startYear}`;
 }
+

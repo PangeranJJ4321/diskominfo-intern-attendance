@@ -30,7 +30,13 @@ import { getShifts, deleteShift } from "@/lib/services/shifts";
 import { getSchedules } from "@/lib/services/schedules";
 import { getAgencies } from "@/lib/services/agencies";
 import type { Shift, Schedule } from "@/interfaces/models";
-import type { DayLabel } from "@/interfaces/admin";
+
+type DayLabel = {
+  value: number;
+  short: string;
+  long: string;
+  weekend: boolean;
+};
 
 const DAY_LABELS: DayLabel[] = [
   { value: 0, short: "Min", long: "Minggu", weekend: true },

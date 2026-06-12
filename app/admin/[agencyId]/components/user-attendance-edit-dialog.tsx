@@ -47,7 +47,7 @@ export default function UserAttendanceEditDialog({
   schedule,
   existingAttendance,
   onSuccess,
-}: Omit<UserAttendanceEditDialogProps, "internId">) {
+}: Omit<UserAttendanceEditDialogProps, "userId">) {
   const [status, setStatus] = useState<AttendanceStatusType>(
     AttendanceStatus.PRESENT,
   );

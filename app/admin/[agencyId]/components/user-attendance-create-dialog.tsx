@@ -39,7 +39,7 @@ import { TimePicker } from "@/components/custom/time-picker";
 export default function UserAttendanceCreateDialog({
   open,
   onOpenChange,
-  internId,
+  userId,
   userName,
   date,
   schedule,
@@ -83,7 +83,7 @@ export default function UserAttendanceCreateDialog({
           : null;
 
       const newAttendance = await createAttendance({
-        internId,
+        userId,
         scheduleId: schedule.id,
         date: formattedDate,
         attendanceTime: timeDate ? timeDate.toISOString() : null,

@@ -18,7 +18,7 @@ export interface AttendanceAreaMapProps {
 export interface UserShiftEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  internId: string;
+  userId: string;
   userName: string;
   onSuccess: () => void;
 }
@@ -26,7 +26,7 @@ export interface UserShiftEditDialogProps {
 export interface UserAttendanceEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  internId: string;
+  userId: string;
   userName: string;
   date: Date | null;
   schedule: Schedule | null;
@@ -37,7 +37,7 @@ export interface UserAttendanceEditDialogProps {
 export interface UserAttendanceCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  internId: string;
+  userId: string;
   userName: string;
   date: Date | null;
   schedule: Schedule | null;

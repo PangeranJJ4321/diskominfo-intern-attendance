@@ -28,6 +28,7 @@ export interface UserAttendancesProps {
     schedule: Schedule,
     attendance: Attendance | null,
   ) => void;
+  refreshTrigger?: number;
 }
 
 export interface TimePickerProps {

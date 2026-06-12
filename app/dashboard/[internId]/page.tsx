@@ -59,6 +59,7 @@ export default function InternDashboardPage({
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const setGeofence = useLocationStore((s) => s.setGeofence);
   const geofenceFetchStatus = useRef({ initiated: false, completed: false });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
   const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
 
@@ -164,6 +165,10 @@ export default function InternDashboardPage({
     }
   }, [currentLocation, setGeofence]);
 
+  const handleAttendanceSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
   return (
     <>
       <Navbar />
@@ -195,6 +200,8 @@ export default function InternDashboardPage({
               <TakeAttendanceList
                 userId={user.id}
                 userName={user.name}
+                onAttendanceSuccess={handleAttendanceSuccess}
+                refreshTrigger={refreshTrigger}
                 agencyRule={agencyRule}
               />
 
@@ -202,7 +209,11 @@ export default function InternDashboardPage({
             </div>
 
             <div className="pt-2">
-              <AttendanceHistoriesCard userId={user.id} />
+              <AttendanceHistoriesCard
+                userId={user.id}
+                refreshTrigger={refreshTrigger}
+                agencyRule={agencyRule}
+              />
             </div>
             <InternInfoCard userId={user.id} />
           </>

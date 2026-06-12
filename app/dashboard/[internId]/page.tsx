@@ -4,12 +4,12 @@ import { use, useEffect, useState, useMemo, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isLocationWithinArea } from "@/lib/location-within-area";
 import type { GeoJsonObject } from "geojson";
 import { getAttendanceAreas } from "@/lib/services/attendance-areas";
 import { createLocationLog } from "@/lib/services/location-logs";
 import { getAgencyRule } from "@/lib/services/agencies";
 import { getInterns } from "@/lib/services/interns";
-import { useLocationStore } from "@/stores/location-store";
 import type { AgencyRule } from "@/interfaces/models";
 
 // Import subcomponents
@@ -55,10 +55,14 @@ export default function InternDashboardPage({
   const { internId } = use(params);
   const { data: session, isPending } = useSession();
 
-  // Geolocation state from Zustand store (updated by LiveLocationMap)
-  const currentLocation = useLocationStore((s) => s.currentLocation);
-  const setGeofence = useLocationStore((s) => s.setGeofence);
+  // Geolocation states
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+  } | null>(null);
   const geofenceFetchStatus = useRef({ initiated: false, completed: false });
+  const [geofence, setGeofence] = useState<GeoJsonObject | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
   const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
@@ -163,7 +167,17 @@ export default function InternDashboardPage({
     if (!geofenceFetchStatus.current.completed) {
       void loadGeofence();
     }
-  }, [currentLocation, setGeofence]);
+  }, [currentLocation]);
+
+  // Compute geofence status
+  const isWithinGeofence = useMemo(() => {
+    if (!currentLocation || !geofence) return null;
+    return isLocationWithinArea(
+      currentLocation.latitude,
+      currentLocation.longitude,
+      geofence,
+    );
+  }, [currentLocation, geofence]);
 
   const handleAttendanceSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -200,19 +214,26 @@ export default function InternDashboardPage({
               <TakeAttendanceList
                 userId={user.id}
                 userName={user.name}
+                currentLocation={currentLocation}
+                isWithinGeofence={isWithinGeofence}
                 onAttendanceSuccess={handleAttendanceSuccess}
                 refreshTrigger={refreshTrigger}
                 agencyRule={agencyRule}
               />
 
-              <LiveLocationMapCard agencyRule={agencyRule} />
+              <LiveLocationMapCard
+                geoData={geofence}
+                currentLocation={currentLocation}
+                onLocationChange={setCurrentLocation}
+                isWithinGeofence={isWithinGeofence}
+                agencyRule={agencyRule}
+              />
             </div>
 
             <div className="pt-2">
               <AttendanceHistoriesCard
                 userId={user.id}
                 refreshTrigger={refreshTrigger}
-                agencyRule={agencyRule}
               />
             </div>
             <InternInfoCard userId={user.id} />

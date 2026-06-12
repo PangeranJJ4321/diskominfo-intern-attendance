@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaProvider } from "@/components/custom/pwa-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DISKOMINFO-INTERN",
   description: "DISKOMINFO Intern Attendance System",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "DISKOMINFO-INTERN",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "theme-color": "#18181b",
+  },
 };
 
 export default function RootLayout({
@@ -32,15 +43,17 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-zinc-50 dark:bg-black min-h-full flex flex-col">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster />
-        </ThemeProvider>
+        <PwaProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster />
+          </ThemeProvider>
+        </PwaProvider>
       </body>
     </html>
   );

@@ -9,22 +9,10 @@ import { useInternStore } from "@/stores/useInternStore";
 import { useAgencyStore } from "@/stores/useAgencyStore";
 import type { AgencyRule } from "@/interfaces/models";
 import { ArrowRight, Calendar, Camera, Map as MapIcon } from "lucide-react";
+import { formatDateIndonesian } from "@/lib/date-utils";
 
 interface InternInfoCardProps {
   userId: string;
-}
-
-/**
- * Formats a date string into a localized Indonesian date.
- *
- * @param dateStr - The ISO date string.
- * @returns The formatted date string.
- */
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-  }).format(new Date(dateStr));
 }
 
 /**
@@ -102,9 +90,9 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
   }
 
   const internship = {
-    startDate: intern.startedAt ? formatDate(intern.startedAt) : "—",
+    startDate: intern.startedAt ? formatDateIndonesian(intern.startedAt) : "—",
     finishDate: intern.finishedAt
-      ? formatDate(intern.finishedAt)
+      ? formatDateIndonesian(intern.finishedAt)
       : "Sedang Berjalan",
   };
 

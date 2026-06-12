@@ -75,13 +75,21 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
     ) => {
       set({ loading: true, error: null });
       try {
-        const attendances = await attendanceService.getAttendancesForIntern(
+        const fetched = await attendanceService.getAttendancesForIntern(
           internId,
           limit,
           startDate,
           endDate,
         );
-        set({ attendances, loading: false });
+        set((state) => {
+          // Merge by ID to avoid overwriting existing attendances from other fetches
+          const existingIds = new Set(state.attendances.map((a) => a.id));
+          const newItems = fetched.filter((a) => !existingIds.has(a.id));
+          return {
+            attendances: [...state.attendances, ...newItems],
+            loading: false,
+          };
+        });
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
       }
@@ -95,13 +103,21 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
     ) => {
       set({ loading: true, error: null });
       try {
-        const attendances = await attendanceService.getAttendancesForUser(
+        const fetched = await attendanceService.getAttendancesForUser(
           userId,
           limit,
           startDate,
           endDate,
         );
-        set({ attendances, loading: false });
+        set((state) => {
+          // Merge by ID to avoid overwriting existing attendances from other fetches
+          const existingIds = new Set(state.attendances.map((a) => a.id));
+          const newItems = fetched.filter((a) => !existingIds.has(a.id));
+          return {
+            attendances: [...state.attendances, ...newItems],
+            loading: false,
+          };
+        });
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
       }

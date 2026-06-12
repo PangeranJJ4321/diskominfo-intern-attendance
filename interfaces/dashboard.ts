@@ -10,7 +10,6 @@ export interface TakeAttendanceListProps {
 export interface TakeAttendanceFaceCameraProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (photoUrl: string, faceDescriptor: number[]) => void;
 }
 
 export interface TakeAttendanceCardProps {

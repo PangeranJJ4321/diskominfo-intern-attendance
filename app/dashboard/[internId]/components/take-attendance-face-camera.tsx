@@ -20,6 +20,7 @@ import { uploadImage } from "@/lib/services/upload";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { Spinner } from "@/components/ui/spinner";
 import { FaceModelLoadingOverlay } from "@/components/custom/face-model-loading-overlay";
+import { useFaceCaptureStore } from "@/stores/useFaceCaptureStore";
 
 /**
  * Camera component for verifying the user's face during check-in.
@@ -27,7 +28,6 @@ import { FaceModelLoadingOverlay } from "@/components/custom/face-model-loading-
 export default function TakeAttendanceFaceCamera({
   open,
   onOpenChange,
-  onSuccess,
 }: TakeAttendanceFaceCameraProps) {
   const [cameraReady, setCameraReady] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -43,6 +43,8 @@ export default function TakeAttendanceFaceCamera({
     null,
   );
   const [modelsReady, setModelsReady] = useState(false);
+  const setCapture = useFaceCaptureStore((s) => s.setCapture);
+
   const [modelsError, setModelsError] = useState("");
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -185,7 +187,7 @@ export default function TakeAttendanceFaceCamera({
       const { url: photoUrl } = await uploadImage(base64, "attendance-photos");
 
       setStatus("Foto berhasil diunggah! Mencatat presensi...");
-      onSuccess(photoUrl, capturedDescriptor);
+      setCapture(photoUrl, capturedDescriptor);
       handleOpenChange(false);
     } catch (error) {
       const errMsg =

@@ -36,7 +36,6 @@ export default function TakeAttendanceList({
   );
   const holidays = useAgencyHolidayStore((s) => s.holidays);
   const fetchHolidays = useAgencyHolidayStore((s) => s.fetchHolidays);
-  const loading = useAttendanceStore((s) => s.loading);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -167,7 +166,7 @@ export default function TakeAttendanceList({
     holidays,
   ]);
 
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col md:flex-row w-full gap-4">
         {[1, 2].map((i) => (

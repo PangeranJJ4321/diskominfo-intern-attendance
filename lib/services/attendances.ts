@@ -107,7 +107,18 @@ export async function createAttendance(
     body: JSON.stringify(data),
   });
   if (!res.ok) await handleError(res, "Gagal mencatat presensi");
-  return res.json();
+  const created: Attendance = await res.json();
+  let cleanTime = created.attendanceTime;
+  if (cleanTime && cleanTime.includes("T")) {
+    const dateObj = new Date(cleanTime);
+    const hours = String(dateObj.getHours()).padStart(2, "0");
+    const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+    cleanTime = `${hours}:${minutes}`;
+  }
+  return {
+    ...created,
+    attendanceTime: cleanTime,
+  };
 }
 
 export async function updateAttendance(

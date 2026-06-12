@@ -109,10 +109,21 @@ export async function GET(request: NextRequest) {
         : {}),
       ...(startDate || endDate
         ? {
-            startDate: {
-              ...(startDate ? { gte: startDate } : {}),
-              ...(endDate ? { lte: endDate } : {}),
-            },
+            AND: [
+              // Assignment starts on or before the end of the query range
+              {
+                startDate: {
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              },
+              // Assignment has no end date OR ends on or after the start of the query range
+              {
+                OR: [
+                  { endDate: null },
+                  ...(startDate ? [{ endDate: { gte: startDate } }] : []),
+                ],
+              },
+            ],
           }
         : {}),
     };

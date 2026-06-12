@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil } from "lucide-react";
-import { getInterns } from "@/lib/services/interns";
-import { getAgencies } from "@/lib/services/agencies";
-import { getInstitutions } from "@/lib/services/institutions";
+import { useInternStore } from "@/stores/useInternStore";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import { useInstitutionStore } from "@/stores/useInstitutionStore";
 import { deleteIntern } from "@/lib/services/interns";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
 import { CreateInternDialog } from "./create-intern-dialog";
 import { EditInternDialog } from "./edit-intern-dialog";
 import { toast } from "sonner";
-import type { Intern, Agency, Institution } from "@/interfaces/models";
+import type { Intern } from "@/interfaces/models";
 import type { InternCardProps } from "@/interfaces/profile";
 
 /**
@@ -41,97 +41,85 @@ function isInternActive(intern: Intern): boolean {
  * Displays intern data for a user and allows create/edit/delete operations.
  * Shows "Edit" button when there is an active intern, "Tambah" button otherwise.
  *
+ * Uses Zustand stores for interns, agencies, and institutions instead of direct API calls.
+ *
  * @param {InternCardProps} props - The component props.
  * @param {string} props.userId - The user ID.
- * @param {function} [props.onInternsChange] - Callback when interns list changes.
  * @returns {React.JSX.Element} The rendered intern card.
  */
-export function InternCard({ userId, onInternsChange }: InternCardProps) {
-  const [loading, setLoading] = useState(true);
-  const [interns, setInterns] = useState<Intern[]>([]);
-  const [agencies, setAgencies] = useState<Agency[]>([]);
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
+export function InternCard({ userId }: InternCardProps) {
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+
+  // ── Zustand stores ──
+  const allInterns = useInternStore((s) => s.interns);
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const internsLoading = useInternStore((s) => s.loading);
+  const agencies = useAgencyStore((s) => s.agencies);
+  const fetchAgencies = useAgencyStore((s) => s.fetchAgencies);
+  const agenciesLoading = useAgencyStore((s) => s.loading);
+  const institutions = useInstitutionStore((s) => s.institutions);
+  const fetchInstitutions = useInstitutionStore((s) => s.fetchInstitutions);
+  const institutionsLoading = useInstitutionStore((s) => s.loading);
+
+  // Combined loading from stores (no local loading state to avoid setState-in-effect)
+  const loading = internsLoading || agenciesLoading || institutionsLoading;
+
+  // Filter interns for this user
+  const interns = useMemo(
+    () => allInterns.filter((i) => i.userId === userId),
+    [allInterns, userId],
+  );
 
   /** The currently active intern, if any */
   const activeIntern = interns.find((i) => isInternActive(i)) ?? null;
 
   /**
-   * Fetches all required data from the API without setting state.
-   *
-   * @returns The fetched interns, agencies, and institutions.
+   * Fetches all required data from the Zustand stores.
    */
-  async function fetchAllData() {
-    const [internsData, agenciesData, institutionsData] = await Promise.all([
-      getInterns(),
-      getAgencies(),
-      getInstitutions(),
-    ]);
-    const userInterns = internsData.filter((i) => i.userId === userId);
-    return { userInterns, agenciesData, institutionsData };
-  }
-
-  /**
-   * Applies fetched data to component state.
-   *
-   * @param data - The fetched data to apply.
-   */
-  function applyData(data: {
-    userInterns: Intern[];
-    agenciesData: Agency[];
-    institutionsData: Institution[];
-  }) {
-    setInterns(data.userInterns);
-    setAgencies(data.agenciesData);
-    setInstitutions(data.institutionsData);
-    onInternsChange?.(data.userInterns);
-  }
+  const refreshData = useCallback(async () => {
+    try {
+      await Promise.all([fetchInterns(), fetchAgencies(), fetchInstitutions()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data magang");
+    }
+  }, [fetchInterns, fetchAgencies, fetchInstitutions]);
 
   useEffect(() => {
     let cancelled = false;
 
-    fetchAllData()
-      .then((data) => {
-        if (cancelled) return;
-        applyData(data);
-        if (data.userInterns.length === 0) {
-          setCreateOpen(true);
+    void (async () => {
+      try {
+        await Promise.all([
+          fetchInterns(),
+          fetchAgencies(),
+          fetchInstitutions(),
+        ]);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Gagal memuat data magang",
+          );
         }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(
-          err instanceof Error ? err.message : "Gagal memuat data magang",
-        );
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
-      });
+        return;
+      }
+
+      if (cancelled) return;
+
+      // Auto-open create dialog if no interns yet
+      const currentInterns = useInternStore
+        .getState()
+        .interns.filter((i) => i.userId === userId);
+      if (currentInterns.length === 0) {
+        if (!cancelled) setCreateOpen(true);
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  /**
-   * Refreshes all data after a mutation (create, update, or delete).
-   */
-  async function refreshData() {
-    setError("");
-    setLoading(true);
-    try {
-      const data = await fetchAllData();
-      applyData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat data magang");
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [userId, fetchInterns, fetchAgencies, fetchInstitutions]);
 
   /**
    * Handles successful intern creation.
@@ -159,9 +147,10 @@ export function InternCard({ userId, onInternsChange }: InternCardProps) {
   async function handleDelete(internId: string) {
     try {
       await deleteIntern(internId);
+      // Refresh store after deletion
+      await fetchInterns();
       setEditOpen(false);
       toast.success("Data magang berhasil dihapus");
-      void refreshData();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Gagal menghapus data magang",

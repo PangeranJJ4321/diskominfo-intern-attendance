@@ -10,7 +10,7 @@ import {
   Calendar,
   AlertTriangle,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +36,10 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createAttendance } from "@/lib/services/attendances";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import { useLocationStore } from "@/stores/useLocationStore";
+import { useUserStore } from "@/stores/useUserStore";
 import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import {
   AttendanceStatus,
@@ -52,17 +55,22 @@ function formatTimeLabel(value: string): string {
 
 export default function TakeAttendanceCard({
   schedule,
-  attendances,
   internId,
-  userHasFaceRegistered,
-  currentLocation,
-  isWithinGeofence,
-  onAttendanceSuccess,
-  refreshTrigger,
   workDate,
   className,
-  agencyRule,
 }: TakeAttendanceCardProps) {
+  // Zustand stores
+  const createAttendance = useAttendanceStore((s) => s.createAttendance);
+  const fetchAttendancesForIntern = useAttendanceStore(
+    (s) => s.fetchAttendancesForIntern,
+  );
+  const attendances = useAttendanceStore((s) => s.attendances);
+  const agencyRule = useAgencyStore((s) => s.rule);
+  const currentLocation = useLocationStore((s) => s.currentLocation);
+  const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
+  const profile = useUserStore((s) => s.profile);
+  const userHasFaceRegistered = (profile?.faceDescriptors?.length ?? 0) > 0;
+
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
 
@@ -88,9 +96,6 @@ export default function TakeAttendanceCard({
       clearInterval(interval);
     };
   }, []);
-
-  // Fetch database records
-  useEffect(() => {}, [refreshTrigger]);
 
   const todayDateStr = useMemo(() => {
     if (workDate) return workDate;
@@ -255,7 +260,15 @@ export default function TakeAttendanceCard({
         `Presensi ${getAttendanceStatusLabel(status)} berhasil dikirim!`,
       );
 
-      onAttendanceSuccess();
+      // Refetch attendances via Zustand store after successful submission
+      const yesterdayDateStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      void fetchAttendancesForIntern(
+        internId,
+        1000,
+        yesterdayDateStr,
+        todayDateStr,
+      );
+
       setSelectedStatus(null);
       setNotes("");
       setCapturedPhotoUrl(null);

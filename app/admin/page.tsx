@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { getAgencyAccesses } from "@/lib/services/agency-accesses";
+import { useAgencyAccessStore } from "@/stores/useAgencyAccessStore";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Admin landing page — redirects to the first agency the admin has access to.
  * If no agency access is found, shows a fallback message.
+ *
+ * Uses Zustand store for agency accesses instead of direct API calls.
  *
  * @returns {React.JSX.Element} A loading skeleton or redirect.
  */
@@ -19,14 +21,18 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Zustand store for agency accesses
+  const fetchAccesses = useAgencyAccessStore((s) => s.fetchAccesses);
+
   useEffect(() => {
     if (sessionPending) return;
 
     async function redirectToFirstAgency() {
       try {
-        const accesses = await getAgencyAccesses();
-        if (accesses.length > 0 && accesses[0].agencyId) {
-          router.replace(`/admin/${accesses[0].agencyId}`);
+        await fetchAccesses();
+        const freshAccesses = useAgencyAccessStore.getState().accesses;
+        if (freshAccesses.length > 0 && freshAccesses[0].agencyId) {
+          router.replace(`/admin/${freshAccesses[0].agencyId}`);
           return;
         }
         setError(
@@ -41,7 +47,7 @@ export default function AdminPage() {
     }
 
     void redirectToFirstAgency();
-  }, [sessionPending, router]);
+  }, [sessionPending, router, fetchAccesses]);
 
   return (
     <>

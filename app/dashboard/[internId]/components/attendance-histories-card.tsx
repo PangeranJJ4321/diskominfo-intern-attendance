@@ -13,9 +13,16 @@ import { formatWeekRange } from "@/lib/date-utils";
 import type { Schedule, Attendance } from "@/interfaces/models";
 import UserAttendanceDetailDialog from "./user-attendance-detail-dialog";
 
+/**
+ * Renders the attendance history card with a calendar view.
+ * Zustand stores handle data fetching internally — no refreshTrigger needed.
+ *
+ * @param {AttendanceHistoriesCardProps} props - The component props.
+ * @param {string} props.internId - The intern ID to display attendance for.
+ * @returns {React.JSX.Element} The rendered attendance history card.
+ */
 export default function AttendanceHistoriesCard({
   internId,
-  refreshTrigger,
 }: AttendanceHistoriesCardProps) {
   const isMobile = useIsMobile();
   // Calendar Month State
@@ -131,12 +138,11 @@ export default function AttendanceHistoriesCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Calendar Grid wrapper */}
+        {/* Calendar Grid wrapper — UserAttendances now uses Zustand stores internally */}
         <UserAttendances
           internIds={[internId]}
           currentMonth={currentMonth}
           onDayClick={handleDayClick}
-          refreshTrigger={refreshTrigger}
         />
 
         {/* Calendar Legends */}

@@ -30,6 +30,7 @@ import { getInitials } from "@/lib/string-utils";
 import { getUsers } from "@/lib/services/users";
 import { getShifts } from "@/lib/services/shifts";
 import { getShiftAssignments } from "@/lib/services/shift-assignments";
+import { useInternStore } from "@/stores/intern-store";
 import type {
   User,
   Shift,
@@ -38,19 +39,35 @@ import type {
   Attendance,
 } from "@/interfaces/models";
 
+export interface UserAttendancesCardProps {
+  agencyId: string;
+}
+
 /**
  * Renders the admin dashboard user attendance management card.
  *
+ * @param {UserAttendancesCardProps} props - Component props containing the agency ID.
  * @returns {React.JSX.Element} The rendered user attendance control card.
  */
-export default function UserAttendancesCard() {
+export default function UserAttendancesCard({
+  agencyId,
+}: UserAttendancesCardProps) {
   const isMobile = useIsMobile();
+  const internStore = useInternStore();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  /**
+   * Resolves the internId for the currently selected user
+   * scoped to the current agency.
+   */
+  const selectedInternId = selectedUser
+    ? internStore.getInternIdForUser(selectedUser.id, agencyId)
+    : undefined;
 
   // Date State for Calendar
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -81,7 +98,12 @@ export default function UserAttendancesCard() {
       setIsLoading(true);
       try {
         const [loadedUsers, loadedShifts, loadedAssignments] =
-          await Promise.all([getUsers(), getShifts(), getShiftAssignments()]);
+          await Promise.all([
+            getUsers(),
+            getShifts(),
+            getShiftAssignments(),
+            internStore.fetchInterns(),
+          ]);
         if (!cancelled) {
           setUsers(loadedUsers);
           setShifts(loadedShifts);
@@ -115,7 +137,7 @@ export default function UserAttendancesCard() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [refreshCounter]);
+  }, [refreshCounter, internStore]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
@@ -486,11 +508,11 @@ export default function UserAttendancesCard() {
       </Card>
 
       {/* User Shift Assignment Dialog */}
-      {selectedUser && (
+      {selectedUser && selectedInternId && (
         <UserShiftEditDialog
           open={isAssignDialogOpen}
           onOpenChange={setIsAssignDialogOpen}
-          userId={selectedUser.id}
+          internId={selectedInternId}
           userName={selectedUser.name}
           onSuccess={() => setRefreshCounter((prev) => prev + 1)}
         />
@@ -508,17 +530,17 @@ export default function UserAttendancesCard() {
             existingAttendance={overrideExisting}
             onSuccess={() => setRefreshCounter((prev) => prev + 1)}
           />
-        ) : (
+        ) : selectedInternId ? (
           <UserAttendanceCreateDialog
             open={isOverrideOpen}
             onOpenChange={setIsOverrideOpen}
-            userId={selectedUser.id}
+            internId={selectedInternId}
             userName={selectedUser.name}
             date={overrideDate}
             schedule={overrideSchedule}
             onSuccess={() => setRefreshCounter((prev) => prev + 1)}
           />
-        ))}
+        ) : null)}
 
       {/* Export Attendance Dialog */}
       <ExportAttendanceDialog

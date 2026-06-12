@@ -47,7 +47,7 @@ import { Spinner } from "@/components/ui/spinner";
 export default function UserShiftEditDialog({
   open,
   onOpenChange,
-  userId,
+  internId,
   userName,
   onSuccess,
 }: UserShiftEditDialogProps) {
@@ -70,9 +70,7 @@ export default function UserShiftEditDialog({
         getShiftAssignments(),
       ]);
       setShifts(freshShifts);
-      setUserAssignments(
-        allAssignments.filter((a) => a.intern?.userId === userId),
-      );
+      setUserAssignments(allAssignments.filter((a) => a.internId === internId));
 
       // Set default form values
       if (freshShifts.length > 0) {
@@ -85,7 +83,7 @@ export default function UserShiftEditDialog({
     } finally {
       setIsLoadingData(false);
     }
-  }, [userId]);
+  }, [internId]);
 
   useEffect(() => {
     if (open) {
@@ -120,7 +118,7 @@ export default function UserShiftEditDialog({
         dateRange.to && !isSameDay ? format(dateRange.to, "yyyy-MM-dd") : null;
 
       const newAssignment = await createShiftAssignment({
-        userId,
+        internId,
         shiftId: selectedShiftId,
         startDate,
         endDate,

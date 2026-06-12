@@ -56,8 +56,6 @@ export function InternCard({ userId }: InternCardProps) {
   // ── Intern store ──
   const internsAll = useInternStore((s) => s.interns);
   const fetchInterns = useInternStore((s) => s.fetchInterns);
-  const addIntern = useInternStore((s) => s.addIntern);
-  const updateIntern = useInternStore((s) => s.updateIntern);
   const removeIntern = useInternStore((s) => s.removeIntern);
 
   // ── Agency store ──
@@ -113,32 +111,38 @@ export function InternCard({ userId }: InternCardProps) {
   }, [userId, loadData]);
 
   /**
-   * Handles successful intern creation. Adds the new intern to the Zustand store
-   * to avoid a full re-fetch.
-   *
-   * @param intern - The newly created intern record.
+   * Refreshes store data after a mutation (create, update, or delete).
    */
-  function handleCreate(intern: Intern) {
-    addIntern(intern);
+  async function refreshData() {
+    setError("");
+    try {
+      const institutionsData = await loadData();
+      setInstitutions(institutionsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data magang");
+    }
+  }
+
+  /**
+   * Handles successful intern creation.
+   */
+  function handleCreate() {
     setCreateOpen(false);
     toast.success("Data magang berhasil ditambahkan");
+    void refreshData();
   }
 
   /**
-   * Handles successful intern update. Updates the intern in the Zustand store
-   * to avoid a full re-fetch.
-   *
-   * @param intern - The updated intern record.
+   * Handles successful intern update.
    */
-  function handleEdit(intern: Intern) {
-    updateIntern(intern);
+  function handleEdit() {
     setEditOpen(false);
     toast.success("Data magang berhasil diperbarui");
+    void refreshData();
   }
 
   /**
-   * Handles intern deletion with confirmation. Removes the intern from the
-   * Zustand store (no re-fetch needed — store reactively updates the UI).
+   * Handles intern deletion with confirmation.
    *
    * @param internId - The ID of the intern to delete.
    */
@@ -148,6 +152,7 @@ export function InternCard({ userId }: InternCardProps) {
       removeIntern(internId);
       setEditOpen(false);
       toast.success("Data magang berhasil dihapus");
+      void refreshData();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Gagal menghapus data magang",
@@ -190,18 +195,7 @@ export function InternCard({ userId }: InternCardProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setError("");
-                loadData()
-                  .then((institutionsData) => setInstitutions(institutionsData))
-                  .catch((err) =>
-                    setError(
-                      err instanceof Error
-                        ? err.message
-                        : "Gagal memuat data magang",
-                    ),
-                  );
-              }}
+              onClick={() => void refreshData()}
             >
               Coba lagi
             </Button>

@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { GeoJsonObject } from "geojson";
 import { getAttendanceAreas } from "@/lib/services/attendance-areas";
 import { createLocationLog } from "@/lib/services/location-logs";
-import { getAgencyRule } from "@/lib/services/agencies";
-import { getInterns } from "@/lib/services/interns";
 import { useLocationStore } from "@/stores/location-store";
+import { useInternStore } from "@/stores/intern-store";
+import { useAgencyStore } from "@/stores/agency-store";
 import type { AgencyRule } from "@/interfaces/models";
 
 // Import subcomponents
@@ -58,6 +58,12 @@ export default function InternDashboardPage({
   // Geolocation state from Zustand store (updated by LiveLocationMap)
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const setGeofence = useLocationStore((s) => s.setGeofence);
+
+  // Intern & Agency stores
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const getInternForUser = useInternStore((s) => s.getInternForUser);
+  const fetchAgencyRule = useAgencyStore((s) => s.fetchAgencyRule);
+
   const geofenceFetchStatus = useRef({ initiated: false, completed: false });
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
   const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
@@ -96,11 +102,11 @@ export default function InternDashboardPage({
 
     async function loadAgencyRule() {
       try {
-        const interns = await getInterns();
-        const intern = interns.find((i) => i.id === internId);
+        await fetchInterns();
+        const intern = getInternForUser(user?.id ?? "");
         if (intern) {
-          const rule = await getAgencyRule(intern.agencyId);
-          setAgencyRule(rule);
+          const rule = await fetchAgencyRule(intern.agencyId);
+          if (rule) setAgencyRule(rule);
         }
       } catch (err) {
         console.error("Gagal memuat aturan instansi:", err);
@@ -108,7 +114,7 @@ export default function InternDashboardPage({
     }
 
     void loadAgencyRule();
-  }, [internId, user?.id]);
+  }, [internId, user?.id, fetchInterns, getInternForUser, fetchAgencyRule]);
 
   // Load geofence from the backend
   useEffect(() => {

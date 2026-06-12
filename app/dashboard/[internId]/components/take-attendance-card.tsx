@@ -46,6 +46,7 @@ import {
 import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import { useLocationStore } from "@/stores/location-store";
 import { useAttendanceStore } from "@/stores/attendance-store";
+import { useInternStore } from "@/stores/intern-store";
 import TakeAttendanceFaceCamera from "./take-attendance-face-camera";
 import { formatTimeFromApi } from "@/lib/time-utils";
 
@@ -72,6 +73,10 @@ export default function TakeAttendanceCard({
     (s) => s.userHasFaceRegistered,
   );
   const refreshAttendances = useAttendanceStore((s) => s.refreshAttendances);
+
+  // ── Intern store ──
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const getInternForUser = useInternStore((s) => s.getInternForUser);
 
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
@@ -237,9 +242,8 @@ export default function TakeAttendanceCard({
         const now = new Date();
 
         // Resolve internId from userId (required by this repo's schema)
-        const { getInterns } = await import("@/lib/services/interns");
-        const interns = await getInterns(1000);
-        const intern = interns.find((i) => i.userId === userId);
+        await fetchInterns();
+        const intern = getInternForUser(userId);
         if (!intern) {
           toast.error("Data magang tidak ditemukan.");
           setIsSubmitting(false);
@@ -300,6 +304,8 @@ export default function TakeAttendanceCard({
       schedule.id,
       todayDateStr,
       refreshAttendances,
+      fetchInterns,
+      getInternForUser,
     ],
   );
 

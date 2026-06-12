@@ -28,7 +28,7 @@ import ScheduleEditDialog from "./schedule-edit-dialog";
 
 import { getShifts, deleteShift } from "@/lib/services/shifts";
 import { getSchedules } from "@/lib/services/schedules";
-import { getAgencies } from "@/lib/services/agencies";
+import { useAgencyStore } from "@/stores/agency-store";
 import type { Shift, Schedule } from "@/interfaces/models";
 import type { DayLabel } from "@/interfaces/admin";
 
@@ -66,6 +66,10 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ── Agency store ──
+  const fetchAgencies = useAgencyStore((s) => s.fetchAgencies);
+  const getAgencyById = useAgencyStore((s) => s.getAgencyById);
+
   // Weekly Create Dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
@@ -90,12 +94,15 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [loadedShifts, loadedSchedules, loadedAgencies] =
-          await Promise.all([getShifts(), getSchedules(), getAgencies()]);
+        const [loadedShifts, loadedSchedules] = await Promise.all([
+          getShifts(),
+          getSchedules(),
+        ]);
+        await fetchAgencies();
         setShifts(loadedShifts);
         setSchedules(loadedSchedules);
 
-        const currentAgency = loadedAgencies.find((a) => a.id === agencyId);
+        const currentAgency = getAgencyById(agencyId);
         setDefaultShiftId(currentAgency?.defaultShiftId ?? null);
 
         if (loadedShifts.length > 0) {
@@ -110,7 +117,7 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
     }
 
     return () => clearTimeout(timer);
-  }, [agencyId]);
+  }, [agencyId, fetchAgencies, getAgencyById]);
 
   /**
    * Callback when a shift is successfully created.

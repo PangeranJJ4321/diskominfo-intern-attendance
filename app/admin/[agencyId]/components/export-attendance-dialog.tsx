@@ -33,7 +33,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import {
   getAttendances,
-  getAttendancesForUser,
+  getAttendancesForIntern,
 } from "@/lib/services/attendances";
 import { getSchedules } from "@/lib/services/schedules";
 import type { ExportAttendanceDialogProps } from "@/interfaces/admin";
@@ -53,6 +53,7 @@ export default function ExportAttendanceDialog({
   users,
   shifts,
   assignments,
+  interns,
 }: ExportAttendanceDialogProps) {
   // Default range picker to May 2026 for demo data consistency
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -62,6 +63,7 @@ export default function ExportAttendanceDialog({
 
   const [exportTarget, setExportTarget] = useState<"all" | "specific">("all");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedInternId, setSelectedInternId] = useState<string>("");
   const [isExporting, setIsExporting] = useState(false);
 
   // Formatting date range label display helper
@@ -79,15 +81,26 @@ export default function ExportAttendanceDialog({
     return "Pilih rentang tanggal";
   }, [dateRange]);
 
-  // Ensure selectedUserId has a default value when list of users is populated
+  // Ensure selectedUserId and selectedInternId have defaults when list of users is populated
   useEffect(() => {
-    if (open && users.length > 0 && !selectedUserId) {
+    if (open && users.length > 0) {
       const timer = setTimeout(() => {
-        setSelectedUserId(users[0].id);
+        if (!selectedUserId) {
+          setSelectedUserId(users[0].id);
+        }
+        // Map selectedUserId to the first intern of that user
+        if (selectedUserId) {
+          const userInterns = interns.filter(
+            (i) => i.userId === selectedUserId,
+          );
+          if (userInterns.length > 0) {
+            setSelectedInternId((prev) => prev || userInterns[0].id);
+          }
+        }
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, users, selectedUserId]);
+  }, [open, users, selectedUserId, interns, selectedInternId]);
 
   /**
    * Handles the export process to fetch, filter, format and trigger XLSX download.
@@ -113,13 +126,13 @@ export default function ExportAttendanceDialog({
       if (exportTarget === "all") {
         data = await getAttendances(fetchLimit, startDateStr, endDateStr);
       } else {
-        if (!selectedUserId) {
+        if (!selectedInternId) {
           toast.error("Silakan pilih karyawan terlebih dahulu.");
           setIsExporting(false);
           return;
         }
-        data = await getAttendancesForUser(
-          selectedUserId,
+        data = await getAttendancesForIntern(
+          selectedInternId,
           fetchLimit,
           startDateStr,
           endDateStr,
@@ -144,7 +157,11 @@ export default function ExportAttendanceDialog({
       const targetUsers =
         exportTarget === "all"
           ? users
-          : users.filter((u) => u.id === selectedUserId);
+          : users.filter((u) => {
+              // For specific export, match by internId mapped to user
+              const intern = interns.find((i) => i.id === selectedInternId);
+              return intern && intern.userId === u.id;
+            });
       const todayStr = format(new Date(), "yyyy-MM-dd");
 
       const dataToExport = [];
@@ -156,8 +173,11 @@ export default function ExportAttendanceDialog({
           const dayValue = calendarDay.getDay();
 
           // Get active shift assignments for user on this date
+          const userInternIds = interns
+            .filter((i) => i.userId === user.id)
+            .map((i) => i.id);
           const activeAssigns = assignments.filter((a) => {
-            if (a.intern?.userId !== user.id) return false;
+            if (!userInternIds.includes(a.internId)) return false;
             return (
               a.startDate <= dateStr && (!a.endDate || a.endDate >= dateStr)
             );
@@ -172,7 +192,8 @@ export default function ExportAttendanceDialog({
 
           // Find attendances in fetched database list for this user and date
           const userDateAttendances = data.filter(
-            (att) => att.intern?.userId === user.id && att.date === dateStr,
+            (att) =>
+              userInternIds.includes(att.internId) && att.date === dateStr,
           );
 
           // Merge schedules just like calendar view to account for overrides
@@ -426,7 +447,15 @@ export default function ExportAttendanceDialog({
               >
                 Pilih Karyawan
               </Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <Select
+                value={selectedUserId}
+                onValueChange={(val) => {
+                  setSelectedUserId(val);
+                  // Auto-select first intern for this user
+                  const userInterns = interns.filter((i) => i.userId === val);
+                  setSelectedInternId(userInterns[0]?.id || "");
+                }}
+              >
                 <SelectTrigger
                   id="select-user"
                   className="w-full rounded-lg bg-background border-border text-xs h-9"

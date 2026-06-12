@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getSchedules } from "@/lib/services/schedules";
 import { getShiftAssignments } from "@/lib/services/shift-assignments";
 import { getHolidays } from "@/lib/services/holidays";
-import { getAttendancesForUser } from "@/lib/services/attendances";
+import { getAttendancesForIntern } from "@/lib/services/attendances";
 import { getUserFaceDescriptors } from "@/lib/services/users";
 import type {
   Schedule,
@@ -33,6 +33,7 @@ import TakeAttendanceCard from "./take-attendance-card";
  */
 export default function TakeAttendanceList({
   userId,
+  internId,
   userName,
   currentLocation,
   isWithinGeofence,
@@ -58,7 +59,12 @@ export default function TakeAttendanceList({
       try {
         const [scheds, atts, assigns, hols] = await Promise.all([
           getSchedules(1000, relevantDays),
-          getAttendancesForUser(userId, 1000, yesterdayDateStr, todayDateStr),
+          getAttendancesForIntern(
+            internId,
+            1000,
+            yesterdayDateStr,
+            todayDateStr,
+          ),
           getShiftAssignments(1000, yesterdayDateStr, todayDateStr),
           getHolidays(1000, yesterdayDateStr, todayDateStr),
         ]);
@@ -73,7 +79,7 @@ export default function TakeAttendanceList({
       }
     }
     void loadData();
-  }, [userId, refreshTrigger]);
+  }, [internId, refreshTrigger]);
 
   const todayDateStr = useMemo(() => {
     return format(new Date(), "yyyy-MM-dd");
@@ -93,7 +99,7 @@ export default function TakeAttendanceList({
 
   // Fetch face descriptors from the API
   useEffect(() => {
-    if (!userId) return;
+    if (!internId) return;
 
     async function checkFaceRegistration() {
       try {
@@ -105,7 +111,7 @@ export default function TakeAttendanceList({
     }
 
     void checkFaceRegistration();
-  }, [userId, refreshTrigger]);
+  }, [internId, userId, refreshTrigger]);
 
   // Filter active schedules for today (including active yesterday overnight shifts)
   const sortedSchedulesWithWorkDates = useMemo(() => {
@@ -114,7 +120,7 @@ export default function TakeAttendanceList({
 
     // 1. Get assignments active for yesterday and today
     const assignmentsYesterday = assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (a.internId !== internId) return false;
       return (
         a.startDate <= yesterdayDateStr &&
         (!a.endDate || a.endDate >= yesterdayDateStr)
@@ -122,7 +128,7 @@ export default function TakeAttendanceList({
     });
 
     const assignmentsToday = assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (a.internId !== internId) return false;
       return (
         a.startDate <= todayDateStr && (!a.endDate || a.endDate >= todayDateStr)
       );
@@ -181,7 +187,7 @@ export default function TakeAttendanceList({
   }, [
     schedules,
     assignments,
-    userId,
+    internId,
     todayDateStr,
     yesterdayDateStr,
     todayDayOfWeek,
@@ -248,7 +254,7 @@ export default function TakeAttendanceList({
               schedule={schedule}
               attendances={attendances}
               workDate={workDate}
-              userId={userId}
+              internId={internId}
               userName={userName}
               userHasFaceRegistered={userHasFaceRegistered}
               currentLocation={currentLocation}
@@ -268,7 +274,7 @@ export default function TakeAttendanceList({
               schedule={schedule}
               attendances={attendances}
               workDate={workDate}
-              userId={userId}
+              internId={internId}
               userName={userName}
               userHasFaceRegistered={userHasFaceRegistered}
               currentLocation={currentLocation}

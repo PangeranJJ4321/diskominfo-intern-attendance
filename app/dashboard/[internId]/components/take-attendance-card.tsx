@@ -53,7 +53,7 @@ function formatTimeLabel(value: string): string {
 export default function TakeAttendanceCard({
   schedule,
   attendances,
-  userId,
+  internId,
   userHasFaceRegistered,
   currentLocation,
   isWithinGeofence,
@@ -104,12 +104,12 @@ export default function TakeAttendanceCard({
     return (
       attendances.find(
         (a) =>
-          a.intern?.userId === userId &&
+          a.internId === internId &&
           a.scheduleId === schedule.id &&
           a.date === todayDateStr,
       ) || null
     );
-  }, [attendances, schedule, userId, todayDateStr]);
+  }, [attendances, schedule, internId, todayDateStr]);
 
   // Timing states
   const timingStates = useMemo(() => {
@@ -226,17 +226,8 @@ export default function TakeAttendanceCard({
     try {
       const now = new Date();
 
-      // Resolve internId from userId
-      const { getInterns } = await import("@/lib/services/interns");
-      const interns = await getInterns(1000);
-      const intern = interns.find((i) => i.userId === userId);
-      if (!intern) {
-        toast.error("Data magang tidak ditemukan.");
-        return;
-      }
-
       await createAttendance({
-        internId: intern.id,
+        internId,
         scheduleId: schedule.id,
         date: todayDateStr,
         attendanceTime: now.toISOString(),

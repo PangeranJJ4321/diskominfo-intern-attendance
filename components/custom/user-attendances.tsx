@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import { getSchedules } from "@/lib/services/schedules";
 import { getShiftAssignments } from "@/lib/services/shift-assignments";
-import { getAttendancesForUser } from "@/lib/services/attendances";
+import { getAttendancesForIntern } from "@/lib/services/attendances";
 import { getHolidays } from "@/lib/services/holidays";
 import type {
   Schedule,
@@ -35,7 +35,7 @@ import {
  * @returns {React.JSX.Element} The rendered user attendance calendar.
  */
 export default function UserAttendances({
-  userId,
+  internIds,
   currentMonth,
   onDayClick,
   refreshTrigger = 0,
@@ -78,14 +78,18 @@ export default function UserAttendances({
     async function loadData() {
       setLoading(true);
       try {
-        const [schedsData, assignsData, attsData, holsData] = await Promise.all(
-          [
-            getSchedules(),
-            getShiftAssignments(1000, startDate, endDate),
-            getAttendancesForUser(userId, 1000, startDate, endDate),
-            getHolidays(1000, startDate, endDate),
-          ],
+        // Fetch attendances for all intern IDs in parallel
+        const attsPromises = internIds.map((internId) =>
+          getAttendancesForIntern(internId, 1000, startDate, endDate),
         );
+        const [schedsData, assignsData, allAtts, holsData] = await Promise.all([
+          getSchedules(),
+          getShiftAssignments(1000, startDate, endDate),
+          Promise.all(attsPromises),
+          getHolidays(1000, startDate, endDate),
+        ]);
+        // Flatten attendance results from multiple interns
+        const attsData = allAtts.flat();
         if (!cancelled) {
           setSchedules(schedsData);
           setAssignments(assignsData);
@@ -105,7 +109,7 @@ export default function UserAttendances({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [userId, refreshTrigger, currentMonth, isMobile]);
+  }, [internIds, refreshTrigger, currentMonth, isMobile]);
 
   if (!isClient || loading) {
     if (isMobile) {
@@ -200,7 +204,7 @@ export default function UserAttendances({
   const getActiveAssignmentsForDate = (date: Date): ShiftAssignment[] => {
     const formattedDate = format(date, "yyyy-MM-dd");
     return assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (!internIds.includes(a.internId)) return false;
       const startOk = a.startDate <= formattedDate;
       const endOk = !a.endDate || a.endDate >= formattedDate;
       return startOk && endOk;
@@ -238,7 +242,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.intern?.userId === userId && a.date === formattedDate,
+            (a) => internIds.includes(a.internId) && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -315,7 +319,7 @@ export default function UserAttendances({
                   daySchedules.map((schedule, idx) => {
                     const attendance = attendances.find(
                       (a) =>
-                        a.intern?.userId === userId &&
+                        internIds.includes(a.internId) &&
                         a.scheduleId === schedule.id &&
                         a.date === formattedDate,
                     );
@@ -458,7 +462,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.intern?.userId === userId && a.date === formattedDate,
+            (a) => internIds.includes(a.internId) && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -527,7 +531,7 @@ export default function UserAttendances({
                         // Find attendance record
                         const attendance = attendances.find(
                           (a) =>
-                            a.intern?.userId === userId &&
+                            internIds.includes(a.internId) &&
                             a.scheduleId === schedule.id &&
                             a.date === formattedDate,
                         );

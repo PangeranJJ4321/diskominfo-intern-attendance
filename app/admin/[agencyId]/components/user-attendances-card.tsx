@@ -30,8 +30,10 @@ import { getInitials } from "@/lib/string-utils";
 import { getUsers } from "@/lib/services/users";
 import { getShifts } from "@/lib/services/shifts";
 import { getShiftAssignments } from "@/lib/services/shift-assignments";
+import { getInterns } from "@/lib/services/interns";
 import type {
   User,
+  Intern,
   Shift,
   ShiftAssignment,
   Schedule,
@@ -50,6 +52,7 @@ export default function UserAttendancesCard() {
 
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
+  const [interns, setInterns] = useState<Intern[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Date State for Calendar
@@ -80,12 +83,18 @@ export default function UserAttendancesCard() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [loadedUsers, loadedShifts, loadedAssignments] =
-          await Promise.all([getUsers(), getShifts(), getShiftAssignments()]);
+        const [loadedUsers, loadedShifts, loadedAssignments, loadedInterns] =
+          await Promise.all([
+            getUsers(),
+            getShifts(),
+            getShiftAssignments(),
+            getInterns(),
+          ]);
         if (!cancelled) {
           setUsers(loadedUsers);
           setShifts(loadedShifts);
           setAssignments(loadedAssignments);
+          setInterns(loadedInterns);
 
           // Auto select first user if not selected or update selected user references
           setSelectedUser((prev) => {
@@ -135,13 +144,16 @@ export default function UserAttendancesCard() {
   const activeAssignments = useMemo(() => {
     if (!selectedUser) return [];
     const todayStr = format(new Date(), "yyyy-MM-dd");
+    const userInternIds = interns
+      .filter((i) => i.userId === selectedUser.id)
+      .map((i) => i.id);
     return assignments.filter(
       (a) =>
-        a.intern?.userId === selectedUser.id &&
+        userInternIds.includes(a.internId) &&
         a.startDate <= todayStr &&
         (!a.endDate || a.endDate >= todayStr),
     );
-  }, [selectedUser, assignments]);
+  }, [selectedUser, assignments, interns]);
 
   const activeShifts = useMemo(() => {
     if (activeAssignments.length === 0) return [];
@@ -291,9 +303,12 @@ export default function UserAttendancesCard() {
               filteredUsers.map((user) => {
                 const isSelected = selectedUser?.id === user.id;
                 const todayStr = format(new Date(), "yyyy-MM-dd");
+                const userInternIds = interns
+                  .filter((i) => i.userId === user.id)
+                  .map((i) => i.id);
                 const userAssigns = assignments.filter(
                   (a) =>
-                    a.intern?.userId === user.id &&
+                    userInternIds.includes(a.internId) &&
                     a.startDate <= todayStr &&
                     (!a.endDate || a.endDate >= todayStr),
                 );
@@ -444,7 +459,9 @@ export default function UserAttendancesCard() {
               </div>
 
               <UserAttendances
-                userId={selectedUser.id}
+                internIds={interns
+                  .filter((i) => i.userId === selectedUser.id)
+                  .map((i) => i.id)}
                 currentMonth={currentMonth}
                 onDayClick={handleCalendarDayClick}
                 refreshTrigger={refreshCounter}
@@ -528,6 +545,7 @@ export default function UserAttendancesCard() {
         users={users}
         shifts={shifts}
         assignments={assignments}
+        interns={interns}
       />
     </div>
   );

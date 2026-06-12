@@ -64,13 +64,19 @@ export default function UserShiftEditDialog({
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      const [freshShifts, allAssignments] = await Promise.all([
+      const { getInterns: loadInterns } =
+        await import("@/lib/services/interns");
+      const [freshShifts, allAssignments, freshInterns] = await Promise.all([
         getShifts(),
         getShiftAssignments(),
+        loadInterns(),
       ]);
       setShifts(freshShifts);
+      const userInternIds = freshInterns
+        .filter((i) => i.userId === userId)
+        .map((i) => i.id);
       setUserAssignments(
-        allAssignments.filter((a) => a.intern?.userId === userId),
+        allAssignments.filter((a) => userInternIds.includes(a.internId)),
       );
 
       // Set default form values

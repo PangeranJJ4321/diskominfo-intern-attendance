@@ -21,7 +21,7 @@ export interface FaceModelLoadingOverlayProps {
 }
 
 export interface UserAttendancesProps {
-  userId: string;
+  internIds: string[];
   currentMonth: Date;
   onDayClick?: (
     date: Date,

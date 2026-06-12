@@ -213,6 +213,7 @@ export default function InternDashboardPage({
             <div className="flex flex-col gap-6">
               <TakeAttendanceList
                 userId={user.id}
+                internId={internId}
                 userName={user.name}
                 currentLocation={currentLocation}
                 isWithinGeofence={isWithinGeofence}
@@ -232,7 +233,7 @@ export default function InternDashboardPage({
 
             <div className="pt-2">
               <AttendanceHistoriesCard
-                userId={user.id}
+                internId={internId}
                 refreshTrigger={refreshTrigger}
               />
             </div>

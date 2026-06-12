@@ -4,6 +4,7 @@ import { AttendanceStatus, type AttendanceStatusType } from "./enums";
 
 export interface TakeAttendanceListProps {
   userId: string;
+  internId: string;
   userName: string;
   currentLocation: {
     latitude: number;
@@ -28,7 +29,7 @@ export interface TakeAttendanceFaceCameraProps {
 export interface TakeAttendanceCardProps {
   schedule: Schedule;
   attendances: Attendance[];
-  userId: string;
+  internId: string;
   userName: string;
   userHasFaceRegistered: boolean;
   currentLocation: {
@@ -92,7 +93,7 @@ export interface AttendanceNotesDialogProps {
 }
 
 export interface AttendanceHistoriesCardProps {
-  userId: string;
+  internId: string;
   refreshTrigger: number;
 }
 

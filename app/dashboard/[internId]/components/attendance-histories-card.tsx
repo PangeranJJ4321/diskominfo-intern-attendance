@@ -14,7 +14,7 @@ import type { Schedule, Attendance } from "@/interfaces/models";
 import UserAttendanceDetailDialog from "./user-attendance-detail-dialog";
 
 export default function AttendanceHistoriesCard({
-  userId,
+  internId,
   refreshTrigger,
 }: AttendanceHistoriesCardProps) {
   const isMobile = useIsMobile();
@@ -24,8 +24,11 @@ export default function AttendanceHistoriesCard({
   // Detail Dialog State
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
+    null,
+  );
+  const [selectedAttendance, setSelectedAttendance] =
+    useState<Attendance | null>(null);
 
   /**
    * Handles opening the attendance detail dialog when a calendar day/attendance is clicked.
@@ -37,7 +40,7 @@ export default function AttendanceHistoriesCard({
   const handleDayClick = (
     date: Date,
     schedule: Schedule,
-    attendance: Attendance | null
+    attendance: Attendance | null,
   ) => {
     setSelectedDate(date);
     setSelectedSchedule(schedule);
@@ -77,7 +80,9 @@ export default function AttendanceHistoriesCard({
         <div className="space-y-1">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <CalendarDays className="size-5 text-primary" />
-            {isMobile ? "Riwayat Presensi Mingguan" : "Riwayat Presensi Bulanan"}
+            {isMobile
+              ? "Riwayat Presensi Mingguan"
+              : "Riwayat Presensi Bulanan"}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             {isMobile
@@ -108,7 +113,9 @@ export default function AttendanceHistoriesCard({
               <ChevronLeft className="size-3.5" />
             </Button>
             <div className="w-36 text-center text-xs font-extrabold tracking-wide uppercase px-1">
-              {isMobile ? formatWeekRange(currentMonth) : format(currentMonth, "MMMM yyyy", { locale: id })}
+              {isMobile
+                ? formatWeekRange(currentMonth)
+                : format(currentMonth, "MMMM yyyy", { locale: id })}
             </div>
             <Button
               variant="ghost"
@@ -126,7 +133,7 @@ export default function AttendanceHistoriesCard({
       <CardContent className="space-y-4">
         {/* Calendar Grid wrapper */}
         <UserAttendances
-          userId={userId}
+          internIds={[internId]}
           currentMonth={currentMonth}
           onDayClick={handleDayClick}
           refreshTrigger={refreshTrigger}

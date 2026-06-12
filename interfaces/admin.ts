@@ -5,6 +5,7 @@ import type {
   AgencyHoliday,
   Attendance,
   User,
+  Intern,
   ShiftAssignment,
 } from "./models";
 
@@ -126,4 +127,5 @@ export interface ExportAttendanceDialogProps {
   users: User[];
   shifts: Shift[];
   assignments: ShiftAssignment[];
+  interns: Intern[];
 }

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { FaceRegisterDialog } from "./face-register-dialog";
 import { useProfileStore } from "@/stores/profile-store";
+import { formatDateLocale } from "@/lib/date-utils";
 
 function SectionRow({ label, value }: { label: string; value?: string }) {
   return (
@@ -14,17 +15,6 @@ function SectionRow({ label, value }: { label: string; value?: string }) {
       <p className="text-sm font-medium text-foreground">{value || "—"}</p>
     </div>
   );
-}
-
-function formatDate(dateStr: string | null | undefined, locale = "id") {
-  if (!dateStr) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(dateStr));
 }
 
 /**
@@ -72,7 +62,7 @@ export function FaceRegister() {
           />
           <SectionRow
             label="Registrasi terakhir"
-            value={formatDate(latestDescriptor?.createdAt)}
+            value={formatDateLocale(latestDescriptor?.createdAt)}
           />
         </div>
       </CardContent>

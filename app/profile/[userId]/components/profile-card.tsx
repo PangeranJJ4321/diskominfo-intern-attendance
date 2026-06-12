@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EditProfileDialog } from "./edit-profile-dialog";
 import { useProfileStore } from "@/stores/profile-store";
+import { formatDateLocale } from "@/lib/date-utils";
 
 function SectionRow({
   label,
@@ -21,13 +22,6 @@ function SectionRow({
       <div className="text-sm font-medium text-foreground">{value}</div>
     </div>
   );
-}
-
-function formatDate(dateStr: string, locale = "id") {
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(dateStr));
 }
 
 /**
@@ -66,11 +60,11 @@ export function ProfileCard() {
           <SectionRow label="Alamat email" value={user.email} />
           <SectionRow
             label="Tanggal registrasi"
-            value={formatDate(user.createdAt)}
+            value={formatDateLocale(user.createdAt)}
           />
           <SectionRow
             label="Terakhir diperbarui"
-            value={formatDate(user.updatedAt)}
+            value={formatDateLocale(user.updatedAt)}
           />
         </div>
       </CardContent>

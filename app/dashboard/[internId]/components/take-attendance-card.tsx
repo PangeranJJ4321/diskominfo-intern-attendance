@@ -47,10 +47,7 @@ import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import { useLocationStore } from "@/stores/location-store";
 import { useAttendanceStore } from "@/stores/attendance-store";
 import TakeAttendanceFaceCamera from "./take-attendance-face-camera";
-
-function formatTimeLabel(value: string): string {
-  return value.length >= 5 ? value.slice(0, 5) : value;
-}
+import { formatTimeFromApi } from "@/lib/time-utils";
 
 /**
  * Renders a single attendance card for a specific schedule.
@@ -133,10 +130,10 @@ export default function TakeAttendanceCard({
       };
     }
 
-    const windowStartStr = formatTimeLabel(schedule.windowStart);
-    const lateCutoffStr = formatTimeLabel(schedule.lateCutoff);
-    const scheduleEndStr = formatTimeLabel(schedule.scheduleEnd);
-    const scheduleStartStr = formatTimeLabel(schedule.scheduleStart);
+    const windowStartStr = formatTimeFromApi(schedule.windowStart);
+    const lateCutoffStr = formatTimeFromApi(schedule.lateCutoff);
+    const scheduleEndStr = formatTimeFromApi(schedule.scheduleEnd);
+    const scheduleStartStr = formatTimeFromApi(schedule.scheduleStart);
 
     const isOvernight = scheduleEndStr < windowStartStr;
 
@@ -376,8 +373,8 @@ export default function TakeAttendanceCard({
           <div className="flex items-center text-xs md:text-sm text-muted-foreground gap-2 bg-muted/60 w-fit px-2.5 py-1 rounded-xl">
             <Clock className="size-4 text-primary" />
             <span className="font-semibold text-foreground">
-              {formatTimeLabel(schedule.scheduleStart)} -{" "}
-              {formatTimeLabel(schedule.scheduleEnd)} WITA
+              {formatTimeFromApi(schedule.scheduleStart)} -{" "}
+              {formatTimeFromApi(schedule.scheduleEnd)} WITA
             </span>
           </div>
 
@@ -397,19 +394,19 @@ export default function TakeAttendanceCard({
                 <>
                   <Clock className="size-3" />
                   Belum masuk jam absen (mulai{" "}
-                  {formatTimeLabel(schedule.windowStart)})
+                  {formatTimeFromApi(schedule.windowStart)})
                 </>
               )}
               {isWithinTime && (
                 <>
                   <CheckCircle2 className="size-3" />
-                  Tepat waktu — batas {formatTimeLabel(schedule.lateCutoff)}
+                  Tepat waktu — batas {formatTimeFromApi(schedule.lateCutoff)}
                 </>
               )}
               {isLateNow && (
                 <>
                   <AlertTriangle className="size-3" />
-                  Terlambat — batas {formatTimeLabel(schedule.scheduleEnd)}
+                  Terlambat — batas {formatTimeFromApi(schedule.scheduleEnd)}
                 </>
               )}
               {isAfterAllowedWindow && (

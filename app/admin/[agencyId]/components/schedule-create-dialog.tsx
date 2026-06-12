@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSchedule } from "@/lib/services/schedules";
+import { useScheduleStore } from "@/stores/schedule-store";
 import type { ScheduleCreateDialogProps } from "@/interfaces/admin";
 import { TimePicker } from "@/components/custom/time-picker";
 
@@ -78,10 +79,12 @@ export default function ScheduleCreateDialog({
       });
 
       onSuccess(scheduleData);
+      useScheduleStore.getState().addSchedule(scheduleData);
       toast.success("Jadwal mingguan berhasil ditambahkan");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Gagal menyimpan jadwal";
+      const errorMsg =
+        err instanceof Error ? err.message : "Gagal menyimpan jadwal";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);

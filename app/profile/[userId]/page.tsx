@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/custom/navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,31 +11,92 @@ import { AccountConnectionsCard } from "./components/account-connections-card";
 import { DeleteAccountCard } from "./components/delete-account-card";
 import { FaceRegister } from "./components/face-register";
 import { InternCard } from "./components/intern-card";
+import { getInterns } from "@/lib/services/interns";
+import { fetchUser } from "@/lib/services/users";
+import { type ProfileUser, type Intern } from "@/interfaces/models";
 import { type ProfilePageProps } from "@/interfaces/profile";
-import { useProfileStore } from "@/stores/profile-store";
 
 /**
- * Renders the user-specific profile page. Fetches profile data via the
- * Zustand store and passes the loaded user down to child components
- * that still require prop-based data.
+ * Profile page showing user info, intern data, face registration, and settings.
  *
- * @param {ProfilePageProps} props - The page props containing the dynamic route params.
- * @returns {React.JSX.Element} The rendered ProfilePage component.
+ * @param {ProfilePageProps} props - The component props.
+ * @returns {React.JSX.Element} The rendered profile page.
  */
 export default function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = use(params);
-  const user = useProfileStore((s) => s.user);
-  const loading = useProfileStore((s) => s.loading);
-  const fetchProfile = useProfileStore((s) => s.fetchProfile);
-  const reset = useProfileStore((s) => s.reset);
+  const router = useRouter();
+  const [user, setUser] = useState<ProfileUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [interns, setInterns] = useState<Intern[]>([]);
+  const [internsLoading, setInternsLoading] = useState(true);
 
   useEffect(() => {
-    void fetchProfile(userId);
+    let active = true;
+
+    async function loadData() {
+      try {
+        const data = await fetchUser(userId);
+        if (active) {
+          setUser(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile data", error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadData();
 
     return () => {
-      reset();
+      active = false;
     };
-  }, [userId, fetchProfile, reset]);
+  }, [userId]);
+
+  /** Load interns to determine if they have internship data */
+  useEffect(() => {
+    let active = true;
+
+    async function loadInterns() {
+      try {
+        const allInterns = await getInterns();
+        const userInterns = allInterns.filter((i) => i.userId === userId);
+        if (active) {
+          setInterns(userInterns);
+        }
+      } catch (err) {
+        console.error("Failed to fetch intern data", err);
+      } finally {
+        if (active) {
+          setInternsLoading(false);
+        }
+      }
+    }
+
+    void loadInterns();
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const handleUserUpdate = (updatedUser: ProfileUser) => {
+    setUser(updatedUser);
+  };
+
+  /** Handles interns list change from InternCard */
+  const handleInternsChange = (updatedInterns: Intern[]) => {
+    setInterns(updatedInterns);
+  };
+
+  const hasCredential = user
+    ? user.accounts.some((acc) => acc.providerId === "credential")
+    : false;
+
+  const hasInterns = interns.length > 0;
+  const hasFaceDescriptor = user ? user.faceDescriptors.length > 0 : false;
 
   return (
     <>
@@ -59,21 +121,33 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <ProfilePicture />
+              <ProfilePicture user={user} onUpdate={handleUserUpdate} />
 
-              <ProfileCard />
+              <ProfileCard
+                user={user}
+                onUpdate={handleUserUpdate}
+                hasCredential={hasCredential}
+              />
 
-              {/* Intern Card — manages its own intern data fetching via the
-                  intern store, but still needs the userId prop for CRUD
-                  operations such as create and delete. */}
-              <InternCard userId={user.id} />
+              {/* Intern Card — shown first to ensure intern is created before face registration */}
+              <InternCard
+                userId={user.id}
+                onInternsChange={handleInternsChange}
+              />
 
-              {/* Face Register — reads user and face descriptor state from
-                  the profile store internally. */}
-              <FaceRegister />
+              {/* Face Register — only show after intern data exists or if face needs registration */}
+              {!internsLoading && (
+                <FaceRegister
+                  user={user}
+                  onUpdate={(updatedUser: ProfileUser) => {
+                    handleUserUpdate(updatedUser);
+                    router.push("/dashboard");
+                  }}
+                  openByDefault={hasInterns && !hasFaceDescriptor}
+                />
+              )}
 
-              <AccountConnectionsCard />
-
+              <AccountConnectionsCard user={user} onUpdate={handleUserUpdate} />
               <DeleteAccountCard userId={user.id} />
             </div>
           )}

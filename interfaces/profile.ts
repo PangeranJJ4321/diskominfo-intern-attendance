@@ -38,18 +38,25 @@ export interface AlignmentStep {
 }
 
 export interface FaceRegisterDialogProps {
-  /** Whether the dialog should open automatically, e.g. when no face descriptors exist */
+  userId: string;
+  userName: string;
   openByDefault?: boolean;
+  onSuccess?: (updatedUser: ProfileUser) => void;
 }
 
 export interface EditProfilePictureDialogProps {
+  userId: string;
+  currentImage: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: (updatedUser: ProfileUser) => void;
 }
 
 export interface EditProfileDialogProps {
-  /** Whether the user has a credential/password account */
+  userId: string;
+  initialName: string;
   hasCredentialAccount: boolean;
+  onSuccess: (updatedUser: ProfileUser) => void;
 }
 
 export interface DeleteAccountCardProps {

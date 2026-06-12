@@ -6,20 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { EditProfilePictureDialog } from "./edit-profile-picture-dialog";
 import { getInitials } from "@/lib/string-utils";
-import { useProfileStore } from "@/stores/profile-store";
+import type { ProfilePictureProps } from "@/interfaces/profile";
 
-/**
- * Renders the profile picture section with avatar and edit dialog.
- * Reads user data from the Zustand profile store.
- *
- * @returns {React.JSX.Element} The rendered ProfilePicture component.
- */
-export function ProfilePicture() {
-  const user = useProfileStore((s) => s.user);
+export function ProfilePicture({ user, onUpdate }: ProfilePictureProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  if (!user) return null;
-
   const initials = getInitials(user.name);
 
   return (
@@ -48,8 +38,11 @@ export function ProfilePicture() {
 
       {dialogOpen && (
         <EditProfilePictureDialog
+          userId={user.id}
+          currentImage={user.image}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
+          onSuccess={onUpdate}
         />
       )}
     </div>

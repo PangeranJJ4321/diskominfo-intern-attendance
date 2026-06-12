@@ -19,21 +19,23 @@ import {
   alignmentSteps,
   getFaceObservationFeedback,
 } from "@/lib/face-alignment-utils";
-import { useProfileStore } from "@/stores/profile-store";
 
 /**
  * Renders the dialog component to capture and register face descriptors for a user.
- * Reads user data from the Zustand profile store.
  *
  * @param {FaceRegisterDialogProps} props - The component props.
+ * @param {string} props.userId - The ID of the user.
+ * @param {string} props.userName - The name of the user.
  * @param {boolean} [props.openByDefault=false] - Whether the dialog should be open initially.
+ * @param {function} [props.onSuccess] - Callback called on successful face registration.
  * @returns {React.JSX.Element} The rendered dialog and trigger button.
  */
 export function FaceRegisterDialog({
+  userId,
+  userName,
   openByDefault = false,
+  onSuccess,
 }: FaceRegisterDialogProps) {
-  const user = useProfileStore((s) => s.user);
-  const updateStoreUser = useProfileStore((s) => s.updateUser);
   const [open, setOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -101,8 +103,6 @@ export function FaceRegisterDialog({
 
   const processCapture = useCallback(
     async (observation: FaceObservation, stepIndex: number) => {
-      if (!user) return;
-
       setError("");
       setSubmitting(true);
 
@@ -114,7 +114,7 @@ export function FaceRegisterDialog({
       try {
         // Use mock API to register face descriptor
         const updatedUser = await addFaceDescriptor(
-          user.id,
+          userId,
           observation.descriptor,
         );
 
@@ -135,8 +135,10 @@ export function FaceRegisterDialog({
           return;
         }
 
-        updateStoreUser(updatedUser);
         toast.success("Pendaftaran wajah berhasil diselesaikan");
+        if (onSuccess) {
+          onSuccess(updatedUser);
+        }
         setOpen(false);
       } catch (error) {
         const message =
@@ -150,7 +152,7 @@ export function FaceRegisterDialog({
         setSubmitting(false);
       }
     },
-    [user, updateStoreUser],
+    [userId, onSuccess],
   );
 
   useEffect(() => {
@@ -222,8 +224,8 @@ export function FaceRegisterDialog({
             <DialogTitle>Daftarkan wajah</DialogTitle>
             <DialogDescription>
               Ikuti petunjuk di bawah ini untuk mengambil beberapa pose wajah
-              yang sejajar untuk {user?.name ?? "pengguna"}. Proses pengambilan
-              foto akan berjalan secara otomatis.
+              yang sejajar untuk {userName}. Proses pengambilan foto akan
+              berjalan secara otomatis.
             </DialogDescription>
           </DialogHeader>
 

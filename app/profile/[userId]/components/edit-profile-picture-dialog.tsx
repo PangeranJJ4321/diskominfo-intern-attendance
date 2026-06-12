@@ -17,26 +17,26 @@ import type { EditProfilePictureDialogProps } from "@/interfaces/profile";
 import { Trash2Icon, UploadIcon } from "lucide-react";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { uploadImage } from "@/lib/services/upload";
-import { useProfileStore } from "@/stores/profile-store";
 
 /**
  * Renders the edit profile picture dialog.
- * Reads user data from the Zustand profile store and updates it on save.
  *
  * @param {EditProfilePictureDialogProps} props - The component props.
+ * @param {string} props.userId - The ID of the user.
+ * @param {string | null} props.currentImage - The current profile picture URL.
  * @param {boolean} props.open - Whether the dialog is open.
  * @param {function} props.onOpenChange - Callback called when open state changes.
+ * @param {function} props.onSuccess - Callback called on successful save.
  * @returns {React.JSX.Element} The rendered dialog.
  */
 export function EditProfilePictureDialog({
+  userId,
+  currentImage,
   open,
   onOpenChange,
+  onSuccess,
 }: EditProfilePictureDialogProps) {
-  const user = useProfileStore((s) => s.user);
-  const updateStoreUser = useProfileStore((s) => s.updateUser);
   const [loading, setLoading] = useState(false);
-
-  const currentImage = user?.image ?? null;
 
   const [fileState, fileActions] = useFileUpload({
     maxFiles: 1,
@@ -45,20 +45,18 @@ export function EditProfilePictureDialog({
     multiple: false,
     initialFiles: currentImage
       ? [
-          {
-            id: "current-avatar",
-            name: "current-avatar",
-            size: 0,
-            type: "image/*",
-            url: currentImage,
-          },
-        ]
+        {
+          id: "current-avatar",
+          name: "current-avatar",
+          size: 0,
+          type: "image/*",
+          url: currentImage,
+        },
+      ]
       : [],
   });
 
   const handleSave = async () => {
-    if (!user) return;
-
     setLoading(true);
     try {
       const uploadedFile = fileState.files[0];
@@ -82,10 +80,10 @@ export function EditProfilePictureDialog({
         }
       }
 
-      const updatedUser = await updateUser(user.id, {
+      const updatedUser = await updateUser(userId, {
         image: newImage,
       });
-      updateStoreUser(updatedUser);
+      onSuccess(updatedUser);
       toast.success("Foto profil berhasil diperbarui");
       onOpenChange(false);
     } catch {
@@ -101,18 +99,16 @@ export function EditProfilePictureDialog({
         <DialogHeader>
           <DialogTitle>Edit Foto Profil</DialogTitle>
           <DialogDescription>
-            Unggah foto profil baru. Ukuran yang direkomendasikan adalah 256x256
-            piksel, maks 2MB.
+            Unggah foto profil baru. Ukuran yang direkomendasikan adalah 256x256 piksel, maks 2MB.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 py-4">
           <div
-            className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 transition-colors ${
-              fileState.isDragging
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/20 hover:border-primary/50"
-            }`}
+            className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 transition-colors ${fileState.isDragging
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/20 hover:border-primary/50"
+              }`}
             onDragEnter={fileActions.handleDragEnter}
             onDragLeave={fileActions.handleDragLeave}
             onDragOver={fileActions.handleDragOver}
@@ -147,12 +143,8 @@ export function EditProfilePictureDialog({
                 <div className="h-12 w-12 rounded-full border bg-muted flex items-center justify-center mb-2">
                   <UploadIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium">
-                  Klik untuk mengunggah atau seret & lepas
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG atau WEBP hingga 2MB
-                </p>
+                <p className="text-sm font-medium">Klik untuk mengunggah atau seret & lepas</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG atau WEBP hingga 2MB</p>
               </div>
             )}
 

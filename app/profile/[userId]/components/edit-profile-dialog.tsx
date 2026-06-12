@@ -18,26 +18,18 @@ import { Pencil, Lock, User } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { fetchUser } from "@/lib/services/users";
 import type { EditProfileDialogProps } from "@/interfaces/profile";
-import { useProfileStore } from "@/stores/profile-store";
 
-/**
- * Renders the edit profile dialog with tabs for account info and password change.
- * Reads user data from the Zustand profile store and updates it on save.
- *
- * @param {EditProfileDialogProps} props - The component props.
- * @param {boolean} props.hasCredentialAccount - Whether the user has a credential password account.
- * @returns {React.JSX.Element} The rendered dialog.
- */
 export function EditProfileDialog({
+  userId,
+  initialName,
   hasCredentialAccount,
+  onSuccess,
 }: EditProfileDialogProps) {
-  const user = useProfileStore((s) => s.user);
-  const updateStoreUser = useProfileStore((s) => s.updateUser);
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
 
   // Account info state
-  const [name, setName] = useState(user?.name ?? "");
+  const [name, setName] = useState(initialName);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountError, setAccountError] = useState("");
 
@@ -53,7 +45,7 @@ export function EditProfileDialog({
 
     if (!nextOpen) {
       // Reset form when closing
-      setName(user?.name ?? "");
+      setName(initialName);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -72,15 +64,13 @@ export function EditProfileDialog({
       return;
     }
 
-    if (!user) return;
-
     setAccountLoading(true);
     try {
       await authClient.updateUser({
         name,
       });
-      const updatedUser = await fetchUser(user.id);
-      updateStoreUser(updatedUser);
+      const updatedUser = await fetchUser(userId);
+      onSuccess(updatedUser);
       toast.success("Informasi akun berhasil diperbarui");
       setOpen(false);
     } catch (error) {

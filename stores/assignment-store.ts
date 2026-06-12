@@ -12,18 +12,11 @@ interface AssignmentState {
     startDate?: string,
     endDate?: string,
   ) => Promise<void>;
-  /** Appends an assignment to the store after a successful create. */
-  addAssignment: (assignment: ShiftAssignment) => void;
-  /** Removes an assignment from the store after a successful deletion. */
-  removeAssignment: (id: string) => void;
 }
 
 /**
  * Zustand store holding shift assignments.
  * Components subscribe to `assignments` and call `fetchAssignments` on mount.
- *
- * Mutations (`addAssignment`, `removeAssignment`) allow admin operations to
- * update the store without a full re-fetch, ensuring cross-component reactivity.
  */
 export const useAssignmentStore = create<AssignmentState>((set) => ({
   assignments: [],
@@ -42,12 +35,4 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
       set({ loading: false });
     }
   },
-
-  addAssignment: (assignment) =>
-    set((state) => ({ assignments: [...state.assignments, assignment] })),
-
-  removeAssignment: (id) =>
-    set((state) => ({
-      assignments: state.assignments.filter((a) => a.id !== id),
-    })),
 }));

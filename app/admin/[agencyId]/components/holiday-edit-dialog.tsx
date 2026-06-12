@@ -28,7 +28,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateHoliday, deleteHoliday } from "@/lib/services/holidays";
-import { useHolidayStore } from "@/stores/holiday-store";
 import type { HolidayEditDialogProps } from "@/interfaces/admin";
 
 /**
@@ -78,16 +77,11 @@ export default function HolidayEditDialog({
         description: description.trim(),
       });
 
-      // Update both the local parent state (for admin tab UI) and the global
-      // Zustand store so that cross-component consumers (e.g. user-attendances)
-      // react to the change immediately.
       onSuccessUpdate(updatedHoliday);
-      useHolidayStore.getState().updateHoliday(updatedHoliday);
       toast.success("Hari libur berhasil diperbarui");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal memperbarui hari libur";
+      const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui hari libur";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -101,16 +95,11 @@ export default function HolidayEditDialog({
     setIsSubmitting(true);
     try {
       await deleteHoliday(holiday.id);
-      // Update both the local parent state (for admin tab UI) and the global
-      // Zustand store so that cross-component consumers (e.g. user-attendances)
-      // react to the change immediately.
       onSuccessDelete(holiday.id);
-      useHolidayStore.getState().deleteHoliday(holiday.id);
       toast.success("Hari libur berhasil dihapus");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal menghapus hari libur";
+      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus hari libur";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);

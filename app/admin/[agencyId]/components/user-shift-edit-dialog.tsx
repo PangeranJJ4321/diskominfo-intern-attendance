@@ -39,7 +39,6 @@ import {
   createShiftAssignment,
   deleteShiftAssignment,
 } from "@/lib/services/shift-assignments";
-import { useAssignmentStore } from "@/stores/assignment-store";
 import type { Shift, ShiftAssignment } from "@/interfaces/models";
 import type { UserShiftEditDialogProps } from "@/interfaces/admin";
 import { Spinner } from "@/components/ui/spinner";
@@ -110,6 +109,15 @@ export default function UserShiftEditDialog({
 
     setIsSubmitting(true);
     try {
+      // Resolve internId from userId
+      const { getInterns } = await import("@/lib/services/interns");
+      const interns = await getInterns(1000);
+      const intern = interns.find((i) => i.userId === userId);
+      if (!intern) {
+        toast.error("Data magang tidak ditemukan untuk pengguna ini.");
+        return;
+      }
+
       const isSameDay =
         dateRange.to &&
         format(dateRange.from, "yyyy-MM-dd") ===
@@ -119,8 +127,8 @@ export default function UserShiftEditDialog({
       const endDate =
         dateRange.to && !isSameDay ? format(dateRange.to, "yyyy-MM-dd") : null;
 
-      const newAssignment = await createShiftAssignment({
-        userId,
+      await createShiftAssignment({
+        internId: intern.id,
         shiftId: selectedShiftId,
         startDate,
         endDate,
@@ -128,7 +136,6 @@ export default function UserShiftEditDialog({
 
       toast.success(`Berhasil menambahkan penugasan shift untuk ${userName}`);
       await loadData();
-      useAssignmentStore.getState().addAssignment(newAssignment);
       onSuccess();
     } catch (err) {
       const errorMsg =
@@ -152,7 +159,6 @@ export default function UserShiftEditDialog({
       await deleteShiftAssignment(assignId);
       toast.success("Berhasil menghapus penugasan shift");
       await loadData();
-      useAssignmentStore.getState().removeAssignment(assignId);
       onSuccess();
     } catch (err) {
       const errorMsg =

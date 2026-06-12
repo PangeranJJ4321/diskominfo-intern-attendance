@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateAttendance } from "@/lib/services/attendances";
-import { useAttendanceStore } from "@/stores/attendance-store";
 import type { AttendanceStatusType } from "@/interfaces/enums";
 import { AttendanceStatus } from "@/interfaces/enums";
 import type { UserAttendanceEditDialogProps } from "@/interfaces/admin";
@@ -100,14 +99,13 @@ export default function UserAttendanceEditDialog({
           ? new Date(`${formattedDate}T${timeStr}:00`)
           : null;
 
-      const updated = await updateAttendance(existingAttendance.id, {
+      await updateAttendance(existingAttendance.id, {
         status,
         attendanceTime: timeDate ? timeDate.toISOString() : null,
         notes: notes.trim() || null,
       });
 
       toast.success("Presensi karyawan berhasil diperbarui");
-      useAttendanceStore.getState().upsertAttendance(updated);
       onSuccess();
       onOpenChange(false);
     } catch (err) {

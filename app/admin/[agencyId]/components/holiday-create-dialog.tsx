@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createHoliday } from "@/lib/services/holidays";
-import { useHolidayStore } from "@/stores/holiday-store";
 import type { HolidayCreateDialogProps } from "@/interfaces/admin";
 
 /**
@@ -57,17 +56,12 @@ export default function HolidayCreateDialog({
         description: description.trim(),
       });
 
-      // Update both the local parent state (for admin tab UI) and the global
-      // Zustand store so that cross-component consumers (e.g. user-attendances)
-      // react to the change immediately.
       onSuccessAdd(newHoliday);
-      useHolidayStore.getState().addHoliday(newHoliday);
       toast.success("Hari libur berhasil ditambahkan");
       setDescription("");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal menambahkan hari libur";
+      const errorMsg = err instanceof Error ? err.message : "Gagal menambahkan hari libur";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);

@@ -25,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateSchedule, deleteSchedule } from "@/lib/services/schedules";
-import { useScheduleStore } from "@/stores/schedule-store";
 import type { ScheduleEditDialogProps } from "@/interfaces/admin";
 import { TimePicker } from "@/components/custom/time-picker";
 /**
@@ -86,12 +85,10 @@ export default function ScheduleEditDialog({
       });
 
       onSuccessUpdate(scheduleData);
-      useScheduleStore.getState().updateSchedule(scheduleData);
       toast.success("Jadwal mingguan berhasil diperbarui");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal menyimpan jadwal";
+      const errorMsg = err instanceof Error ? err.message : "Gagal menyimpan jadwal";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -108,12 +105,10 @@ export default function ScheduleEditDialog({
     try {
       await deleteSchedule(editingSchedule.id);
       onSuccessDelete(editingSchedule.id);
-      useScheduleStore.getState().deleteSchedule(editingSchedule.id);
       toast.success("Jadwal mingguan berhasil dihapus");
       onOpenChange(false);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Gagal menghapus jadwal";
+      const errorMsg = err instanceof Error ? err.message : "Gagal menghapus jadwal";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);

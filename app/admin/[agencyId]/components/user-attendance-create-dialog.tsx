@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAttendance } from "@/lib/services/attendances";
-import { useAttendanceStore } from "@/stores/attendance-store";
+import { getInterns } from "@/lib/services/interns";
 import type { AttendanceStatusType } from "@/interfaces/enums";
 import { AttendanceStatus } from "@/interfaces/enums";
 import type { UserAttendanceCreateDialogProps } from "@/interfaces/admin";
@@ -82,8 +82,16 @@ export default function UserAttendanceCreateDialog({
           ? new Date(`${formattedDate}T${time}:00`)
           : null;
 
-      const newAttendance = await createAttendance({
-        userId,
+      // Resolve internId from userId
+      const interns = await getInterns(1000);
+      const intern = interns.find((i) => i.userId === userId);
+      if (!intern) {
+        toast.error("Data magang tidak ditemukan untuk pengguna ini.");
+        return;
+      }
+
+      await createAttendance({
+        internId: intern.id,
         scheduleId: schedule.id,
         date: formattedDate,
         attendanceTime: timeDate ? timeDate.toISOString() : null,
@@ -92,7 +100,6 @@ export default function UserAttendanceCreateDialog({
       });
 
       toast.success("Presensi karyawan berhasil ditambahkan");
-      useAttendanceStore.getState().upsertAttendance(newAttendance);
       onSuccess();
       onOpenChange(false);
     } catch (err) {

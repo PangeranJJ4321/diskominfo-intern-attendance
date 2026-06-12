@@ -15,12 +15,6 @@ interface AttendanceState {
     startDate?: string,
     endDate?: string,
   ) => Promise<void>;
-  refreshAttendances: (
-    userId: string,
-    limit?: number,
-    startDate?: string,
-    endDate?: string,
-  ) => Promise<void>;
   checkFaceRegistration: (userId: string) => Promise<void>;
   /** Replaces a specific attendance record in the store (used after edit/create) */
   upsertAttendance: (attendance: Attendance) => void;
@@ -38,22 +32,6 @@ export const useAttendanceStore = create<AttendanceState>((set) => ({
   loading: false,
 
   fetchAttendances: async (userId, limit = 1000, startDate, endDate) => {
-    set({ loading: true });
-    try {
-      const data = await getAttendancesForUser(
-        userId,
-        limit,
-        startDate,
-        endDate,
-      );
-      set({ attendances: data, loading: false });
-    } catch {
-      set({ loading: false });
-    }
-  },
-
-  /** Convenience alias for re-fetching attendances (same behaviour). */
-  refreshAttendances: async (userId, limit = 1000, startDate, endDate) => {
     set({ loading: true });
     try {
       const data = await getAttendancesForUser(

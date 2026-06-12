@@ -46,7 +46,6 @@ export default function UserAttendanceEditDialog({
   date,
   schedule,
   existingAttendance,
-  onSuccess,
 }: Omit<UserAttendanceEditDialogProps, "internId">) {
   const [status, setStatus] = useState<AttendanceStatusType>(
     AttendanceStatus.PRESENT,
@@ -108,7 +107,6 @@ export default function UserAttendanceEditDialog({
 
       toast.success("Presensi karyawan berhasil diperbarui");
       useAttendanceStore.getState().upsertAttendance(updated);
-      onSuccess();
       onOpenChange(false);
     } catch (err) {
       const errorMsg =

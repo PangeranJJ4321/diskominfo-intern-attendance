@@ -72,7 +72,7 @@ export default function TakeAttendanceCard({
   const userHasFaceRegistered = useAttendanceStore(
     (s) => s.userHasFaceRegistered,
   );
-  const refreshAttendances = useAttendanceStore((s) => s.refreshAttendances);
+  const upsertAttendance = useAttendanceStore((s) => s.upsertAttendance);
 
   // ── Intern store ──
   const fetchInterns = useInternStore((s) => s.fetchInterns);
@@ -250,7 +250,7 @@ export default function TakeAttendanceCard({
           return;
         }
 
-        await createAttendance({
+        const newAttendance = await createAttendance({
           internId: intern.id,
           scheduleId: schedule.id,
           date: todayDateStr,
@@ -281,8 +281,8 @@ export default function TakeAttendanceCard({
           `Presensi ${getAttendanceStatusLabel(status)} berhasil dikirim!`,
         );
 
-        // Invalidate the attendance store so calendar components re-render
-        void refreshAttendances(userId, 1000, todayDateStr, todayDateStr);
+        // Optimistically add the new attendance to the Zustand store
+        upsertAttendance(newAttendance);
 
         setSelectedStatus(null);
         setNotes("");
@@ -303,7 +303,7 @@ export default function TakeAttendanceCard({
       userId,
       schedule.id,
       todayDateStr,
-      refreshAttendances,
+      upsertAttendance,
       fetchInterns,
       getInternForUser,
     ],

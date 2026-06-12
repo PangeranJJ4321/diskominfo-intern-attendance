@@ -71,6 +71,7 @@ export default function UserAttendancesCard({
 
   // Date State for Calendar
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [refreshCounter, setRefreshCounter] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -136,7 +137,7 @@ export default function UserAttendancesCard({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [internStore]);
+  }, [refreshCounter, internStore]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
@@ -513,6 +514,7 @@ export default function UserAttendancesCard({
           onOpenChange={setIsAssignDialogOpen}
           internId={selectedInternId}
           userName={selectedUser.name}
+          onSuccess={() => setRefreshCounter((prev) => prev + 1)}
         />
       )}
 
@@ -526,6 +528,7 @@ export default function UserAttendancesCard({
             date={overrideDate}
             schedule={overrideSchedule}
             existingAttendance={overrideExisting}
+            onSuccess={() => setRefreshCounter((prev) => prev + 1)}
           />
         ) : selectedInternId ? (
           <UserAttendanceCreateDialog
@@ -535,6 +538,7 @@ export default function UserAttendancesCard({
             userName={selectedUser.name}
             date={overrideDate}
             schedule={overrideSchedule}
+            onSuccess={() => setRefreshCounter((prev) => prev + 1)}
           />
         ) : null)}
 

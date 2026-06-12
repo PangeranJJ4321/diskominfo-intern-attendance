@@ -20,6 +20,7 @@ export interface UserShiftEditDialogProps {
   onOpenChange: (open: boolean) => void;
   internId: string;
   userName: string;
+  onSuccess: () => void;
 }
 
 export interface UserAttendanceEditDialogProps {
@@ -30,6 +31,7 @@ export interface UserAttendanceEditDialogProps {
   date: Date | null;
   schedule: Schedule | null;
   existingAttendance: Attendance | null;
+  onSuccess: () => void;
 }
 
 export interface UserAttendanceCreateDialogProps {
@@ -39,6 +41,7 @@ export interface UserAttendanceCreateDialogProps {
   userName: string;
   date: Date | null;
   schedule: Schedule | null;
+  onSuccess: () => void;
 }
 
 export interface ShiftsControlProps {

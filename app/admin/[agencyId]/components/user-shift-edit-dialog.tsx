@@ -49,6 +49,7 @@ export default function UserShiftEditDialog({
   onOpenChange,
   internId,
   userName,
+  onSuccess,
 }: UserShiftEditDialogProps) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [userAssignments, setUserAssignments] = useState<ShiftAssignment[]>([]);
@@ -126,6 +127,7 @@ export default function UserShiftEditDialog({
       toast.success(`Berhasil menambahkan penugasan shift untuk ${userName}`);
       await loadData();
       useAssignmentStore.getState().addAssignment(newAssignment);
+      onSuccess();
     } catch (err) {
       const errorMsg =
         err instanceof Error
@@ -149,6 +151,7 @@ export default function UserShiftEditDialog({
       toast.success("Berhasil menghapus penugasan shift");
       await loadData();
       useAssignmentStore.getState().removeAssignment(assignId);
+      onSuccess();
     } catch (err) {
       const errorMsg =
         err instanceof Error ? err.message : "Gagal menghapus penugasan shift";

@@ -43,6 +43,7 @@ export default function UserAttendanceCreateDialog({
   userName,
   date,
   schedule,
+  onSuccess,
 }: UserAttendanceCreateDialogProps) {
   const [status, setStatus] = useState<AttendanceStatusType>(
     AttendanceStatus.PRESENT,
@@ -92,6 +93,7 @@ export default function UserAttendanceCreateDialog({
 
       toast.success("Presensi karyawan berhasil ditambahkan");
       useAttendanceStore.getState().upsertAttendance(newAttendance);
+      onSuccess();
       onOpenChange(false);
     } catch (err) {
       const errorMsg =

@@ -13,14 +13,6 @@ interface InternState {
   getInternIdForUser: (userId: string, agencyId?: string) => string | undefined;
   /** Returns all intern records for a given userId. */
   getInternsForUser: (userId: string) => Intern[];
-  /** Returns the first intern record for a given userId. */
-  getInternForUser: (userId: string) => Intern | undefined;
-  /** Appends an intern to the store optimistically after a successful create. */
-  addIntern: (intern: Intern) => void;
-  /** Replaces an existing intern in the store after a successful update. */
-  updateIntern: (updated: Intern) => void;
-  /** Removes an intern from the store after a successful deletion. */
-  removeIntern: (id: string) => void;
 }
 
 /**
@@ -57,22 +49,4 @@ export const useInternStore = create<InternState>((set, get) => ({
     const { interns } = get();
     return interns.filter((i) => i.userId === userId);
   },
-
-  getInternForUser: (userId: string) => {
-    const { interns } = get();
-    return interns.find((i) => i.userId === userId);
-  },
-
-  addIntern: (intern) =>
-    set((state) => ({ interns: [...state.interns, intern] })),
-
-  updateIntern: (updated) =>
-    set((state) => ({
-      interns: state.interns.map((i) => (i.id === updated.id ? updated : i)),
-    })),
-
-  removeIntern: (id) =>
-    set((state) => ({
-      interns: state.interns.filter((i) => i.id !== id),
-    })),
 }));

@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useInternStore } from "@/stores/intern-store";
-import { useAgencyStore } from "@/stores/agency-store";
+import { getInterns } from "@/lib/services/interns";
+import { getAgencyRule } from "@/lib/services/agencies";
 import type { Intern, AgencyRule } from "@/interfaces/models";
 import { ArrowRight, Calendar, Camera, Map as MapIcon } from "lucide-react";
 
@@ -40,17 +40,13 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
   const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
   const [error, setError] = useState("");
 
-  const fetchInterns = useInternStore((s) => s.fetchInterns);
-  const getInternForUser = useInternStore((s) => s.getInternForUser);
-  const fetchAgencyRule = useAgencyStore((s) => s.fetchAgencyRule);
-
   useEffect(() => {
     let active = true;
 
     async function fetchData() {
       try {
-        await fetchInterns();
-        const userIntern = getInternForUser(userId) ?? null;
+        const interns = await getInterns();
+        const userIntern = interns.find((i) => i.userId === userId) ?? null;
 
         if (active) {
           setIntern(userIntern);
@@ -58,7 +54,7 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
 
         if (userIntern) {
           try {
-            const rule = await fetchAgencyRule(userIntern.agencyId);
+            const rule = await getAgencyRule(userIntern.agencyId);
             if (active) {
               setAgencyRule(rule);
             }
@@ -86,7 +82,7 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
     return () => {
       active = false;
     };
-  }, [userId, fetchInterns, getInternForUser, fetchAgencyRule]);
+  }, [userId]);
 
   if (loading) {
     return (

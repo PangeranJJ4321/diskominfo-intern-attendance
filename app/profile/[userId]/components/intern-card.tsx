@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil } from "lucide-react";
+import { getInterns } from "@/lib/services/interns";
+import { getAgencies } from "@/lib/services/agencies";
 import { getInstitutions } from "@/lib/services/institutions";
 import { deleteIntern } from "@/lib/services/interns";
-import { useInternStore } from "@/stores/intern-store";
-import { useAgencyStore } from "@/stores/agency-store";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
 import { CreateInternDialog } from "./create-intern-dialog";
 import { EditInternDialog } from "./edit-intern-dialog";
 import { toast } from "sonner";
-import type { Intern, Institution } from "@/interfaces/models";
+import type { Intern, Agency, Institution } from "@/interfaces/models";
 import type { InternCardProps } from "@/interfaces/profile";
 
 /**
@@ -46,51 +46,57 @@ function isInternActive(intern: Intern): boolean {
  * @param {function} [props.onInternsChange] - Callback when interns list changes.
  * @returns {React.JSX.Element} The rendered intern card.
  */
-export function InternCard({ userId }: InternCardProps) {
+export function InternCard({ userId, onInternsChange }: InternCardProps) {
   const [loading, setLoading] = useState(true);
+  const [interns, setInterns] = useState<Intern[]>([]);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  // ── Intern store ──
-  const internsAll = useInternStore((s) => s.interns);
-  const fetchInterns = useInternStore((s) => s.fetchInterns);
-  const removeIntern = useInternStore((s) => s.removeIntern);
-
-  // ── Agency store ──
-  const agencies = useAgencyStore((s) => s.agencies);
-  const fetchAgencies = useAgencyStore((s) => s.fetchAgencies);
-
-  const userInterns = internsAll.filter((i) => i.userId === userId);
-
   /** The currently active intern, if any */
-  const activeIntern = userInterns.find((i) => isInternActive(i)) ?? null;
+  const activeIntern = interns.find((i) => isInternActive(i)) ?? null;
 
   /**
-   * Loads intern, agency, and institution data from stores/API.
-   * Returns the institutions list so callers can decide what to do with it.
+   * Fetches all required data from the API without setting state.
+   *
+   * @returns The fetched interns, agencies, and institutions.
    */
-  const loadData = useCallback(async () => {
-    const [, , institutionsData] = await Promise.all([
-      fetchInterns(),
-      fetchAgencies(),
+  async function fetchAllData() {
+    const [internsData, agenciesData, institutionsData] = await Promise.all([
+      getInterns(),
+      getAgencies(),
       getInstitutions(),
     ]);
-    return institutionsData;
-  }, [fetchInterns, fetchAgencies]);
+    const userInterns = internsData.filter((i) => i.userId === userId);
+    return { userInterns, agenciesData, institutionsData };
+  }
+
+  /**
+   * Applies fetched data to component state.
+   *
+   * @param data - The fetched data to apply.
+   */
+  function applyData(data: {
+    userInterns: Intern[];
+    agenciesData: Agency[];
+    institutionsData: Institution[];
+  }) {
+    setInterns(data.userInterns);
+    setAgencies(data.agenciesData);
+    setInstitutions(data.institutionsData);
+    onInternsChange?.(data.userInterns);
+  }
 
   useEffect(() => {
     let cancelled = false;
 
-    loadData()
-      .then((institutionsData) => {
+    fetchAllData()
+      .then((data) => {
         if (cancelled) return;
-        setInstitutions(institutionsData);
-        const freshUserInterns = useInternStore
-          .getState()
-          .interns.filter((i) => i.userId === userId);
-        if (freshUserInterns.length === 0) {
+        applyData(data);
+        if (data.userInterns.length === 0) {
           setCreateOpen(true);
         }
       })
@@ -108,18 +114,22 @@ export function InternCard({ userId }: InternCardProps) {
     return () => {
       cancelled = true;
     };
-  }, [userId, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   /**
-   * Refreshes store data after a mutation (create, update, or delete).
+   * Refreshes all data after a mutation (create, update, or delete).
    */
   async function refreshData() {
     setError("");
+    setLoading(true);
     try {
-      const institutionsData = await loadData();
-      setInstitutions(institutionsData);
+      const data = await fetchAllData();
+      applyData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat data magang");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -149,7 +159,6 @@ export function InternCard({ userId }: InternCardProps) {
   async function handleDelete(internId: string) {
     try {
       await deleteIntern(internId);
-      removeIntern(internId);
       setEditOpen(false);
       toast.success("Data magang berhasil dihapus");
       void refreshData();
@@ -230,14 +239,14 @@ export function InternCard({ userId }: InternCardProps) {
           </Button>
         </div>
 
-        {userInterns.length === 0 ? (
+        {interns.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
             Belum ada data magang. Klik tombol &ldquo;Tambah&rdquo; untuk
             mendaftarkan magang Anda.
           </p>
         ) : (
           <div className="space-y-4">
-            {userInterns.map((intern) => (
+            {interns.map((intern) => (
               <InternInfoCard key={intern.id} userId={userId} />
             ))}
           </div>

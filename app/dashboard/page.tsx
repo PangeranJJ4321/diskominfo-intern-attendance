@@ -4,12 +4,12 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import type { GeoJsonObject } from "geojson";
+import { getInterns } from "@/lib/services/interns";
 import { getAttendanceAreas } from "@/lib/services/attendance-areas";
 import { createLocationLog } from "@/lib/services/location-logs";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocationStore } from "@/stores/location-store";
-import { useInternStore } from "@/stores/intern-store";
 
 // Default geofence centered on User's coordinates
 const DEFAULT_GEOFENCE: GeoJsonObject = {
@@ -51,10 +51,6 @@ export default function DashboardPage() {
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const setGeofence = useLocationStore((s) => s.setGeofence);
 
-  // Intern store
-  const fetchInterns = useInternStore((s) => s.fetchInterns);
-  const getInternForUser = useInternStore((s) => s.getInternForUser);
-
   // Page-local state
   const geofenceFetchStatus = useRef({ initiated: false, completed: false });
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
@@ -93,8 +89,8 @@ export default function DashboardPage() {
 
     async function redirectToInternDashboard() {
       try {
-        await fetchInterns();
-        const intern = getInternForUser(session?.user?.id ?? "");
+        const interns = await getInterns();
+        const intern = interns.find((i) => i.userId === session?.user?.id);
         if (intern) {
           router.replace(`/dashboard/${intern.id}`);
           return;
@@ -114,7 +110,7 @@ export default function DashboardPage() {
     }
 
     void redirectToInternDashboard();
-  }, [sessionPending, session, router, fetchInterns, getInternForUser]);
+  }, [sessionPending, session, router]);
 
   // Load geofence from the backend
   useEffect(() => {

@@ -21,14 +21,13 @@ export interface FaceModelLoadingOverlayProps {
 }
 
 export interface UserAttendancesProps {
-  userId: string;
+  internIds: string[];
   currentMonth: Date;
   onDayClick?: (
     date: Date,
     schedule: Schedule,
     attendance: Attendance | null,
   ) => void;
-  refreshTrigger?: number;
 }
 
 export interface TimePickerProps {

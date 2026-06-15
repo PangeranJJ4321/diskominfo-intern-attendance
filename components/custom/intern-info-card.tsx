@@ -1,88 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getInterns } from "@/lib/services/interns";
-import { getAgencyRule } from "@/lib/services/agencies";
-import type { Intern, AgencyRule } from "@/interfaces/models";
+import { useInternStore } from "@/stores/useInternStore";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import type { AgencyRule } from "@/interfaces/models";
 import { ArrowRight, Calendar, Camera, Map as MapIcon } from "lucide-react";
+import { formatDateIndonesian } from "@/lib/date-utils";
 
 interface InternInfoCardProps {
   userId: string;
 }
 
 /**
- * Formats a date string into a localized Indonesian date.
- *
- * @param dateStr - The ISO date string.
- * @returns The formatted date string.
- */
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-  }).format(new Date(dateStr));
-}
-
-/**
  * Displays intern info card showing dates and attendance rules.
+ * Uses Zustand stores instead of direct API calls.
  *
  * @param {InternInfoCardProps} props - The component props.
  * @param {string} props.userId - The user ID to fetch intern data for.
  * @returns {React.JSX.Element} The rendered intern info card.
  */
 export function InternInfoCard({ userId }: InternInfoCardProps) {
-  const [loading, setLoading] = useState(true);
-  const [intern, setIntern] = useState<Intern | null>(null);
-  const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
-  const [error, setError] = useState("");
+  // Zustand stores - each component subscribes only to the slices it needs
+  const interns = useInternStore((s) => s.interns);
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const internsLoading = useInternStore((s) => s.loading);
+  const internsError = useInternStore((s) => s.error);
 
+  const rule = useAgencyStore((s) => s.rule);
+  const fetchAgencyRule = useAgencyStore((s) => s.fetchAgencyRule);
+  const ruleLoading = useAgencyStore((s) => s.loading);
+
+  // Fetch interns on mount
   useEffect(() => {
-    let active = true;
+    void fetchInterns();
+  }, [fetchInterns]);
 
-    async function fetchData() {
-      try {
-        const interns = await getInterns();
-        const userIntern = interns.find((i) => i.userId === userId) ?? null;
+  // Find the user's intern
+  const intern = useMemo(() => {
+    return interns.find((i) => i.userId === userId) ?? null;
+  }, [interns, userId]);
 
-        if (active) {
-          setIntern(userIntern);
-        }
-
-        if (userIntern) {
-          try {
-            const rule = await getAgencyRule(userIntern.agencyId);
-            if (active) {
-              setAgencyRule(rule);
-            }
-          } catch {
-            if (active) {
-              setAgencyRule(null);
-            }
-          }
-        }
-      } catch (err) {
-        if (active) {
-          setError(
-            err instanceof Error ? err.message : "Gagal memuat data magang",
-          );
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+  // Fetch agency rule when intern is available
+  useEffect(() => {
+    if (intern) {
+      void fetchAgencyRule(intern.agencyId);
     }
+  }, [intern, fetchAgencyRule]);
 
-    void fetchData();
-
-    return () => {
-      active = false;
-    };
-  }, [userId]);
+  const loading = internsLoading || (!!intern && ruleLoading);
+  const error = internsError;
 
   if (loading) {
     return (
@@ -120,16 +90,18 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
   }
 
   const internship = {
-    startDate: intern.startedAt ? formatDate(intern.startedAt) : "—",
+    startDate: intern.startedAt ? formatDateIndonesian(intern.startedAt) : "—",
     finishDate: intern.finishedAt
-      ? formatDate(intern.finishedAt)
+      ? formatDateIndonesian(intern.finishedAt)
       : "Sedang Berjalan",
   };
 
-  const activeRule = agencyRule ?? {
-    requireFaceVerification: false,
-    requireWithinArea: false,
-  };
+  const activeRule: AgencyRule =
+    rule ??
+    ({
+      requireFaceVerification: false,
+      requireWithinArea: false,
+    } as AgencyRule);
 
   return (
     <Card className="w-full transition-all hover:shadow-md">

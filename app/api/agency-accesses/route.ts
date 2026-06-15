@@ -9,6 +9,21 @@ import { createAgencyAccessSchema } from "@/lib/schemas/agency-access-schema";
 
 const querySchema = createTableQuerySchema(["id", "createdAt"], "createdAt");
 
+/** Shape used consistently for reading/returning agency access objects. */
+const agencyAccessSelect = {
+  id: true,
+  agencyId: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+  user: {
+    select: { id: true, name: true, email: true, image: true },
+  },
+  agency: {
+    select: { id: true, name: true },
+  },
+} as const;
+
 /**
  * GET: List all agency accesses with pagination, sorting, and search.
  */
@@ -76,10 +91,7 @@ export async function GET(request: NextRequest) {
     const [accesses, totalCount] = await Promise.all([
       prisma.agencyAccess.findMany({
         where: whereCondition,
-        include: {
-          user: true,
-          agency: true,
-        },
+        select: agencyAccessSelect,
         take: limit,
         skip: skip,
         orderBy: {
@@ -158,6 +170,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { userId } = parsedBody.data;
     const { agencyId } = body;
 
     if (!agencyId || typeof agencyId !== "string") {
@@ -169,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     // Validate that the referenced user exists
     const targetUser = await prisma.user.findUnique({
-      where: { id: parsedBody.data.userId },
+      where: { id: userId },
     });
 
     if (!targetUser) {
@@ -188,12 +201,9 @@ export async function POST(request: NextRequest) {
     const newAccess = await prisma.agencyAccess.create({
       data: {
         agencyId,
-        userId: parsedBody.data.userId,
+        userId,
       },
-      include: {
-        user: true,
-        agency: true,
-      },
+      select: agencyAccessSelect,
     });
 
     return NextResponse.json(newAccess, { status: 201 });

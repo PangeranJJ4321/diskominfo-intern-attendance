@@ -5,102 +5,87 @@ import { format, subDays } from "date-fns";
 import { AlertCircle, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSchedules } from "@/lib/services/schedules";
-import { getShiftAssignments } from "@/lib/services/shift-assignments";
-import { getHolidays } from "@/lib/services/holidays";
-import { getAttendancesForUser } from "@/lib/services/attendances";
-import { getUserFaceDescriptors } from "@/lib/services/users";
-import type {
-  Schedule,
-  Attendance,
-  ShiftAssignment,
-  Holiday,
-} from "@/interfaces/models";
+import { useScheduleStore } from "@/stores/useScheduleStore";
+import { useShiftAssignmentStore } from "@/stores/useShiftAssignmentStore";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
+import { useAgencyHolidayStore } from "@/stores/useAgencyHolidayStore";
+import type { Schedule } from "@/interfaces/models";
 import type { TakeAttendanceListProps } from "@/interfaces/dashboard";
 import TakeAttendanceCard from "./take-attendance-card";
 
 /**
  * Renders the list of attendance cards for the user's scheduled shifts of the day.
+ * Uses Zustand stores for all data (schedules, assignments, attendances, holidays,
+ * location, geofence) — no prop drilling required. Attendances and face registration
+ * are read directly from stores by child cards.
  *
  * @param {TakeAttendanceListProps} props - The component props.
- * @param {string} props.userId - The user ID.
- * @param {string} props.userName - The name of the user.
- * @param {{ latitude: number; longitude: number; accuracy: number } | null} props.currentLocation - Current GPS location of the user.
- * @param {boolean | null} props.isWithinGeofence - Whether the user is within the geofence area.
- * @param {function} props.onAttendanceSuccess - Callback when attendance is successfully updated.
- * @param {number} props.refreshTrigger - Trigger to reload attendance data.
+ * @param {string} props.internId - The intern ID.
  * @returns {React.JSX.Element} The rendered list of cards.
  */
 export default function TakeAttendanceList({
-  userId,
-  userName,
-  currentLocation,
-  isWithinGeofence,
-  onAttendanceSuccess,
-  refreshTrigger,
-  agencyRule,
+  internId,
 }: TakeAttendanceListProps) {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [userHasFaceRegistered, setUserHasFaceRegistered] = useState(false);
+  // Zustand stores - each selector subscribes to just the slice it needs
+  const schedules = useScheduleStore((s) => s.schedules);
+  const fetchSchedules = useScheduleStore((s) => s.fetchSchedules);
+  const assignments = useShiftAssignmentStore((s) => s.assignments);
+  const fetchAssignments = useShiftAssignmentStore((s) => s.fetchAssignments);
+  const fetchAttendancesForIntern = useAttendanceStore(
+    (s) => s.fetchAttendancesForIntern,
+  );
+  const holidays = useAgencyHolidayStore((s) => s.holidays);
+  const fetchHolidays = useAgencyHolidayStore((s) => s.fetchHolidays);
+
   const [isLoading, setIsLoading] = useState(true);
 
+  const todayDateStr = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const yesterdayDateStr = useMemo(
+    () => format(subDays(new Date(), 1), "yyyy-MM-dd"),
+    [],
+  );
+  const todayDayOfWeek = useMemo(() => new Date().getDay(), []);
+  const yesterdayDayOfWeek = useMemo(() => subDays(new Date(), 1).getDay(), []);
+
+  const relevantDays = useMemo(
+    () => [...new Set([todayDayOfWeek, yesterdayDayOfWeek])],
+    [todayDayOfWeek, yesterdayDayOfWeek],
+  );
+
+  // Fetch schedules, assignments, attendances, and holidays via Zustand stores
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scheds, atts, assigns, hols] = await Promise.all([
-          getSchedules(),
-          getAttendancesForUser(userId),
-          getShiftAssignments(),
-          getHolidays(),
+        await Promise.all([
+          fetchSchedules(1000, relevantDays),
+          fetchAttendancesForIntern(
+            internId,
+            1000,
+            yesterdayDateStr,
+            todayDateStr,
+          ),
+          fetchAssignments(1000, yesterdayDateStr, todayDateStr),
+          fetchHolidays(1000, yesterdayDateStr, todayDateStr),
         ]);
-        setSchedules(scheds);
-        setAttendances(atts);
-        setAssignments(assigns);
-        setHolidays(hols);
       } catch (err) {
         console.error("Gagal memuat data presensi", err);
       } finally {
         setIsLoading(false);
       }
     }
+
     void loadData();
-  }, [userId, refreshTrigger]);
-
-  const todayDateStr = useMemo(() => {
-    return format(new Date(), "yyyy-MM-dd");
-  }, []);
-
-  const yesterdayDateStr = useMemo(() => {
-    return format(subDays(new Date(), 1), "yyyy-MM-dd");
-  }, []);
-
-  const todayDayOfWeek = useMemo(() => {
-    return new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-  }, []);
-
-  const yesterdayDayOfWeek = useMemo(() => {
-    return subDays(new Date(), 1).getDay();
-  }, []);
-
-  // Fetch face descriptors from the API
-  useEffect(() => {
-    if (!userId) return;
-
-    async function checkFaceRegistration() {
-      try {
-        const data = await getUserFaceDescriptors(userId);
-        setUserHasFaceRegistered(data.data && data.data.length > 0);
-      } catch (error) {
-        console.error("Failed to fetch user face descriptors:", error);
-      }
-    }
-
-    void checkFaceRegistration();
-  }, [userId, refreshTrigger]);
+  }, [
+    internId,
+    fetchSchedules,
+    fetchAttendancesForIntern,
+    fetchAssignments,
+    fetchHolidays,
+    relevantDays,
+    todayDateStr,
+    yesterdayDateStr,
+  ]);
 
   // Filter active schedules for today (including active yesterday overnight shifts)
   const sortedSchedulesWithWorkDates = useMemo(() => {
@@ -109,7 +94,7 @@ export default function TakeAttendanceList({
 
     // 1. Get assignments active for yesterday and today
     const assignmentsYesterday = assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (a.internId !== internId) return false;
       return (
         a.startDate <= yesterdayDateStr &&
         (!a.endDate || a.endDate >= yesterdayDateStr)
@@ -117,7 +102,7 @@ export default function TakeAttendanceList({
     });
 
     const assignmentsToday = assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (a.internId !== internId) return false;
       return (
         a.startDate <= todayDateStr && (!a.endDate || a.endDate >= todayDateStr)
       );
@@ -137,10 +122,8 @@ export default function TakeAttendanceList({
         activeShiftIdsYesterday.includes(s.shiftId) &&
         s.dayOfWeek === yesterdayDayOfWeek
       ) {
-        // If yesterday was a holiday, only allow if configured to work on holidays
         const allowedYesterday = !yesterdayHols || s.shift?.workOnHolidays;
         if (allowedYesterday) {
-          // If current local time is before the overnight schedule's end time, it is still active!
           if (currentLocalTimeStr < s.scheduleEnd) {
             activeList.push({
               schedule: s,
@@ -158,7 +141,6 @@ export default function TakeAttendanceList({
         activeShiftIdsToday.includes(s.shiftId) &&
         s.dayOfWeek === todayDayOfWeek
       ) {
-        // Must check if today is a holiday
         const allowedToday = !todayHols || s.shift?.workOnHolidays;
         if (allowedToday) {
           activeList.push({
@@ -176,7 +158,7 @@ export default function TakeAttendanceList({
   }, [
     schedules,
     assignments,
-    userId,
+    internId,
     todayDateStr,
     yesterdayDateStr,
     todayDayOfWeek,
@@ -241,17 +223,9 @@ export default function TakeAttendanceList({
             <TakeAttendanceCard
               key={`${schedule.id}-${workDate}`}
               schedule={schedule}
-              attendances={attendances}
               workDate={workDate}
-              userId={userId}
-              userName={userName}
-              userHasFaceRegistered={userHasFaceRegistered}
-              currentLocation={currentLocation}
-              isWithinGeofence={isWithinGeofence}
-              onAttendanceSuccess={onAttendanceSuccess}
-              refreshTrigger={refreshTrigger}
+              internId={internId}
               className="min-w-0 flex-1 w-full"
-              agencyRule={agencyRule}
             />
           ))}
         </div>
@@ -261,17 +235,9 @@ export default function TakeAttendanceList({
             <TakeAttendanceCard
               key={`${schedule.id}-${workDate}`}
               schedule={schedule}
-              attendances={attendances}
               workDate={workDate}
-              userId={userId}
-              userName={userName}
-              userHasFaceRegistered={userHasFaceRegistered}
-              currentLocation={currentLocation}
-              isWithinGeofence={isWithinGeofence}
-              onAttendanceSuccess={onAttendanceSuccess}
-              refreshTrigger={refreshTrigger}
+              internId={internId}
               className="min-w-[320px] shrink-0 snap-start flex-1"
-              agencyRule={agencyRule}
             />
           ))}
         </div>

@@ -3,17 +3,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
+import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
 import { createShiftAssignmentSchema } from "@/lib/schemas/shift-assignment-schema";
 
-const querySchema = createTableQuerySchema(
+const querySchema = createDatedQuerySchema(
   ["id", "internId", "shiftId", "startDate"],
   "startDate",
 );
 
+/** Shape used consistently for reading/returning shift assignment objects. */
+const assignmentSelect = {
+  id: true,
+  internId: true,
+  shiftId: true,
+  startDate: true,
+  endDate: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true } },
+    },
+  },
+  shift: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} as const;
+
 /**
- * GET: List all shift assignments with pagination, sorting, and search
+ * GET: List all shift assignments with pagination, sorting, search, and optional date range filtering.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,7 +83,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, startDate, endDate } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
     // Admins see all assignments; ordinary users only see their own (via intern)
@@ -85,12 +107,31 @@ export async function GET(request: NextRequest) {
             },
           }
         : {}),
+      ...(startDate || endDate
+        ? {
+            AND: [
+              // Assignment starts on or before the end of the query range
+              {
+                startDate: {
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              },
+              // Assignment has no end date OR ends on or after the start of the query range
+              {
+                OR: [
+                  { endDate: null },
+                  ...(startDate ? [{ endDate: { gte: startDate } }] : []),
+                ],
+              },
+            ],
+          }
+        : {}),
     };
 
     const [assignments, totalCount] = await Promise.all([
       prisma.shiftAssignment.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } }, shift: true },
+        select: assignmentSelect,
         take: limit,
         skip: skip,
         orderBy: {
@@ -194,7 +235,7 @@ export async function POST(request: NextRequest) {
 
     const newAssignment = await prisma.shiftAssignment.create({
       data: parsedBody.data,
-      include: { intern: { include: { user: true } }, shift: true },
+      select: assignmentSelect,
     });
 
     return NextResponse.json(newAssignment, { status: 201 });

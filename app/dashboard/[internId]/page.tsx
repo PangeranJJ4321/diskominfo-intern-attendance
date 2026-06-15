@@ -4,19 +4,19 @@ import { use, useEffect, useState, useMemo, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isLocationWithinArea } from "@/lib/location-within-area";
 import type { GeoJsonObject } from "geojson";
 import { getAttendanceAreas } from "@/lib/services/attendance-areas";
-import { createLocationLog } from "@/lib/services/location-logs";
-import { getAgencyRule } from "@/lib/services/agencies";
-import { getInterns } from "@/lib/services/interns";
-import type { AgencyRule } from "@/interfaces/models";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import { useInternStore } from "@/stores/useInternStore";
+import { useLocationLogStore } from "@/stores/useLocationLogStore";
+import { useLocationStore } from "@/stores/useLocationStore";
 
 // Import subcomponents
 import TakeAttendanceList from "./components/take-attendance-list";
 import LiveLocationMapCard from "./components/live-location-map-card";
 import AttendanceHistoriesCard from "./components/attendance-histories-card";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
+import { LazyCard } from "@/components/custom/lazy-card";
 
 // Default geofence centered on User's coordinates
 const DEFAULT_GEOFENCE: GeoJsonObject = {
@@ -43,6 +43,7 @@ const DEFAULT_GEOFENCE: GeoJsonObject = {
 
 /**
  * Renders the dashboard page for a specific intern, with attendance and location logging.
+ * Uses Zustand stores for all shared state — no prop-drilled refreshTrigger or location.
  *
  * @param {{ params: Promise<{ internId: string }> }} props - The route parameters containing the intern ID.
  * @returns {React.JSX.Element} The rendered dashboard page.
@@ -55,17 +56,16 @@ export default function InternDashboardPage({
   const { internId } = use(params);
   const { data: session, isPending } = useSession();
 
-  // Geolocation states
-  const [currentLocation, setCurrentLocation] = useState<{
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-  } | null>(null);
+  // Zustand stores
+  const fetchAgencyRule = useAgencyStore((s) => s.fetchAgencyRule);
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const createLog = useLocationLogStore((s) => s.createLog);
+  const currentLocation = useLocationStore((s) => s.currentLocation);
+  const setGeoData = useLocationStore((s) => s.setGeoData);
+  const geoData = useLocationStore((s) => s.geoData);
+
   const geofenceFetchStatus = useRef({ initiated: false, completed: false });
-  const [geofence, setGeofence] = useState<GeoJsonObject | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [hasLoggedLocation, setHasLoggedLocation] = useState(false);
-  const [agencyRule, setAgencyRule] = useState<AgencyRule | null>(null);
 
   // Resolve user info from session
   const user = useMemo(() => {
@@ -79,33 +79,33 @@ export default function InternDashboardPage({
     };
   }, [session]);
 
-  // Automatically log location once GPS resolves
+  // Automatically log location once GPS resolves and push to store
   useEffect(() => {
     if (user?.id && currentLocation && !hasLoggedLocation) {
       setTimeout(() => {
         setHasLoggedLocation(true);
       }, 0);
-      createLocationLog({
+      createLog({
         userId: user.id,
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
-      }).catch((err) => {
+      }).catch((err: unknown) => {
         console.error("Gagal mengirim log lokasi otomatis:", err);
       });
     }
-  }, [currentLocation, user?.id, hasLoggedLocation]);
+  }, [currentLocation, user?.id, hasLoggedLocation, createLog]);
 
-  // Load agency rule for the intern
+  // Pre-load agency rule into Zustand store so leaf components can read it
   useEffect(() => {
     if (!user?.id) return;
 
     async function loadAgencyRule() {
       try {
-        const interns = await getInterns();
-        const intern = interns.find((i) => i.id === internId);
+        await fetchInterns();
+        const freshInterns = useInternStore.getState().interns;
+        const intern = freshInterns.find((i) => i.id === internId);
         if (intern) {
-          const rule = await getAgencyRule(intern.agencyId);
-          setAgencyRule(rule);
+          await fetchAgencyRule(intern.agencyId);
         }
       } catch (err) {
         console.error("Gagal memuat aturan instansi:", err);
@@ -113,26 +113,24 @@ export default function InternDashboardPage({
     }
 
     void loadAgencyRule();
-  }, [internId, user?.id]);
+  }, [internId, user?.id, fetchInterns, fetchAgencyRule]);
 
-  // Load geofence from the backend
+  // Load geofence into location store (not local state)
   useEffect(() => {
-    // If a fetch has already started or finished, block any duplicate calls entirely
     if (geofenceFetchStatus.current.initiated) return;
 
     async function loadGeofence() {
-      // Lock it immediately before the async call starts
       geofenceFetchStatus.current.initiated = true;
 
       try {
         const areas = await getAttendanceAreas();
 
         if (areas.length > 0 && areas[0].geoData) {
-          setGeofence(areas[0].geoData as GeoJsonObject);
+          setGeoData(areas[0].geoData as GeoJsonObject);
         } else if (currentLocation) {
           const lat = currentLocation.latitude;
           const lng = currentLocation.longitude;
-          setGeofence({
+          setGeoData({
             type: "FeatureCollection",
             features: [
               {
@@ -154,34 +152,19 @@ export default function InternDashboardPage({
             ],
           } as unknown as GeoJsonObject);
         } else {
-          setGeofence(DEFAULT_GEOFENCE);
+          setGeoData(DEFAULT_GEOFENCE);
         }
         geofenceFetchStatus.current.completed = true;
       } catch (err) {
         console.error("Gagal memuat area presensi:", err);
-        setGeofence(DEFAULT_GEOFENCE);
+        setGeoData(DEFAULT_GEOFENCE);
       }
     }
 
-    // Only execute if we don't have data yet
     if (!geofenceFetchStatus.current.completed) {
       void loadGeofence();
     }
-  }, [currentLocation]);
-
-  // Compute geofence status
-  const isWithinGeofence = useMemo(() => {
-    if (!currentLocation || !geofence) return null;
-    return isLocationWithinArea(
-      currentLocation.latitude,
-      currentLocation.longitude,
-      geofence,
-    );
-  }, [currentLocation, geofence]);
-
-  const handleAttendanceSuccess = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
+  }, [currentLocation, setGeoData]);
 
   return (
     <>
@@ -211,32 +194,22 @@ export default function InternDashboardPage({
         ) : (
           <>
             <div className="flex flex-col gap-6">
-              <TakeAttendanceList
-                userId={user.id}
-                userName={user.name}
-                currentLocation={currentLocation}
-                isWithinGeofence={isWithinGeofence}
-                onAttendanceSuccess={handleAttendanceSuccess}
-                refreshTrigger={refreshTrigger}
-                agencyRule={agencyRule}
-              />
+              <LazyCard skeletonHeight="h-[220px] md:h-[180px]">
+                <TakeAttendanceList internId={internId} />
+              </LazyCard>
 
-              <LiveLocationMapCard
-                geoData={geofence}
-                currentLocation={currentLocation}
-                onLocationChange={setCurrentLocation}
-                isWithinGeofence={isWithinGeofence}
-                agencyRule={agencyRule}
-              />
+              <LazyCard skeletonHeight="h-[480px]">
+                <LiveLocationMapCard geoData={geoData} />
+              </LazyCard>
             </div>
 
-            <div className="pt-2">
-              <AttendanceHistoriesCard
-                userId={user.id}
-                refreshTrigger={refreshTrigger}
-              />
-            </div>
-            <InternInfoCard userId={user.id} />
+            <LazyCard skeletonHeight="h-[580px]">
+              <AttendanceHistoriesCard internId={internId} />
+            </LazyCard>
+
+            <LazyCard skeletonHeight="h-64">
+              <InternInfoCard userId={user.id} />
+            </LazyCard>
           </>
         )}
       </main>

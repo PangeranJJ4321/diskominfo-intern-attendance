@@ -39,7 +39,7 @@ export function SignInForm({
   const onSubmit = async (data: SignInFormValues) => {
     setSubmitError("");
 
-    const { data: signInData, error: signInError } = await signIn.email({
+    const { error: signInError } = await signIn.email({
       email: data.email,
       password: data.password,
     });
@@ -49,7 +49,7 @@ export function SignInForm({
       return;
     }
 
-    router.push(signInData?.user.id ? "/" : "/");
+    router.push("/");
   };
 
   // 4. Google OAuth Handler

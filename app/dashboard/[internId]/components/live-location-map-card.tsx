@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Navigation, Info, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import { useLocationStore } from "@/stores/useLocationStore";
 import { type LiveLocationMapCardProps } from "@/interfaces/dashboard";
 
 const LiveLocationMap = dynamic(() => import("./live-location-map"), {
@@ -14,15 +16,15 @@ const LiveLocationMap = dynamic(() => import("./live-location-map"), {
 
 /**
  * Card component containing the live location map and geofence status.
+ * Uses Zustand stores for location and geofence state instead of prop drilling.
  *
  * @param props - Component properties.
  */
 export default function LiveLocationMapCard({
   geoData,
-  onLocationChange,
-  isWithinGeofence,
-  agencyRule,
 }: LiveLocationMapCardProps) {
+  const agencyRule = useAgencyStore((s) => s.rule);
+  const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
   const enforceGeo = agencyRule?.requireWithinArea !== false;
 
   return (
@@ -72,10 +74,7 @@ export default function LiveLocationMapCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Map Container */}
-        <LiveLocationMap
-          geoData={geoData}
-          onLocationChange={onLocationChange}
-        />
+        <LiveLocationMap geoData={geoData} />
 
         {enforceGeo && isWithinGeofence === false && (
           <div className="flex items-start gap-2 text-xs bg-destructive/5 border border-destructive/10 rounded-xl p-3 text-destructive">

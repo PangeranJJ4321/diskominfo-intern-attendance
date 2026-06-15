@@ -11,6 +11,43 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+/** Shape used consistently for reading/returning attendance objects. */
+const attendanceSelect = {
+  id: true,
+  internId: true,
+  scheduleId: true,
+  date: true,
+  attendanceTime: true,
+  attendanceLatitude: true,
+  attendanceLongitude: true,
+  attendancePhotoUrl: true,
+  attendanceFaceDescriptor: true,
+  status: true,
+  notes: true,
+  createdAt: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true, email: true, image: true } },
+    },
+  },
+  schedule: {
+    select: {
+      id: true,
+      shiftId: true,
+      name: true,
+      dayOfWeek: true,
+      windowStart: true,
+      scheduleStart: true,
+      lateCutoff: true,
+      scheduleEnd: true,
+      shift: {
+        select: { id: true, name: true },
+      },
+    },
+  },
+} as const;
+
 /**
  * GET: Retrieve a specific Attendance by ID
  */
@@ -51,7 +88,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const attendance = await prisma.attendance.findUnique({
       where: { id },
-      include: { intern: { include: { user: true } }, schedule: true },
+      select: attendanceSelect,
     });
 
     if (!attendance) {
@@ -63,7 +100,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Non-admin users can only read their own attendance
     const isAdmin = dbUser.agencyAccesses.length > 0;
-    if (!isAdmin && attendance.intern.userId !== session.user.id) {
+    if (!isAdmin && attendance.intern.user.id !== session.user.id) {
       return NextResponse.json(
         { error: "Forbidden: Missing access credentials." },
         { status: 403 },
@@ -163,7 +200,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updatedAttendance = await prisma.attendance.update({
       where: { id },
       data,
-      include: { intern: { include: { user: true } }, schedule: true },
+      select: attendanceSelect,
     });
 
     return NextResponse.json(updatedAttendance);

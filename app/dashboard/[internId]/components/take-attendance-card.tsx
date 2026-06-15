@@ -10,9 +10,11 @@ import {
   Calendar,
   AlertTriangle,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 import { cn } from "@/lib/utils";
+import { formatTimeLabel } from "@/lib/time-utils";
+import { parseDateTimeLocal } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +38,10 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createAttendance } from "@/lib/services/attendances";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
+import { useAgencyStore } from "@/stores/useAgencyStore";
+import { useLocationStore } from "@/stores/useLocationStore";
+import { useFaceCaptureStore } from "@/stores/useFaceCaptureStore";
 import type { TakeAttendanceCardProps } from "@/interfaces/dashboard";
 import {
   AttendanceStatus,
@@ -46,33 +51,59 @@ import {
 } from "@/interfaces/enums";
 import TakeAttendanceFaceCamera from "./take-attendance-face-camera";
 
-function formatTimeLabel(value: string): string {
-  return value.length >= 5 ? value.slice(0, 5) : value;
-}
-
 export default function TakeAttendanceCard({
   schedule,
-  attendances,
-  userId,
-  userHasFaceRegistered,
-  currentLocation,
-  isWithinGeofence,
-  onAttendanceSuccess,
-  refreshTrigger,
+  internId,
   workDate,
   className,
-  agencyRule,
 }: TakeAttendanceCardProps) {
+  // Zustand stores
+  const createAttendance = useAttendanceStore((s) => s.createAttendance);
+  const fetchAttendancesForIntern = useAttendanceStore(
+    (s) => s.fetchAttendancesForIntern,
+  );
+  const attendances = useAttendanceStore((s) => s.attendances);
+  const agencyRule = useAgencyStore((s) => s.rule);
+  const currentLocation = useLocationStore((s) => s.currentLocation);
+  const isWithinGeofence = useLocationStore((s) => s.isWithinGeofence);
+
   // Live Clock State
   const [time, setTime] = useState<Date | null>(null);
 
   // Submitting States
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const faceCapturePhotoUrl = useFaceCaptureStore((s) => s.photoUrl);
+  const faceCaptureDescriptor = useFaceCaptureStore((s) => s.faceDescriptor);
+  const clearFaceCapture = useFaceCaptureStore((s) => s.clearCapture);
+
   const [isFaceCameraOpen, setIsFaceCameraOpen] = useState(false);
-  const [capturedPhotoUrl, setCapturedPhotoUrl] = useState<string | null>(null);
-  const [capturedDescriptor, setCapturedDescriptor] = useState<number[] | null>(
-    null,
-  );
+
+  /**
+   * When the face camera closes, check the Zustand store for newly captured
+   * data and either submit attendance or open the late-notes dialog.
+   */
+  function handleFaceCameraOpenChange(open: boolean) {
+    setIsFaceCameraOpen(open);
+    if (!open) {
+      const captureState = useFaceCaptureStore.getState();
+      if (
+        captureState.photoUrl !== null &&
+        captureState.faceDescriptor !== null
+      ) {
+        if (isLateNow) {
+          setSelectedStatus(AttendanceStatus.LATE);
+          setNotes("");
+        } else {
+          void handleSubmitAttendance(
+            AttendanceStatus.PRESENT,
+            "",
+            captureState.faceDescriptor,
+            captureState.photoUrl,
+          );
+        }
+      }
+    }
+  }
 
   // Dialog / notes states
   const [selectedStatus, setSelectedStatus] =
@@ -89,9 +120,6 @@ export default function TakeAttendanceCard({
     };
   }, []);
 
-  // Fetch database records
-  useEffect(() => {}, [refreshTrigger]);
-
   const todayDateStr = useMemo(() => {
     if (workDate) return workDate;
     if (!time) return "";
@@ -104,12 +132,12 @@ export default function TakeAttendanceCard({
     return (
       attendances.find(
         (a) =>
-          a.intern?.userId === userId &&
+          a.internId === internId &&
           a.scheduleId === schedule.id &&
           a.date === todayDateStr,
       ) || null
     );
-  }, [attendances, schedule, userId, todayDateStr]);
+  }, [attendances, schedule, internId, todayDateStr]);
 
   // Timing states
   const timingStates = useMemo(() => {
@@ -137,12 +165,6 @@ export default function TakeAttendanceCard({
 
     const workDateToUse = workDate || format(time, "yyyy-MM-dd");
 
-    const parseLocal = (dStr: string, tStr: string) => {
-      const [yyyy, mm, dd] = dStr.split("-").map(Number);
-      const [hh, min, sec] = tStr.split(":").map(Number);
-      return new Date(yyyy, mm - 1, dd, hh, min, sec || 0, 0);
-    };
-
     if (isOvernight) {
       const parts = workDateToUse.split("-").map(Number);
       const startDay = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -151,18 +173,24 @@ export default function TakeAttendanceCard({
 
       const nextDayDateStr = format(nextDay, "yyyy-MM-dd");
 
-      absoluteWindowStart = parseLocal(workDateToUse, windowStartStr);
-      absoluteScheduleStart = parseLocal(workDateToUse, scheduleStartStr);
-      absoluteLateCutoff = parseLocal(
+      absoluteWindowStart = parseDateTimeLocal(workDateToUse, windowStartStr);
+      absoluteScheduleStart = parseDateTimeLocal(
+        workDateToUse,
+        scheduleStartStr,
+      );
+      absoluteLateCutoff = parseDateTimeLocal(
         lateCutoffStr < windowStartStr ? nextDayDateStr : workDateToUse,
         lateCutoffStr,
       );
-      absoluteScheduleEnd = parseLocal(nextDayDateStr, scheduleEndStr);
+      absoluteScheduleEnd = parseDateTimeLocal(nextDayDateStr, scheduleEndStr);
     } else {
-      absoluteWindowStart = parseLocal(workDateToUse, windowStartStr);
-      absoluteScheduleStart = parseLocal(workDateToUse, scheduleStartStr);
-      absoluteLateCutoff = parseLocal(workDateToUse, lateCutoffStr);
-      absoluteScheduleEnd = parseLocal(workDateToUse, scheduleEndStr);
+      absoluteWindowStart = parseDateTimeLocal(workDateToUse, windowStartStr);
+      absoluteScheduleStart = parseDateTimeLocal(
+        workDateToUse,
+        scheduleStartStr,
+      );
+      absoluteLateCutoff = parseDateTimeLocal(workDateToUse, lateCutoffStr);
+      absoluteScheduleEnd = parseDateTimeLocal(workDateToUse, scheduleEndStr);
     }
 
     const isBeforeSchedule = time < absoluteWindowStart;
@@ -226,17 +254,8 @@ export default function TakeAttendanceCard({
     try {
       const now = new Date();
 
-      // Resolve internId from userId
-      const { getInterns } = await import("@/lib/services/interns");
-      const interns = await getInterns(1000);
-      const intern = interns.find((i) => i.userId === userId);
-      if (!intern) {
-        toast.error("Data magang tidak ditemukan.");
-        return;
-      }
-
       await createAttendance({
-        internId: intern.id,
+        internId,
         scheduleId: schedule.id,
         date: todayDateStr,
         attendanceTime: now.toISOString(),
@@ -264,38 +283,24 @@ export default function TakeAttendanceCard({
         `Presensi ${getAttendanceStatusLabel(status)} berhasil dikirim!`,
       );
 
-      onAttendanceSuccess();
+      // Refetch attendances via Zustand store after successful submission
+      const yesterdayDateStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      void fetchAttendancesForIntern(
+        internId,
+        1000,
+        yesterdayDateStr,
+        todayDateStr,
+      );
+
       setSelectedStatus(null);
       setNotes("");
-      setCapturedPhotoUrl(null);
-      setCapturedDescriptor(null);
+      clearFaceCapture();
     } catch (err) {
       const errorMsg =
         err instanceof Error ? err.message : "Gagal mengirim presensi.";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
-    }
-  }
-
-  function handleFaceDescriptorCaptured(
-    photoUrl: string,
-    faceDescriptor: number[],
-  ) {
-    setIsFaceCameraOpen(false);
-    setCapturedPhotoUrl(photoUrl);
-    setCapturedDescriptor(faceDescriptor);
-
-    if (isLateNow) {
-      setSelectedStatus(AttendanceStatus.LATE);
-      setNotes("");
-    } else {
-      void handleSubmitAttendance(
-        AttendanceStatus.PRESENT,
-        "",
-        faceDescriptor,
-        photoUrl,
-      );
     }
   }
 
@@ -345,7 +350,7 @@ export default function TakeAttendanceCard({
             {schedule.name}
           </h3>
 
-          <div className="flex items-center text-xs md:text-sm text-muted-foreground gap-2 bg-muted/60 w-fit px-2.5 py-1 rounded-xl">
+          <div className="flex items-center text-xs md:text-sm text-muted-foreground gap-2 bg-muted/60 w-fit py-1 rounded-xl">
             <Clock className="size-4 text-primary" />
             <span className="font-semibold text-foreground">
               {formatTimeLabel(schedule.scheduleStart)} -{" "}
@@ -409,10 +414,7 @@ export default function TakeAttendanceCard({
               disabled={!canSubmitAttendance}
               onClick={() => {
                 // Face verification only needed if rule requires it (default: true)
-                // and user has face registered
-                const needFace =
-                  agencyRule?.requireFaceVerification !== false &&
-                  userHasFaceRegistered;
+                const needFace = agencyRule?.requireFaceVerification !== false;
                 if (needFace) {
                   setIsFaceCameraOpen(true);
                 } else if (isLateNow) {
@@ -588,8 +590,8 @@ export default function TakeAttendanceCard({
                 void handleSubmitAttendance(
                   selectedStatus,
                   notes,
-                  capturedDescriptor,
-                  capturedPhotoUrl,
+                  faceCaptureDescriptor,
+                  faceCapturePhotoUrl,
                 );
               }}
               type="button"
@@ -603,9 +605,7 @@ export default function TakeAttendanceCard({
 
       <TakeAttendanceFaceCamera
         open={isFaceCameraOpen}
-        onOpenChange={setIsFaceCameraOpen}
-        userHasFaceRegistered={userHasFaceRegistered}
-        onSuccess={handleFaceDescriptorCaptured}
+        onOpenChange={handleFaceCameraOpenChange}
       />
     </Card>
   );

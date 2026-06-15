@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { getInterns } from "@/lib/services/interns";
+import { useInternStore } from "@/stores/useInternStore";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
  * Dashboard landing page — redirects to the intern's specific dashboard
  * based on their intern ID. If no intern data is available, redirects to
  * the profile page instead.
+ *
+ * Uses Zustand store for interns instead of direct API calls.
  *
  * @returns {React.JSX.Element} A loading skeleton or redirect.
  */
@@ -20,13 +22,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Zustand store for interns
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+
   useEffect(() => {
     if (sessionPending) return;
 
     async function redirectToInternDashboard() {
       try {
-        const interns = await getInterns();
-        const intern = interns.find((i) => i.userId === session?.user?.id);
+        await fetchInterns();
+        // Re-read from store after fetch
+        const freshInterns = useInternStore.getState().interns;
+        const intern = freshInterns.find((i) => i.userId === session?.user?.id);
         if (intern) {
           router.replace(`/dashboard/${intern.id}`);
           return;
@@ -46,7 +53,7 @@ export default function DashboardPage() {
     }
 
     void redirectToInternDashboard();
-  }, [sessionPending, session, router]);
+  }, [sessionPending, session, router, fetchInterns]);
 
   return (
     <>

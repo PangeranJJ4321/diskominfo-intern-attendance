@@ -77,16 +77,6 @@ export async function GET(request: NextRequest) {
     const [shifts, totalCount] = await Promise.all([
       prisma.shift.findMany({
         where: whereCondition,
-        include: {
-          _count: {
-            select: {
-              schedules: {
-                where: { deletedAt: null },
-              },
-              assignments: true,
-            },
-          },
-        },
         take: limit,
         skip: skip,
         orderBy: {

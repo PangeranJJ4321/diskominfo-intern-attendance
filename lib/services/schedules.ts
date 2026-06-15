@@ -2,8 +2,15 @@ import { formatTimeToApi, formatTimeFromApi } from "@/lib/time-utils";
 import { Schedule } from "@/interfaces/models";
 import { handleError } from "./utils";
 
-export async function getSchedules(limit = 1000): Promise<Schedule[]> {
-  const res = await fetch(`/api/schedules?limit=${limit}`);
+export async function getSchedules(
+  limit = 1000,
+  dayOfWeek?: number[],
+): Promise<Schedule[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (dayOfWeek && dayOfWeek.length > 0) {
+    params.set("dayOfWeek", dayOfWeek.join(","));
+  }
+  const res = await fetch(`/api/schedules?${params.toString()}`);
   if (!res.ok) await handleError(res, "Gagal mengambil data jadwal");
   const json = await res.json();
   const rawList: Schedule[] = json.data || [];
@@ -16,7 +23,9 @@ export async function getSchedules(limit = 1000): Promise<Schedule[]> {
   }));
 }
 
-export async function createSchedule(data: Omit<Schedule, "id">): Promise<Schedule> {
+export async function createSchedule(
+  data: Omit<Schedule, "id">,
+): Promise<Schedule> {
   const payload = {
     ...data,
     windowStart: formatTimeToApi(data.windowStart),
@@ -42,14 +51,22 @@ export async function createSchedule(data: Omit<Schedule, "id">): Promise<Schedu
 
 export async function updateSchedule(
   id: string,
-  data: Partial<Omit<Schedule, "id" | "shiftId">>
+  data: Partial<Omit<Schedule, "id" | "shiftId">>,
 ): Promise<Schedule> {
   const payload = {
     ...data,
-    ...(data.windowStart ? { windowStart: formatTimeToApi(data.windowStart) } : {}),
-    ...(data.scheduleStart ? { scheduleStart: formatTimeToApi(data.scheduleStart) } : {}),
-    ...(data.lateCutoff ? { lateCutoff: formatTimeToApi(data.lateCutoff) } : {}),
-    ...(data.scheduleEnd ? { scheduleEnd: formatTimeToApi(data.scheduleEnd) } : {}),
+    ...(data.windowStart
+      ? { windowStart: formatTimeToApi(data.windowStart) }
+      : {}),
+    ...(data.scheduleStart
+      ? { scheduleStart: formatTimeToApi(data.scheduleStart) }
+      : {}),
+    ...(data.lateCutoff
+      ? { lateCutoff: formatTimeToApi(data.lateCutoff) }
+      : {}),
+    ...(data.scheduleEnd
+      ? { scheduleEnd: formatTimeToApi(data.scheduleEnd) }
+      : {}),
   };
   const res = await fetch(`/api/schedules/${id}`, {
     method: "PATCH",

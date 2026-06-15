@@ -2,15 +2,50 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 /**
+ * Formats a date string into a localized Indonesian date (medium style).
+ *
+ * @param dateStr - The ISO date string or null.
+ * @returns The formatted date string, or "—" if null.
+ */
+export function formatDateIndonesian(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+  }).format(new Date(dateStr));
+}
+
+/**
+ * Parses a local date string (YYYY-MM-DD) and time string (HH:mm:ss or HH:mm)
+ * into a Date object using local time fields (no timezone offset).
+ *
+ * @param dateStr - The date string in YYYY-MM-DD format.
+ * @param timeStr - The time string in HH:mm:ss or HH:mm format.
+ * @returns A Date object representing the local date and time.
+ */
+export function parseDateTimeLocal(dateStr: string, timeStr: string): Date {
+  const [yyyy, mm, dd] = dateStr.split("-").map(Number);
+  const [hh, min, sec] = timeStr.split(":").map(Number);
+  return new Date(yyyy, mm - 1, dd, hh, min, sec || 0, 0);
+}
+
+/**
  * Generates a list of Dates for a monthly calendar grid, including padding days
  * from the previous and next months to complete the start/end weeks.
- * 
+ *
  * @param currentMonth The month to generate the calendar grid for
  * @returns Array of Date objects representing the grid
  */
 export function getCalendarDays(currentMonth: Date): Date[] {
-  const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  const monthStart = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1,
+  );
+  const monthEnd = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() + 1,
+    0,
+  );
 
   const startDate = new Date(monthStart);
   startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of first week
@@ -29,7 +64,7 @@ export function getCalendarDays(currentMonth: Date): Date[] {
 
 /**
  * Parses a date string formatted as YYYY-MM-DD locally to avoid timezone shifts.
- * 
+ *
  * @param str The local date string formatted as YYYY-MM-DD
  * @returns Date object representing the local date
  */
@@ -40,7 +75,7 @@ export function parseDateLocal(str: string): Date {
 
 /**
  * Formats a weekly range starting from the week of the given date.
- * 
+ *
  * @param date The reference date within the week
  * @returns The formatted weekly range string
  */
@@ -66,4 +101,3 @@ export function formatWeekRange(date: Date): string {
   }
   return `${startDay} - ${endDay} ${startMonth} ${startYear}`;
 }
-

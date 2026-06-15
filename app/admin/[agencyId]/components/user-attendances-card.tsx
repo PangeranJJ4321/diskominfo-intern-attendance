@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -27,34 +27,43 @@ import UserAttendanceCreateDialog from "./user-attendance-create-dialog";
 import UserShiftEditDialog from "./user-shift-edit-dialog";
 import ExportAttendanceDialog from "./export-attendance-dialog";
 import { getInitials } from "@/lib/string-utils";
-import { getUsers } from "@/lib/services/users";
-import { getShifts } from "@/lib/services/shifts";
-import { getShiftAssignments } from "@/lib/services/shift-assignments";
-import type {
-  User,
-  Shift,
-  ShiftAssignment,
-  Schedule,
-  Attendance,
-} from "@/interfaces/models";
+
+// Zustand stores — replace direct API calls
+import { useUserStore } from "@/stores/useUserStore";
+import { useShiftStore } from "@/stores/useShiftStore";
+import { useShiftAssignmentStore } from "@/stores/useShiftAssignmentStore";
+import { useInternStore } from "@/stores/useInternStore";
+
+import type { Schedule, Attendance } from "@/interfaces/models";
 
 /**
  * Renders the admin dashboard user attendance management card.
+ *
+ * Uses Zustand stores for user, shift, assignment, and intern data.
+ * No more refreshCounter — dialogs refetch specific stores on success.
  *
  * @returns {React.JSX.Element} The rendered user attendance control card.
  */
 export default function UserAttendancesCard() {
   const isMobile = useIsMobile();
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
+  // ── Zustand stores ──
+  const users = useUserStore((s) => s.users);
+  const fetchUsers = useUserStore((s) => s.fetchUsers);
+  const shifts = useShiftStore((s) => s.shifts);
+  const fetchShifts = useShiftStore((s) => s.fetchShifts);
+  const assignments = useShiftAssignmentStore((s) => s.assignments);
+  const fetchAssignments = useShiftAssignmentStore((s) => s.fetchAssignments);
+  const interns = useInternStore((s) => s.interns);
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
+
+  const [selectedUser, setSelectedUser] = useState<NonNullable<
+    (typeof users)[number]
+  > | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Date State for Calendar
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
-  const [refreshCounter, setRefreshCounter] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -74,29 +83,37 @@ export default function UserAttendancesCard() {
   // Export Attendance Dialog state
   const [isExportOpen, setIsExportOpen] = useState(false);
 
+  // ── Refresh helper – re-fetches from stores on success actions ──
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      fetchUsers(),
+      fetchShifts(),
+      fetchAssignments(),
+      fetchInterns(),
+    ]);
+  }, [fetchUsers, fetchShifts, fetchAssignments, fetchInterns]);
+
+  /** Called after a shift assignment or attendance mutation succeeds. */
+  const handleRefreshSuccess = useCallback(() => {
+    void refreshAll().catch((err) => {
+      console.error("Gagal refresh data setelah mutasi", err);
+    });
+  }, [refreshAll]);
+
   useEffect(() => {
     const timer = setTimeout(() => setIsClient(true), 0);
     let cancelled = false;
+
     async function loadData() {
       setIsLoading(true);
       try {
-        const [loadedUsers, loadedShifts, loadedAssignments] =
-          await Promise.all([getUsers(), getShifts(), getShiftAssignments()]);
+        await refreshAll();
         if (!cancelled) {
-          setUsers(loadedUsers);
-          setShifts(loadedShifts);
-          setAssignments(loadedAssignments);
-
-          // Auto select first user if not selected or update selected user references
+          const currentUsers = useUserStore.getState().users;
           setSelectedUser((prev) => {
-            if (!prev && loadedUsers.length > 0) {
-              return loadedUsers[0];
-            }
+            if (!prev && currentUsers.length > 0) return currentUsers[0];
             if (prev) {
-              const updatedUser = loadedUsers.find((u) => u.id === prev.id);
-              if (updatedUser) {
-                return updatedUser;
-              }
+              return currentUsers.find((u) => u.id === prev.id) ?? prev;
             }
             return prev;
           });
@@ -105,17 +122,16 @@ export default function UserAttendancesCard() {
         console.error("Gagal memuat data", err);
         toast.error("Gagal memuat data peserta magang");
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
+
     void loadData();
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [refreshCounter]);
+  }, [refreshAll]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
@@ -128,26 +144,25 @@ export default function UserAttendancesCard() {
     );
   }, [users, searchQuery]);
 
-  const handleOpenAssignDialog = () => {
-    setIsAssignDialogOpen(true);
-  };
-
   const activeAssignments = useMemo(() => {
     if (!selectedUser) return [];
     const todayStr = format(new Date(), "yyyy-MM-dd");
+    const userInternIds = interns
+      .filter((i) => i.userId === selectedUser.id)
+      .map((i) => i.id);
     return assignments.filter(
       (a) =>
-        a.intern?.userId === selectedUser.id &&
+        userInternIds.includes(a.internId) &&
         a.startDate <= todayStr &&
         (!a.endDate || a.endDate >= todayStr),
     );
-  }, [selectedUser, assignments]);
+  }, [selectedUser, assignments, interns]);
 
   const activeShifts = useMemo(() => {
     if (activeAssignments.length === 0) return [];
     return activeAssignments
       .map((a) => shifts.find((s) => s.id === a.shiftId))
-      .filter((s): s is Shift => !!s);
+      .filter((s): s is NonNullable<typeof s> => !!s);
   }, [activeAssignments, shifts]);
 
   // Month navigation helpers
@@ -247,8 +262,7 @@ export default function UserAttendancesCard() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
-      {/* Left Sidebar: Employee List Wrapper */}
-      {/* Added h-[350px] for mobile constraint, reverting to lg:h-auto for desktop */}
+      {/* Left Sidebar: Employee List */}
       <div className="lg:col-span-1 relative h-87.5 lg:h-auto lg:min-h-0">
         <Card className="flex flex-col overflow-hidden p-4 w-full h-full lg:absolute lg:inset-0">
           <div className="space-y-3 pb-3 border-b border-border/40 shrink-0">
@@ -281,7 +295,7 @@ export default function UserAttendancesCard() {
             </div>
           </div>
 
-          {/* Scrollable List with Custom Thin Scrollbar */}
+          {/* Scrollable List */}
           <div className="flex-1 overflow-y-auto pt-3 space-y-1.5 pr-2 -mr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full scrollbar-thin">
             {filteredUsers.length === 0 ? (
               <div className="text-center text-xs text-muted-foreground py-8">
@@ -291,9 +305,12 @@ export default function UserAttendancesCard() {
               filteredUsers.map((user) => {
                 const isSelected = selectedUser?.id === user.id;
                 const todayStr = format(new Date(), "yyyy-MM-dd");
+                const userInternIds = interns
+                  .filter((i) => i.userId === user.id)
+                  .map((i) => i.id);
                 const userAssigns = assignments.filter(
                   (a) =>
-                    a.intern?.userId === user.id &&
+                    userInternIds.includes(a.internId) &&
                     a.startDate <= todayStr &&
                     (!a.endDate || a.endDate >= todayStr),
                 );
@@ -384,7 +401,7 @@ export default function UserAttendancesCard() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleOpenAssignDialog}
+                  onClick={() => setIsAssignDialogOpen(true)}
                   className="rounded-lg border-border h-9 text-xs flex items-center gap-1 font-semibold"
                 >
                   <UserCog className="size-4" /> Atur Shift
@@ -443,11 +460,13 @@ export default function UserAttendancesCard() {
                 </div>
               </div>
 
+              {/* No more refreshTrigger — UserAttendances uses stores internally */}
               <UserAttendances
-                userId={selectedUser.id}
+                internIds={interns
+                  .filter((i) => i.userId === selectedUser.id)
+                  .map((i) => i.id)}
                 currentMonth={currentMonth}
                 onDayClick={handleCalendarDayClick}
-                refreshTrigger={refreshCounter}
               />
 
               {/* Attendance Legend */}
@@ -493,11 +512,11 @@ export default function UserAttendancesCard() {
           onOpenChange={setIsAssignDialogOpen}
           userId={selectedUser.id}
           userName={selectedUser.name}
-          onSuccess={() => setRefreshCounter((prev) => prev + 1)}
+          onSuccess={handleRefreshSuccess}
         />
       )}
 
-      {/* Attendance Override Dialog */}
+      {/* Attendance Override Dialogs */}
       {selectedUser &&
         (overrideExisting ? (
           <UserAttendanceEditDialog
@@ -507,7 +526,7 @@ export default function UserAttendancesCard() {
             date={overrideDate}
             schedule={overrideSchedule}
             existingAttendance={overrideExisting}
-            onSuccess={() => setRefreshCounter((prev) => prev + 1)}
+            onSuccess={handleRefreshSuccess}
           />
         ) : (
           <UserAttendanceCreateDialog
@@ -517,7 +536,7 @@ export default function UserAttendancesCard() {
             userName={selectedUser.name}
             date={overrideDate}
             schedule={overrideSchedule}
-            onSuccess={() => setRefreshCounter((prev) => prev + 1)}
+            onSuccess={handleRefreshSuccess}
           />
         ))}
 
@@ -528,6 +547,7 @@ export default function UserAttendancesCard() {
         users={users}
         shifts={shifts}
         assignments={assignments}
+        interns={interns}
       />
     </div>
   );

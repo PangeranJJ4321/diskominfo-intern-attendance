@@ -9,11 +9,14 @@ import { createUserSchema } from "@/lib/schemas/user-schema";
 import { hashPassword } from "better-auth/crypto";
 import { generateCuid } from "@/lib/string-utils";
 
-const querySchema = createTableQuerySchema(["id", "name", "email", "createdAt"], "id");
+const querySchema = createTableQuerySchema(
+  ["id", "name", "email", "createdAt"],
+  "id",
+);
 
 /**
  * GET: List all users with pagination, sorting, and search filtering.
- * 
+ *
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
@@ -91,6 +94,12 @@ export async function GET(request: NextRequest) {
     const [users, totalCount] = await Promise.all([
       prisma.user.findMany({
         where: whereCondition,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
         take: limit,
         skip: skip,
         orderBy: {
@@ -122,7 +131,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST: Create a new user.
- * 
+ *
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */

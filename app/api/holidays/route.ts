@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
+import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
 import { createHolidaySchema } from "@/lib/schemas/holiday-schema";
 import { fetchHolidaySeeds } from "@/lib/get-holidays";
 
-const querySchema = createTableQuerySchema(
+const querySchema = createDatedQuerySchema(
   ["id", "date", "description", "createdAt"],
   "date",
 );
@@ -18,7 +18,7 @@ let isSyncing = false;
 const SYNC_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 /**
- * GET: List all holidays with pagination, sorting, and search
+ * GET: List all holidays with pagination, sorting, search, and optional date range filtering.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +93,10 @@ export async function GET(request: NextRequest) {
           "Failed to automatically sync/create public holidays:",
           syncError,
         );
+        console.warn(
+          "Failed to automatically sync/create public holidays:",
+          syncError,
+        );
       } finally {
         isSyncing = false;
       }
@@ -113,17 +117,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, startDate, endDate } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
-    const whereCondition = search
-      ? {
-          description: {
-            contains: search,
-            mode: "insensitive" as const,
-          },
-        }
-      : {};
+    const whereCondition = {
+      ...(search
+        ? {
+            description: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          }
+        : {}),
+      ...(startDate || endDate
+        ? {
+            date: {
+              ...(startDate ? { gte: startDate } : {}),
+              ...(endDate ? { lte: endDate } : {}),
+            },
+          }
+        : {}),
+    };
 
     const [holidays, totalCount] = await Promise.all([
       prisma.agencyHoliday.findMany({

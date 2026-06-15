@@ -23,3 +23,33 @@ export function createTableQuerySchema<T extends [string, ...string[]]>(
     >,
   });
 }
+
+/**
+ * Date range filter schema (YYYY-MM-DD strings).
+ * Can be used standalone or merged with other query params.
+ */
+export const dateRangeSchema = z.object({
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "startDate must be YYYY-MM-DD")
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "endDate must be YYYY-MM-DD")
+    .optional(),
+});
+
+/**
+ * Combines a table query schema with optional date range filtering.
+ * @param allowedSortColumns - Sortable column names.
+ * @param defaultSort - Default sort column.
+ * @param dateField - The field name for date range filtering. Defaults to "date".
+ */
+export function createDatedQuerySchema<T extends [string, ...string[]]>(
+  allowedSortColumns: T,
+  defaultSort: T[number],
+) {
+  return createTableQuerySchema(allowedSortColumns, defaultSort).merge(
+    dateRangeSchema,
+  );
+}

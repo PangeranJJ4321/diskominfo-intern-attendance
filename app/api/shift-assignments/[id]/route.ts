@@ -10,6 +10,24 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+/** Shape used consistently for reading/returning shift assignment objects. */
+const assignmentSelect = {
+  id: true,
+  internId: true,
+  shiftId: true,
+  startDate: true,
+  endDate: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true } },
+    },
+  },
+  shift: {
+    select: { id: true, name: true },
+  },
+} as const;
+
 /**
  * GET: Retrieve a specific ShiftAssignment by ID
  */
@@ -50,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const assignment = await prisma.shiftAssignment.findUnique({
       where: { id },
-      include: { intern: { include: { user: true } }, shift: true },
+      select: assignmentSelect,
     });
 
     if (!assignment) {
@@ -163,7 +181,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updatedAssignment = await prisma.shiftAssignment.update({
       where: { id },
       data: parsedBody.data,
-      include: { intern: { include: { user: true } }, shift: true },
+      select: assignmentSelect,
     });
 
     return NextResponse.json(updatedAssignment);

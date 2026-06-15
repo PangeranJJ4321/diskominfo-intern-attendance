@@ -20,6 +20,7 @@ import { uploadImage } from "@/lib/services/upload";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { Spinner } from "@/components/ui/spinner";
 import { FaceModelLoadingOverlay } from "@/components/custom/face-model-loading-overlay";
+import { useFaceCaptureStore } from "@/stores/useFaceCaptureStore";
 
 /**
  * Camera component for verifying the user's face during check-in.
@@ -27,9 +28,7 @@ import { FaceModelLoadingOverlay } from "@/components/custom/face-model-loading-
 export default function TakeAttendanceFaceCamera({
   open,
   onOpenChange,
-  userHasFaceRegistered,
-  onSuccess,
-}: Omit<TakeAttendanceFaceCameraProps, "userId" | "userName">) {
+}: TakeAttendanceFaceCameraProps) {
   const [cameraReady, setCameraReady] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
@@ -44,6 +43,8 @@ export default function TakeAttendanceFaceCamera({
     null,
   );
   const [modelsReady, setModelsReady] = useState(false);
+  const setCapture = useFaceCaptureStore((s) => s.setCapture);
+
   const [modelsError, setModelsError] = useState("");
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -92,7 +93,7 @@ export default function TakeAttendanceFaceCamera({
 
   const capturePhoto = async () => {
     const video = videoRef.current;
-    if (!video || !userHasFaceRegistered) return;
+    if (!video) return;
 
     setVerifying(true);
     setError("");
@@ -163,11 +164,6 @@ export default function TakeAttendanceFaceCamera({
   };
 
   const handleUploadAndVerify = async () => {
-    if (!userHasFaceRegistered) {
-      setError("Data wajah tidak terdaftar. Pengunggahan dibatalkan.");
-      return;
-    }
-
     const uploadedFile = fileState.files[0];
     if (!uploadedFile || !capturedDescriptor) return;
 
@@ -191,7 +187,7 @@ export default function TakeAttendanceFaceCamera({
       const { url: photoUrl } = await uploadImage(base64, "attendance-photos");
 
       setStatus("Foto berhasil diunggah! Mencatat presensi...");
-      onSuccess(photoUrl, capturedDescriptor);
+      setCapture(photoUrl, capturedDescriptor);
       handleOpenChange(false);
     } catch (error) {
       const errMsg =
@@ -222,49 +218,47 @@ export default function TakeAttendanceFaceCamera({
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            {userHasFaceRegistered ? (
-              <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-black/90 w-full mx-auto flex items-center justify-center aspect-video">
-                <FaceModelLoadingOverlay
-                  visible={open && !modelsReady && !modelsError}
-                  onReady={() => setModelsReady(true)}
-                  onError={(err) => {
-                    setModelsError(err.message);
-                    setStatus("Gagal memuat model.");
-                  }}
+            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-black/90 w-full mx-auto flex items-center justify-center aspect-video">
+              <FaceModelLoadingOverlay
+                visible={open && !modelsReady && !modelsError}
+                onReady={() => setModelsReady(true)}
+                onError={(err) => {
+                  setModelsError(err.message);
+                  setStatus("Gagal memuat model.");
+                }}
+              />
+
+              {fileState.files[0] ? (
+                <Image
+                  src={fileState.files[0].preview ?? ""}
+                  alt="Captured face snapshot"
+                  fill
+                  sizes="(max-width: 640px) calc(95vw - 2rem), 26rem"
+                  unoptimized
+                  className="w-full h-full object-cover"
                 />
+              ) : (
+                <CustomCamera
+                  ref={videoRef}
+                  open={open}
+                  onStreamActive={handleCameraStreamActive}
+                  onStreamError={handleCameraStreamError}
+                  className={cn(
+                    "w-full h-full object-cover",
+                    !cameraReady && "hidden",
+                  )}
+                />
+              )}
 
-                {fileState.files[0] ? (
-                  <Image
-                    src={fileState.files[0].preview ?? ""}
-                    alt="Captured face snapshot"
-                    fill
-                    sizes="(max-width: 640px) calc(95vw - 2rem), 26rem"
-                    unoptimized
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <CustomCamera
-                    ref={videoRef}
-                    open={open}
-                    onStreamActive={handleCameraStreamActive}
-                    onStreamError={handleCameraStreamError}
-                    className={cn(
-                      "w-full h-full object-cover",
-                      !cameraReady && "hidden",
-                    )}
-                  />
-                )}
-
-                {!cameraReady && !fileState.files[0] && modelsReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-3 bg-black/90">
-                    <Spinner className="size-8 text-accent" />
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Memulai kamera...
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : null}
+              {!cameraReady && !fileState.files[0] && modelsReady && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-3 bg-black/90">
+                  <Spinner className="size-8 text-accent" />
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Memulai kamera...
+                  </p>
+                </div>
+              )}
+            </div>
 
             <div className="rounded-xl border bg-muted/20 p-3.5 text-xs text-muted-foreground flex items-start gap-2.5">
               {verifying ? (
@@ -291,7 +285,7 @@ export default function TakeAttendanceFaceCamera({
               {!fileState.files[0] ? (
                 <Button
                   type="button"
-                  disabled={!cameraReady || verifying || !userHasFaceRegistered}
+                  disabled={!cameraReady || verifying}
                   loading={verifying}
                   onClick={capturePhoto}
                   className="w-full rounded-xl text-xs h-10 font-bold flex items-center justify-center gap-2"
@@ -304,7 +298,7 @@ export default function TakeAttendanceFaceCamera({
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={verifying || !userHasFaceRegistered}
+                    disabled={verifying}
                     onClick={handleRetake}
                     className="rounded-xl text-xs h-10 font-bold"
                   >
@@ -312,7 +306,7 @@ export default function TakeAttendanceFaceCamera({
                   </Button>
                   <Button
                     type="button"
-                    disabled={verifying || !userHasFaceRegistered}
+                    disabled={verifying}
                     onClick={handleUploadAndVerify}
                     className="rounded-xl text-xs h-10 font-bold flex items-center justify-center gap-2"
                   >

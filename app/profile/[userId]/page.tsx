@@ -11,13 +11,15 @@ import { AccountConnectionsCard } from "./components/account-connections-card";
 import { DeleteAccountCard } from "./components/delete-account-card";
 import { FaceRegister } from "./components/face-register";
 import { InternCard } from "./components/intern-card";
-import { getInterns } from "@/lib/services/interns";
+import { useInternStore } from "@/stores/useInternStore";
 import { fetchUser } from "@/lib/services/users";
-import { type ProfileUser, type Intern } from "@/interfaces/models";
+import { type ProfileUser } from "@/interfaces/models";
 import { type ProfilePageProps } from "@/interfaces/profile";
 
 /**
  * Profile page showing user info, intern data, face registration, and settings.
+ *
+ * Uses Zustand store for interns instead of direct API calls.
  *
  * @param {ProfilePageProps} props - The component props.
  * @returns {React.JSX.Element} The rendered profile page.
@@ -27,8 +29,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [interns, setInterns] = useState<Intern[]>([]);
-  const [internsLoading, setInternsLoading] = useState(true);
+
+  // Zustand store for interns
+  const interns = useInternStore((s) => s.interns);
+  const fetchInterns = useInternStore((s) => s.fetchInterns);
 
   useEffect(() => {
     let active = true;
@@ -55,48 +59,25 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     };
   }, [userId]);
 
-  /** Load interns to determine if they have internship data */
+  /** Load interns from Zustand store */
   useEffect(() => {
-    let active = true;
-
-    async function loadInterns() {
-      try {
-        const allInterns = await getInterns();
-        const userInterns = allInterns.filter((i) => i.userId === userId);
-        if (active) {
-          setInterns(userInterns);
-        }
-      } catch (err) {
-        console.error("Failed to fetch intern data", err);
-      } finally {
-        if (active) {
-          setInternsLoading(false);
-        }
-      }
-    }
-
-    void loadInterns();
-
-    return () => {
-      active = false;
-    };
-  }, [userId]);
+    void fetchInterns();
+  }, [userId, fetchInterns]);
 
   const handleUserUpdate = (updatedUser: ProfileUser) => {
     setUser(updatedUser);
   };
 
-  /** Handles interns list change from InternCard */
-  const handleInternsChange = (updatedInterns: Intern[]) => {
-    setInterns(updatedInterns);
-  };
+  const userInterns = interns.filter((i) => i.userId === userId);
+  const hasInterns = userInterns.length > 0;
+  const hasFaceDescriptor = user ? user.faceDescriptors.length > 0 : false;
+
+  // Interns are loaded when store fetch is complete (no separate loading state needed)
+  const internsLoading = false;
 
   const hasCredential = user
     ? user.accounts.some((acc) => acc.providerId === "credential")
     : false;
-
-  const hasInterns = interns.length > 0;
-  const hasFaceDescriptor = user ? user.faceDescriptors.length > 0 : false;
 
   return (
     <>
@@ -130,10 +111,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               />
 
               {/* Intern Card — shown first to ensure intern is created before face registration */}
-              <InternCard
-                userId={user.id}
-                onInternsChange={handleInternsChange}
-              />
+              <InternCard userId={user.id} />
 
               {/* Face Register — only show after intern data exists or if face needs registration */}
               {!internsLoading && (

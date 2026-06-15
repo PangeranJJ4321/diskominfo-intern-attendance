@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format, isSameMonth, isToday } from "date-fns";
 import { id } from "date-fns/locale";
 import { getCalendarDays } from "@/lib/date-utils";
@@ -8,16 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeFromApi } from "@/lib/time-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-import { getSchedules } from "@/lib/services/schedules";
-import { getShiftAssignments } from "@/lib/services/shift-assignments";
-import { getAttendancesForUser } from "@/lib/services/attendances";
-import { getHolidays } from "@/lib/services/holidays";
-import type {
-  Schedule,
-  ShiftAssignment,
-  Attendance,
-  Holiday,
-} from "@/interfaces/models";
+import { useScheduleStore } from "@/stores/useScheduleStore";
+import { useShiftAssignmentStore } from "@/stores/useShiftAssignmentStore";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
+import { useAgencyHolidayStore } from "@/stores/useAgencyHolidayStore";
+import type { ShiftAssignment } from "@/interfaces/models";
 import type { UserAttendancesProps } from "@/interfaces/custom";
 import {
   AttendanceStatus,
@@ -26,66 +21,112 @@ import {
 
 /**
  * Renders the calendar of user attendance history for the specified user and month.
+ * Uses Zustand stores instead of direct API calls and prop drilling.
  *
  * @param {UserAttendancesProps} props - The component props.
- * @param {string} props.userId - The ID of the user.
+ * @param {string[]} props.internIds - The array of intern IDs to display.
  * @param {Date} props.currentMonth - The current month to display.
  * @param {function} [props.onDayClick] - Callback called when a day cell is clicked.
- * @param {number} [props.refreshTrigger=0] - A trigger value to reload the data.
  * @returns {React.JSX.Element} The rendered user attendance calendar.
  */
 export default function UserAttendances({
-  userId,
+  internIds,
   currentMonth,
   onDayClick,
-  refreshTrigger = 0,
 }: UserAttendancesProps) {
   const isMobile = useIsMobile();
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+  // Zustand stores - each component selects only the slices it needs
+  const schedules = useScheduleStore((s) => s.schedules);
+  const fetchSchedules = useScheduleStore((s) => s.fetchSchedules);
+  const assignments = useShiftAssignmentStore((s) => s.assignments);
+  const fetchAssignments = useShiftAssignmentStore((s) => s.fetchAssignments);
+  const attendances = useAttendanceStore((s) => s.attendances);
+  const fetchAttendancesForIntern = useAttendanceStore(
+    (s) => s.fetchAttendancesForIntern,
+  );
+  const holidays = useAgencyHolidayStore((s) => s.holidays);
+  const fetchHolidays = useAgencyHolidayStore((s) => s.fetchHolidays);
+  const storeLoading = useAttendanceStore((s) => s.loading);
+
   const [isClient, setIsClient] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Track which date range we've already fetched to avoid duplicate calls
+  // Using a ref instead of state to avoid setState-in-effect violations
+  const fetchedRangeRef = useRef<string>("");
+
+  const loadData = useCallback(async () => {
+    // Compute date range from the calendar grid to limit data fetching
+    const calendarDays = isMobile
+      ? (() => {
+          const start = new Date(currentMonth);
+          start.setDate(currentMonth.getDate() - currentMonth.getDay());
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
+          return { start, end };
+        })()
+      : (() => {
+          const allDays = getCalendarDays(currentMonth);
+          return {
+            start: allDays[0],
+            end: allDays[allDays.length - 1],
+          };
+        })();
+
+    const formatDate = (d: Date) => format(d, "yyyy-MM-dd");
+    const startDate = formatDate(calendarDays.start);
+    const endDate = formatDate(calendarDays.end);
+    const rangeKey = `${startDate}_${endDate}_${internIds.join(",")}`;
+
+    // Skip if we've already fetched this exact range
+    if (rangeKey === fetchedRangeRef.current) return;
+    fetchedRangeRef.current = rangeKey;
+
+    try {
+      // Fetch all data in parallel using Zustand store actions
+      // Only relevant days for schedules
+      const relevantDays = isMobile
+        ? [currentMonth.getDay()]
+        : [0, 1, 2, 3, 4, 5, 6];
+
+      await Promise.all([
+        fetchSchedules(1000, relevantDays),
+        fetchAssignments(1000, startDate, endDate),
+        ...internIds.map((internId) =>
+          fetchAttendancesForIntern(internId, 1000, startDate, endDate),
+        ),
+        fetchHolidays(1000, startDate, endDate),
+      ]);
+    } catch (err) {
+      console.error("Gagal memuat data presensi pengguna", err);
+    }
+  }, [
+    currentMonth,
+    internIds,
+    isMobile,
+    fetchSchedules,
+    fetchAssignments,
+    fetchAttendancesForIntern,
+    fetchHolidays,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsClient(true);
     }, 0);
     let cancelled = false;
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [schedsData, assignsData, attsData, holsData] = await Promise.all(
-          [
-            getSchedules(),
-            getShiftAssignments(),
-            getAttendancesForUser(userId),
-            getHolidays(),
-          ],
-        );
-        if (!cancelled) {
-          setSchedules(schedsData);
-          setAssignments(assignsData);
-          setAttendances(attsData);
-          setHolidays(holsData);
-        }
-      } catch (err) {
-        console.error("Gagal memuat data presensi pengguna", err);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+
+    if (!cancelled) {
+      void loadData();
     }
-    loadData();
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [userId, refreshTrigger]);
+  }, [loadData]);
 
-  if (!isClient || loading) {
+  if (!isClient || storeLoading) {
     if (isMobile) {
       return (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden divide-y divide-border">
@@ -118,7 +159,6 @@ export default function UserAttendances({
         </div>
         {/* Skeleton Cells */}
         <div className="grid grid-cols-7 gap-px bg-border/30">
-          {/* First 7 cells (always visible) */}
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
@@ -132,7 +172,6 @@ export default function UserAttendances({
               </div>
             </div>
           ))}
-          {/* Additional 7 cells (hidden on mobile, visible on desktop) */}
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={`extra-${i}`}
@@ -178,7 +217,7 @@ export default function UserAttendances({
   const getActiveAssignmentsForDate = (date: Date): ShiftAssignment[] => {
     const formattedDate = format(date, "yyyy-MM-dd");
     return assignments.filter((a) => {
-      if (a.intern?.userId !== userId) return false;
+      if (!internIds.includes(a.internId)) return false;
       const startOk = a.startDate <= formattedDate;
       const endOk = !a.endDate || a.endDate >= formattedDate;
       return startOk && endOk;
@@ -216,7 +255,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.intern?.userId === userId && a.date === formattedDate,
+            (a) => internIds.includes(a.internId) && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -237,6 +276,11 @@ export default function UserAttendances({
               }
             }
           }
+
+          // Sort schedules from earliest to latest scheduleStart
+          daySchedules.sort((a, b) =>
+            a.scheduleStart.localeCompare(b.scheduleStart),
+          );
 
           return (
             <div
@@ -288,7 +332,7 @@ export default function UserAttendances({
                   daySchedules.map((schedule, idx) => {
                     const attendance = attendances.find(
                       (a) =>
-                        a.intern?.userId === userId &&
+                        internIds.includes(a.internId) &&
                         a.scheduleId === schedule.id &&
                         a.date === formattedDate,
                     );
@@ -431,7 +475,7 @@ export default function UserAttendances({
 
           // Get schedules from attendance records on this date (e.g. from soft-deleted shifts/schedules)
           const dayAttendances = attendances.filter(
-            (a) => a.intern?.userId === userId && a.date === formattedDate,
+            (a) => internIds.includes(a.internId) && a.date === formattedDate,
           );
 
           const daySchedules = [...normalSchedules];
@@ -452,6 +496,11 @@ export default function UserAttendances({
               }
             }
           }
+
+          // Sort schedules from earliest to latest scheduleStart
+          daySchedules.sort((a, b) =>
+            a.scheduleStart.localeCompare(b.scheduleStart),
+          );
 
           return (
             <div
@@ -495,7 +544,7 @@ export default function UserAttendances({
                         // Find attendance record
                         const attendance = attendances.find(
                           (a) =>
-                            a.intern?.userId === userId &&
+                            internIds.includes(a.internId) &&
                             a.scheduleId === schedule.id &&
                             a.date === formattedDate,
                         );

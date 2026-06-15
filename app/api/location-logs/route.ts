@@ -3,17 +3,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
+import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
 import { defineAbilityFor } from "@/lib/casl";
 import { createLocationLogSchema } from "@/lib/schemas/location-log-schema";
 
-const querySchema = createTableQuerySchema(
+const querySchema = createDatedQuerySchema(
   ["id", "internId", "createdAt"],
   "createdAt",
 );
 
+/** Shape used consistently for reading/returning location log objects. */
+const locationLogSelect = {
+  id: true,
+  internId: true,
+  latitude: true,
+  longitude: true,
+  ipAddress: true,
+  createdAt: true,
+  intern: {
+    select: {
+      id: true,
+      user: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
 /**
- * GET: List location logs with pagination and sorting.
+ * GET: List location logs with pagination, sorting, search, and optional date range filtering.
  *
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
@@ -65,7 +81,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, startDate, endDate } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
     // Admins see all logs; ordinary users only see their own (via intern)
@@ -85,12 +102,22 @@ export async function GET(request: NextRequest) {
             },
           }
         : {}),
+      ...(startDate || endDate
+        ? {
+            createdAt: {
+              ...(startDate
+                ? { gte: new Date(`${startDate}T00:00:00.000Z`) }
+                : {}),
+              ...(endDate ? { lte: new Date(`${endDate}T23:59:59.999Z`) } : {}),
+            },
+          }
+        : {}),
     };
 
     const [logs, totalCount] = await Promise.all([
       prisma.locationLog.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } } },
+        select: locationLogSelect,
         take: limit,
         skip: skip,
         orderBy: {

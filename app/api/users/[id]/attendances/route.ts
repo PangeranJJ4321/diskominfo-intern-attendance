@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { defineAbilityFor } from "@/lib/casl";
 import { subject } from "@casl/ability";
-import { createTableQuerySchema } from "@/lib/schemas/query-schema";
+import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,13 +13,28 @@ interface RouteParams {
 
 import { AttendanceStatus } from "@/app/generated/prisma/client";
 
-const querySchema = createTableQuerySchema(
+const querySchema = createDatedQuerySchema(
   ["id", "date", "status", "attendanceTime", "createdAt"],
   "date",
 );
 
+const attendanceSelect = {
+  id: true,
+  internId: true,
+  scheduleId: true,
+  date: true,
+  attendanceTime: true,
+  attendanceLatitude: true,
+  attendanceLongitude: true,
+  attendancePhotoUrl: true,
+  status: true,
+  notes: true,
+  createdAt: true,
+  schedule: true,
+} as const;
+
 /**
- * GET: List attendances for a specific user.
+ * GET: List attendances for a specific user with optional date range filtering.
  *
  * @param request - The incoming NextRequest.
  * @param context - Route parameters containing the user ID.
@@ -85,7 +100,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { page, limit, sortBy, sortOrder, search } = parsedParams.data;
+    const { page, limit, sortBy, sortOrder, search, startDate, endDate } =
+      parsedParams.data;
     const skip = (page - 1) * limit;
 
     // Find all intern records for this user (a user can intern at multiple agencies)
@@ -114,12 +130,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             ],
           }
         : {}),
+      ...(startDate || endDate
+        ? {
+            date: {
+              ...(startDate ? { gte: startDate } : {}),
+              ...(endDate ? { lte: endDate } : {}),
+            },
+          }
+        : {}),
     };
 
     const [attendances, totalCount] = await Promise.all([
       prisma.attendance.findMany({
         where: whereCondition,
-        include: { intern: { include: { user: true } }, schedule: true },
+        select: attendanceSelect,
         take: limit,
         skip: skip,
         orderBy: {

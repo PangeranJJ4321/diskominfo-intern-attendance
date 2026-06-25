@@ -1,5 +1,5 @@
 import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { hashPassword } from "better-auth/crypto";
 import * as dotenv from "dotenv";
 import { generateCuid } from "../lib/string-utils";
@@ -25,14 +25,39 @@ if (!adminName || !adminEmail || !adminPassword) {
   );
 }
 
+/**
+ * Creates and configures the MariaDB driver adapter for Prisma.
+ *
+ * @returns {PrismaMariaDb} Configured driver adapter.
+ */
+function getAdapter(): PrismaMariaDb {
+  const mysqlUrl = process.env.DATABASE_URL;
+  if (!mysqlUrl) {
+    throw new Error("DATABASE_URL is not defined");
+  }
+  const parsedUrl = new URL(mysqlUrl);
+  const user = decodeURIComponent(parsedUrl.username);
+  const password = decodeURIComponent(parsedUrl.password);
+  const host = parsedUrl.hostname;
+  const port = parsedUrl.port ? parseInt(parsedUrl.port) : 3306;
+  const database = parsedUrl.pathname.replace(/^\//, '');
+
+  return new PrismaMariaDb({
+    host,
+    port,
+    user,
+    password,
+    database,
+    connectionLimit: 10,
+  });
+}
+
 // Narrowed variables for use inside the main function closure
 const name = adminName;
 const email = adminEmail;
 const password = adminPassword;
 
-const adapter = new PrismaPg({
-  connectionString: databaseUrl,
-});
+const adapter = getAdapter();
 const prisma = new PrismaClient({ adapter });
 
 /**

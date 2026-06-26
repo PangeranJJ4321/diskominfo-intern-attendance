@@ -21,6 +21,7 @@ interface ShiftAssignmentActions {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    force?: boolean,
   ) => Promise<void>;
   /** Create a new shift assignment */
   createAssignment: (
@@ -39,12 +40,15 @@ interface ShiftAssignmentActions {
 
 export const useShiftAssignmentStore = create<
   ShiftAssignmentState & ShiftAssignmentActions
->((set) => ({
+>((set, get) => ({
   assignments: [],
   loading: false,
   error: null,
 
-  fetchAssignments: async (limit = 1000, startDate, endDate) => {
+  fetchAssignments: async (limit = 1000, startDate, endDate, force = false) => {
+    const { assignments, loading } = get();
+    if (!force && (assignments.length > 0 || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const assignments = await shiftAssignmentService.getShiftAssignments(

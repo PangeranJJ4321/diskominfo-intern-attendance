@@ -17,7 +17,7 @@ interface InternState {
 /** Actions exposed by the intern store */
 interface InternActions {
   /** Fetch all interns with related user, agency, institution */
-  fetchInterns: (limit?: number) => Promise<void>;
+  fetchInterns: (limit?: number, force?: boolean) => Promise<void>;
   /** Create a new intern record */
   createIntern: (
     data: Omit<
@@ -41,12 +41,15 @@ interface InternActions {
   clearError: () => void;
 }
 
-export const useInternStore = create<InternState & InternActions>((set) => ({
+export const useInternStore = create<InternState & InternActions>((set, get) => ({
   interns: [],
   loading: false,
   error: null,
 
-  fetchInterns: async (limit = 1000) => {
+  fetchInterns: async (limit = 1000, force = false) => {
+    const { interns, loading } = get();
+    if (!force && (interns.length > 0 || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const interns = await internService.getInterns(limit);

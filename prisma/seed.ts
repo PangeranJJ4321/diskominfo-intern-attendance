@@ -114,7 +114,8 @@ async function main() {
 
     const hashedPassword = await hashPassword(password);
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (txClient) => {
+      const tx = txClient as typeof prisma;
       await tx.user.create({
         data: {
           id: userId,

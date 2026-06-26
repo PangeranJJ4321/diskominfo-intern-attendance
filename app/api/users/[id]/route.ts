@@ -96,8 +96,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(targetUser);
   } catch (error) {
     console.error("Error fetching user:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", message, stack },
       { status: 500 },
     );
   }
@@ -177,7 +179,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { name, image, emailVerified, password } = validation.data;
 
-    const updatedUser = await prisma.$transaction(async (tx) => {
+    const updatedUser = await prisma.$transaction(async (txClient) => {
+      const tx = txClient as typeof prisma;
       const user = await tx.user.update({
         where: { id },
         data: {

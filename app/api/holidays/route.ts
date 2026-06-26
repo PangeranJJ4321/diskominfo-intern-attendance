@@ -64,7 +64,10 @@ export async function GET(request: NextRequest) {
         });
 
         const existingKeys = new Set(
-          existingHolidays.map((h) => `${h.date}:${h.description}`),
+          existingHolidays.map(
+            (h: { date: string; description: string }) =>
+              `${h.date}:${h.description}`,
+          ),
         );
 
         const newSeeds = seeds.filter(

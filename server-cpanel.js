@@ -95,21 +95,33 @@ const nextConfig = {"env":{},"webpack":null,"typescript":{"ignoreBuildErrors":fa
 process.env.__NEXT_PRIVATE_STANDALONE_CONFIG = JSON.stringify(nextConfig)
 
 // Inisialisasi Next.js dengan custom server untuk menjamin file statis terbaca oleh Passenger cPanel
-const NextServer = require('next/dist/server/next-server').default;
+const next = require('next');
 const http = require('http');
 const { parse } = require('url');
-const { serveStatic } = require('next/dist/server/serve-static');
 
-const app = new NextServer({
-  conf: nextConfig,
-  dir: dir,
-  customServer: false,
+const app = next({
   dev: false,
+  dir: dir,
+  conf: nextConfig,
+  customServer: false,
   hostname: hostname,
   port: currentPort,
 });
 
 const handle = app.getRequestHandler();
+
+const mimeTypes = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.css': 'text/css',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json'
+};
 
 app.prepare().then(() => {
   http.createServer(async (req, res) => {
@@ -117,21 +129,19 @@ app.prepare().then(() => {
       const parsedUrl = parse(req.url, true);
       const { pathname } = parsedUrl;
 
-      // 1. Tangani file statis dari _next/static (CSS, JS internal Next.js)
-      if (pathname.startsWith('/_next/static/')) {
-        const staticPath = path.join(__dirname, '.next', pathname.substring(6));
-        await serveStatic(req, res, staticPath);
-        return;
+      // EXPLICIT STATIC FILE SERVING FOR PUBLIC FOLDER
+      if (pathname !== '/') {
+        const publicPath = path.join(__dirname, 'public', pathname);
+        if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
+          const ext = path.extname(publicPath).toLowerCase();
+          res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+          res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+          res.statusCode = 200;
+          fs.createReadStream(publicPath).pipe(res);
+          return;
+        }
       }
 
-      // 2. Tangani file statis dari folder public (sw.js, manifest, logo, favicon, dll)
-      const publicPath = path.join(__dirname, 'public', pathname);
-      if (pathname !== '/' && fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
-        await serveStatic(req, res, publicPath);
-        return;
-      }
-
-      // 3. Sisanya, biarkan Next.js yang menangani (Pages, API, dll)
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);

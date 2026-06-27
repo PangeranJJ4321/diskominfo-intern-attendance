@@ -55,10 +55,12 @@ export default function ExportAttendanceDialog({
   assignments,
   interns,
 }: ExportAttendanceDialogProps) {
-  // Default range picker to May 2026 for demo data consistency
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2026, 4, 1), // May 1, 2026
-    to: new Date(2026, 4, 31), // May 31, 2026
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    return {
+      from: new Date(today.getFullYear(), today.getMonth(), 1),
+      to: new Date(today.getFullYear(), today.getMonth() + 1, 0),
+    };
   });
 
   const [exportTarget, setExportTarget] = useState<"all" | "specific">("all");

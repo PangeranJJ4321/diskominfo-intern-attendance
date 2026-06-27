@@ -432,8 +432,16 @@ export default function UserAttendancesCard() {
                   <p className="text-sm font-extrabold text-amber-600 dark:text-amber-500">{stats.terlambat}</p>
                 </div>
                 <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Izin/Sakit</p>
-                  <p className="text-sm font-extrabold text-sky-600 dark:text-sky-500">{stats.izin + stats.sakit}</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Izin</p>
+                  <p className="text-sm font-extrabold text-sky-600 dark:text-sky-500">{stats.izin}</p>
+                </div>
+                <div className="text-center px-3">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Sakit</p>
+                  <p className="text-sm font-extrabold text-violet-600 dark:text-violet-500">{stats.sakit}</p>
+                </div>
+                <div className="text-center px-3">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Alpa</p>
+                  <p className="text-sm font-extrabold text-destructive">{stats.alpa}</p>
                 </div>
               </div>
 

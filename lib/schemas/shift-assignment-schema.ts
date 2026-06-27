@@ -7,8 +7,20 @@ const dateMessage = "Format tanggal harus YYYY-MM-DD.";
 export const createShiftAssignmentSchema = z.object({
   internId: z.string().min(1, "Intern ID tidak valid."),
   shiftId: z.cuid2("Shift ID tidak valid."),
-  startDate: z.string().regex(dateRegex, dateMessage),
-  endDate: z.string().regex(dateRegex, dateMessage).optional().nullable(),
+  startDate: z
+    .string()
+    .regex(dateRegex, dateMessage)
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Tanggal kalender tidak valid.",
+    }),
+  endDate: z
+    .string()
+    .regex(dateRegex, dateMessage)
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Tanggal kalender tidak valid.",
+    })
+    .optional()
+    .nullable(),
 });
 
 export const updateShiftAssignmentSchema =

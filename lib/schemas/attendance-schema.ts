@@ -7,7 +7,12 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 export const createAttendanceSchema = z.object({
   internId: z.string().min(1, "Intern ID tidak valid."),
   scheduleId: z.cuid2("Schedule ID tidak valid."),
-  date: z.string().regex(dateRegex, "Format tanggal harus YYYY-MM-DD."),
+  date: z
+    .string()
+    .regex(dateRegex, "Format tanggal harus YYYY-MM-DD.")
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Tanggal kalender tidak valid.",
+    }),
   attendanceTime: z.coerce.date().optional().nullable(),
   attendanceLatitude: z.number().optional().nullable(),
   attendanceLongitude: z.number().optional().nullable(),

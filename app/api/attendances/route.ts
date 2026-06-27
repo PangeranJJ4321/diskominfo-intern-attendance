@@ -306,7 +306,10 @@ export async function POST(request: NextRequest) {
 
       // Check if target working date is a public holiday
       const holiday = await prisma.agencyHoliday.findFirst({
-        where: { date: timeCheck.currentLocalDateStr },
+        where: { 
+          agencyId: intern.agencyId,
+          date: timeCheck.currentLocalDateStr 
+        },
       });
 
       if (holiday && !schedule.shift.workOnHolidays) {
@@ -488,7 +491,14 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(newAttendance, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Anda sudah mengisi presensi untuk jadwal ini pada hari ini." },
+        { status: 409 },
+      );
+    }
+    
     console.error("Error creating attendance:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },

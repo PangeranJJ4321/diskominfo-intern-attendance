@@ -24,9 +24,12 @@ export async function uploadLocalImage(
   // In production cPanel, this prevents uploads from being deleted during deployment.
   const isProduction = process.env.NODE_ENV === "production";
   
+  // Use a string variable to trick @vercel/nft so it doesn't trace the entire project folder
+  const cwd = process.cwd();
+  
   const defaultUploadDir = isProduction
-    ? path.join(process.cwd(), "..", "storage_absensi")
-    : path.join(process.cwd(), "public", "uploads");
+    ? path.join(/*turbopackIgnore: true*/ cwd, "..", "storage_absensi")
+    : path.join(/*turbopackIgnore: true*/ cwd, "public", "uploads");
 
   const storagePath = process.env.UPLOAD_DIR 
     ? process.env.UPLOAD_DIR 

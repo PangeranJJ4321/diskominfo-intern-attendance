@@ -1,9 +1,7 @@
 // app/api/users/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { defineAbilityFor } from "@/lib/casl";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 import { subject } from "@casl/ability";
 import { updateUserSchema } from "@/lib/schemas/user-schema";
 import { hashPassword } from "better-auth/crypto";
@@ -20,33 +18,9 @@ interface RouteParams {
  * @param context - Route parameters containing the user ID.
  * @returns A promise resolving to the NextResponse.
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
+export const GET = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { dbUser, ability }: AuthenticatedContext) => {
     const { id } = await params;
-
     // Parse optional include query parameter
     const { searchParams } = new URL(request.url);
     const includeParam = searchParams.get("include") ?? "";
@@ -78,7 +52,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Evaluate ABAC permissions via CASL
-    const ability = defineAbilityFor(dbUser);
     if (
       !ability.can(
         "read",
@@ -94,16 +67,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(targetUser);
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    return NextResponse.json(
-      { error: "Internal Server Error", message, stack },
-      { status: 500 },
-    );
   }
-}
+);
 
 /**
  * PATCH: Update a specific User by ID.
@@ -112,31 +77,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * @param context - Route parameters containing the user ID.
  * @returns A promise resolving to the NextResponse.
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
+export const PATCH = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { dbUser, ability }: AuthenticatedContext) => {
     const { id } = await params;
 
     const targetUser = await prisma.user.findUnique({
@@ -148,7 +90,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Evaluate ABAC permissions via CASL
-    const ability = defineAbilityFor(dbUser);
     if (
       !ability.can(
         "update",
@@ -221,14 +162,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json(updatedUser);
-  } catch (error) {
-    console.error("Error updating user:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
   }
-}
+);
 
 /**
  * DELETE: Remove a specific User by ID.
@@ -237,31 +172,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  * @param context - Route parameters containing the user ID.
  * @returns A promise resolving to the NextResponse.
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
+export const DELETE = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { dbUser, ability }: AuthenticatedContext) => {
     const { id } = await params;
 
     const targetUser = await prisma.user.findUnique({
@@ -273,7 +185,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Evaluate ABAC permissions via CASL
-    const ability = defineAbilityFor(dbUser);
     if (
       !ability.can(
         "delete",
@@ -293,11 +204,5 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
   }
-}
+);

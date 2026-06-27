@@ -1,10 +1,8 @@
 // app/api/attendances/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
-import { defineAbilityFor } from "@/lib/casl";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 import { createAttendanceSchema } from "@/lib/schemas/attendance-schema";
 import type { GeoJsonObject } from "geojson";
 
@@ -53,38 +51,9 @@ const attendanceSelect = {
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Attendance")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, context: any, { dbUser, ability }: AuthenticatedContext) => {
+    const session = { user: { id: dbUser.id } };
 
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
@@ -160,14 +129,10 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching attendances:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "Attendance"
+);
 
 /**
  * POST: Create a new attendance record.
@@ -175,38 +140,9 @@ export async function GET(request: NextRequest) {
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Attendance")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, context: any, { dbUser, ability }: AuthenticatedContext) => {
+    const session = { user: { id: dbUser.id } };
 
     const body = await request.json();
     const parsedBody = createAttendanceSchema.safeParse(body);
@@ -482,27 +418,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const newAttendance = await prisma.attendance.create({
-      data: {
-        ...parsedBody.data,
-        status: parsedBody.data.status as AttendanceStatusType,
-      },
-      select: attendanceSelect,
-    });
+    try {
+      const newAttendance = await prisma.attendance.create({
+        data: {
+          ...parsedBody.data,
+          status: parsedBody.data.status as AttendanceStatusType,
+        },
+        select: attendanceSelect,
+      });
 
-    return NextResponse.json(newAttendance, { status: 201 });
-  } catch (error: any) {
-    if (error.code === "P2002") {
-      return NextResponse.json(
-        { error: "Anda sudah mengisi presensi untuk jadwal ini pada hari ini." },
-        { status: 409 },
-      );
+      return NextResponse.json(newAttendance, { status: 201 });
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { error: "Anda sudah mengisi presensi untuk jadwal ini pada hari ini." },
+          { status: 409 },
+        );
+      }
+      throw error;
     }
-    
-    console.error("Error creating attendance:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "create",
+  "Attendance"
+);

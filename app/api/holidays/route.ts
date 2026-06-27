@@ -1,10 +1,8 @@
 // app/api/holidays/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
-import { defineAbilityFor } from "@/lib/casl";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 import { createHolidaySchema } from "@/lib/schemas/holiday-schema";
 import { fetchHolidaySeeds } from "@/lib/get-holidays";
 
@@ -20,38 +18,8 @@ const SYNC_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 /**
  * GET: List all holidays with pagination, sorting, search, and optional date range filtering.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Holiday")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     // Auto-create/sync holidays if they haven't been synced within the cooldown period
     const now = Date.now();
@@ -166,50 +134,16 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching holidays:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "Holiday"
+);
 
 /**
  * POST: Create a new holiday
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Holiday")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, context: any, { dbUser, ability }: AuthenticatedContext) => {
 
     const body = await request.json();
     const parsedBody = createHolidaySchema.safeParse(body);
@@ -244,11 +178,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(newHoliday, { status: 201 });
-  } catch (error) {
-    console.error("Error creating holiday:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "create",
+  "Holiday"
+);

@@ -1,11 +1,9 @@
 // app/api/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
-import { defineAbilityFor } from "@/lib/casl";
 import { createUserSchema } from "@/lib/schemas/user-schema";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 import { hashPassword } from "better-auth/crypto";
 import { generateCuid } from "@/lib/string-utils";
 
@@ -20,40 +18,8 @@ const querySchema = createTableQuerySchema(
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    // Fetch user context for CASL evaluation
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    // Evaluate ABAC permissions via CASL
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "User")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
@@ -120,14 +86,10 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "User"
+);
 
 /**
  * POST: Create a new user.
@@ -135,38 +97,8 @@ export async function GET(request: NextRequest) {
  * @param request - The incoming NextRequest.
  * @returns A promise resolving to the NextResponse.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "User")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     const body = await request.json();
     const parsedBody = createUserSchema.safeParse(body);
@@ -227,11 +159,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 201 });
-  } catch (error) {
-    console.error("Error creating user:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "create",
+  "User"
+);

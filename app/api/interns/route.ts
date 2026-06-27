@@ -1,11 +1,9 @@
 // app/api/interns/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createTableQuerySchema } from "@/lib/schemas/query-schema";
-import { defineAbilityFor } from "@/lib/casl";
 import { createInternSchema } from "@/lib/schemas/intern-schema";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 
 const querySchema = createTableQuerySchema(
   ["id", "startedAt", "finishedAt", "createdAt"],
@@ -15,38 +13,8 @@ const querySchema = createTableQuerySchema(
 /**
  * GET: List all interns with pagination, sorting, and search.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Intern")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
@@ -104,52 +72,16 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching interns:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    return NextResponse.json(
-      { error: "Internal Server Error", message, stack },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "Intern"
+);
 
 /**
  * POST: Create a new intern record.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "Intern")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     const body = await request.json();
     const parsedBody = createInternSchema.safeParse(body);
@@ -232,11 +164,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(newIntern, { status: 201 });
-  } catch (error) {
-    console.error("Error creating intern:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "create",
+  "Intern"
+);

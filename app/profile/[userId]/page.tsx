@@ -3,6 +3,9 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/custom/navbar";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfilePicture } from "./components/profile-picture";
@@ -83,6 +86,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     <>
       <Navbar />
       <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <div className="mb-6 hidden md:block">
+          <Link href="/dashboard">
+            <Button variant="ghost" className="pl-0 hover:bg-transparent">
+              <ArrowLeft className="mr-2 size-4" />
+              Kembali ke Dashboard
+            </Button>
+          </Link>
+        </div>
         <div className="flex flex-col gap-6">
           {loading || !user ? (
             <div className="flex flex-col gap-6">

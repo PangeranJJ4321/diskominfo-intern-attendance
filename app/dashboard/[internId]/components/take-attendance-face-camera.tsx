@@ -99,18 +99,11 @@ export default function TakeAttendanceFaceCamera({
     setError("");
     setStatus("Mendeteksi wajah...");
 
+    // Beri waktu bagi React untuk me-render loading state (unblock UI thread)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     try {
-      const descriptor = await faceRecognition.detectDescriptorFromInput(video);
-
-      if (!descriptor) {
-        setError(
-          "Wajah tidak terdeteksi. Silakan posisikan wajah Anda tepat di depan kamera.",
-        );
-        setStatus("Deteksi gagal.");
-        setVerifying(false);
-        return;
-      }
-
+      // 1. DOWNSCALE PERTAMA KALI UNTUK MEMPERCEPAT PROSES DETEKSI WAJAH
       const MAX_DIMENSION = 640;
       let width = video.videoWidth || 640;
       let height = video.videoHeight || 480;
@@ -136,6 +129,19 @@ export default function TakeAttendanceFaceCamera({
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       }
 
+      // 2. JALANKAN DETEKSI WAJAH PADA CANVAS YANG SUDAH KECIL (Jauh lebih cepat)
+      const descriptor = await faceRecognition.detectDescriptorFromInput(canvas);
+
+      if (!descriptor) {
+        setError(
+          "Wajah tidak terdeteksi. Silakan posisikan wajah Anda tepat di depan kamera.",
+        );
+        setStatus("Deteksi gagal.");
+        setVerifying(false);
+        return;
+      }
+
+      // 3. UBAH KE FILE
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       const res = await fetch(dataUrl);
       const blob = await res.blob();

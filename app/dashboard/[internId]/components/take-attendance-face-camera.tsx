@@ -172,19 +172,13 @@ export default function TakeAttendanceFaceCamera({
     setStatus("Mengunggah foto ke server...");
 
     try {
-      let base64 = "";
+      let photoUrl = "";
       if (uploadedFile.file instanceof File) {
-        base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(uploadedFile.file as File);
-        });
+        const result = await uploadImage(uploadedFile.file, "attendance-photos");
+        photoUrl = result.url;
       } else {
-        base64 = uploadedFile.file.url;
+        photoUrl = uploadedFile.file.url;
       }
-
-      const { url: photoUrl } = await uploadImage(base64, "attendance-photos");
 
       setStatus("Foto berhasil diunggah! Mencatat presensi...");
       setCapture(photoUrl, capturedDescriptor);

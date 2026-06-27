@@ -110,7 +110,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       select: { id: true },
     });
 
-    const internIds = interns.map((i) => i.id);
+    const internIds = interns.map((i: { id: string }) => i.id);
 
     const whereCondition = {
       internId: { in: internIds },

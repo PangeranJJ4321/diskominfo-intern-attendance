@@ -198,7 +198,8 @@ export async function POST(request: NextRequest) {
 
     const userId = generateCuid();
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (txClient) => {
+      const tx = txClient as typeof prisma;
       const newUser = await tx.user.create({
         data: {
           id: userId,

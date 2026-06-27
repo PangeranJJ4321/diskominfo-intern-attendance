@@ -77,8 +77,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(rule);
   } catch (error) {
     console.error("Error fetching agency rule:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", message, stack },
       { status: 500 },
     );
   }

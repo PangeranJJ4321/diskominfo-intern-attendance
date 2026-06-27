@@ -17,7 +17,11 @@ interface ScheduleState {
 /** Actions exposed by the schedule store */
 interface ScheduleActions {
   /** Fetch all schedules, optionally filtered by dayOfWeek */
-  fetchSchedules: (limit?: number, dayOfWeek?: number[]) => Promise<void>;
+  fetchSchedules: (
+    limit?: number,
+    dayOfWeek?: number[],
+    force?: boolean,
+  ) => Promise<void>;
   /** Create a new schedule */
   createSchedule: (data: Omit<Schedule, "id">) => Promise<void>;
   /** Update an existing schedule */
@@ -32,12 +36,15 @@ interface ScheduleActions {
 }
 
 export const useScheduleStore = create<ScheduleState & ScheduleActions>(
-  (set) => ({
+  (set, get) => ({
     schedules: [],
     loading: false,
     error: null,
 
-    fetchSchedules: async (limit = 1000, dayOfWeek) => {
+    fetchSchedules: async (limit = 1000, dayOfWeek, force = false) => {
+      const { schedules, loading } = get();
+      if (!force && (schedules.length > 0 || loading)) return;
+
       set({ loading: true, error: null });
       try {
         const schedules = await scheduleService.getSchedules(limit, dayOfWeek);

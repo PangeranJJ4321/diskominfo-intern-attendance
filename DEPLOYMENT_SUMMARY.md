@@ -48,18 +48,44 @@ Setelah menjalankan `npm run build`, Anda bisa menyalin aset dan membuat file `p
 
 * **Terminal PowerShell (VS Code Default Windows)**:
   ```powershell
-  Copy-Item -Path "public" -Destination ".next/standalone/public" -Recurse -Force; Copy-Item -Path ".next/static" -Destination ".next/standalone/.next/static" -Recurse -Force; tar -czvf project.tar.gz -C .next/standalone .
+  Copy-Item -Path "public" -Destination ".next/standalone/public" -Recurse -Force; Copy-Item -Path ".next/static" -Destination ".next/standalone/.next/static" -Recurse -Force; Copy-Item -Path "server-cpanel.js" -Destination ".next/standalone/server-cpanel.js" -Force; tar -czhvf project.tar.gz -C .next/standalone .
   ```
 
 * **Terminal Git Bash / Linux / macOS**:
   ```bash
-  cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && tar -czvf project.tar.gz -C .next/standalone .
+  cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && cp -r prisma .next/standalone/prisma && cp server-cpanel.js .next/standalone/server-cpanel.js && tar -czhvf project.tar.gz -C .next/standalone .
+
+
   ```
 
 * **Terminal Command Prompt (CMD)**:
   ```cmd
-  xcopy /s /e /y public .next\standalone\public\ && xcopy /s /e /y .next\static .next\standalone\.next\static\ && tar -czvf project.tar.gz -C .next/standalone .
+  xcopy /s /e /y public .next\standalone\public\ && xcopy /s /e /y .next\static .next\standalone\.next\static\ && copy server-cpanel.js .next\standalone\server-cpanel.js && tar -czhvf project.tar.gz -C .next/standalone .
   ```
+
+---
+
+## 4. Persistensi Data (Penyimpanan Foto)
+
+Aplikasi kini menggunakan **penyimpanan file lokal (On-Premise)**, bukan lagi Cloudinary. 
+Karena Next.js *standalone* selalu menghapus dan menimpa isi *root directory* saat _redeploy_, diperlukan langkah agar **foto profil pengguna tidak hilang**.
+
+Script `server-cpanel.js` dan API upload dirancang agar menyimpan gambar secara persisten di folder luar aplikasi.
+
+- Secara default, aplikasi versi produksi akan membaca/menulis dari folder: `../storage_absensi` (satu level di atas folder `.next/standalone`).
+- Anda bisa menimpa letak folder ini dengan menambahkan *Environment Variable* `UPLOAD_DIR` di panel konfigurasi Node.js aplikasi cPanel Anda (contoh: `/home/username/storage_rahasia`).
+
+**Yang harus dilakukan saat deploy:**
+Pastikan folder aplikasi cPanel Anda memiliki struktur seperti ini:
+```text
+/home/user/storage_absensi/     <-- Foto disimpan di sini secara aman (Tidak ikut terhapus saat redeploy)
+/home/user/public_html/
+ ├── .env
+ ├── server-cpanel.js
+ ├── package.json
+ └── ... (File-file hasil ekstrak project.tar.gz)
+```
+Tidak perlu melakukan apa-apa lagi! Script wrapper `server-cpanel.js` akan cerdas mencegat rute `/uploads/*` dan otomatis memanggil isi dari direktori eksternal (`storage_absensi`) tersebut.
 
 
 ---

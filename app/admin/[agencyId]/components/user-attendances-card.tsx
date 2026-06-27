@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isSameMonth } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   CalendarDays,
@@ -33,8 +33,10 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useShiftStore } from "@/stores/useShiftStore";
 import { useShiftAssignmentStore } from "@/stores/useShiftAssignmentStore";
 import { useInternStore } from "@/stores/useInternStore";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
 
 import type { Schedule, Attendance } from "@/interfaces/models";
+import { AttendanceStatus } from "@/interfaces/enums";
 
 /**
  * Renders the admin dashboard user attendance management card.
@@ -56,6 +58,7 @@ export default function UserAttendancesCard() {
   const fetchAssignments = useShiftAssignmentStore((s) => s.fetchAssignments);
   const interns = useInternStore((s) => s.interns);
   const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const attendances = useAttendanceStore((s) => s.attendances);
 
   const [selectedUser, setSelectedUser] = useState<NonNullable<
     (typeof users)[number]
@@ -164,6 +167,44 @@ export default function UserAttendancesCard() {
       .map((a) => shifts.find((s) => s.id === a.shiftId))
       .filter((s): s is NonNullable<typeof s> => !!s);
   }, [activeAssignments, shifts]);
+
+  // Month navigation helpers
+  const userAttendances = useMemo(() => {
+    if (!selectedUser) return [];
+    const userInternIds = interns
+      .filter((i) => i.userId === selectedUser.id)
+      .map((i) => i.id);
+    return attendances.filter((a) => userInternIds.includes(a.internId));
+  }, [selectedUser, interns, attendances]);
+
+  const stats = useMemo(() => {
+    let hadir = 0;
+    let sakit = 0;
+    let izin = 0;
+    let terlambat = 0;
+    let alpa = 0;
+
+    userAttendances.forEach((a) => {
+      // Only count for the currently viewed month
+      const isCurrentMonth = isSameMonth(new Date(a.date), currentMonth);
+      if (!isCurrentMonth) return;
+
+      if (a.status === AttendanceStatus.PRESENT) {
+        hadir++;
+      } else if (a.status === AttendanceStatus.LATE) {
+        terlambat++;
+        hadir++; // Note: Terlambat is still considered "Hadir" for the total count
+      } else if (a.status === AttendanceStatus.SICK) {
+        sakit++;
+      } else if (a.status === AttendanceStatus.EXCUSED) {
+        izin++;
+      } else if (a.status === AttendanceStatus.ABSENT) {
+        alpa++;
+      }
+    });
+
+    return { hadir, sakit, izin, terlambat, alpa };
+  }, [userAttendances, currentMonth]);
 
   // Month navigation helpers
   const handleNextMonth = () => {
@@ -377,6 +418,22 @@ export default function UserAttendancesCard() {
                   <p className="text-xs text-muted-foreground truncate">
                     {selectedUser.email}
                   </p>
+                </div>
+              </div>
+
+              {/* Attendance Summary Stats */}
+              <div className="flex items-center gap-3 divide-x divide-border/60 hidden xl:flex">
+                <div className="text-center px-3">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Hadir</p>
+                  <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-500">{stats.hadir}</p>
+                </div>
+                <div className="text-center px-3">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Terlambat</p>
+                  <p className="text-sm font-extrabold text-amber-600 dark:text-amber-500">{stats.terlambat}</p>
+                </div>
+                <div className="text-center px-3">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Izin/Sakit</p>
+                  <p className="text-sm font-extrabold text-sky-600 dark:text-sky-500">{stats.izin + stats.sakit}</p>
                 </div>
               </div>
 

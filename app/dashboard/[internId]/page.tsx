@@ -101,11 +101,21 @@ export default function InternDashboardPage({
 
     async function loadAgencyRule() {
       try {
-        await fetchInterns();
+        const internState = useInternStore.getState();
+        if (internState.interns.length === 0 && !internState.loading) {
+          await fetchInterns();
+        }
+
         const freshInterns = useInternStore.getState().interns;
         const intern = freshInterns.find((i) => i.id === internId);
         if (intern) {
-          await fetchAgencyRule(intern.agencyId);
+          const agencyState = useAgencyStore.getState();
+          if (
+            (!agencyState.rule || agencyState.rule.agencyId !== intern.agencyId) &&
+            !agencyState.loading
+          ) {
+            await fetchAgencyRule(intern.agencyId);
+          }
         }
       } catch (err) {
         console.error("Gagal memuat aturan instansi:", err);

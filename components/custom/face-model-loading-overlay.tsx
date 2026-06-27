@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { type ModelLoadingCallback } from "@/lib/face-recognition";
 import faceRecognition from "@/lib/face-recognition";
 import type { FaceModelLoadingOverlayProps } from "@/interfaces/custom";
 
 /**
  * Renders a semi-transparent overlay with a spinner and progress text
- * while face-api.js models are being downloaded from Cloudinary and cached
- * in IndexedDB.
+ * while face-api.js models are being loaded from the local server.
  *
  * The overlay automatically dismisses itself when models are ready.
  */
@@ -19,21 +17,8 @@ export function FaceModelLoadingOverlay({
   onReady,
   onError,
 }: FaceModelLoadingOverlayProps) {
-  const [phase, setPhase] = useState<
-    "checking" | "downloading" | "loading" | "done"
-  >("checking");
-  const [downloaded, setDownloaded] = useState(0);
-  const [total, setTotal] = useState(0);
-
-  const onProgress = useMemo<ModelLoadingCallback>(() => {
-    return (p, loaded, tot) => {
-      setPhase(p);
-      if (p === "downloading") {
-        setDownloaded(loaded ?? 0);
-        setTotal(tot ?? 0);
-      }
-    };
-  }, []);
+  const [statusText, setStatusText] = useState("Mempersiapkan model...");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!visible) return;
@@ -42,10 +27,12 @@ export function FaceModelLoadingOverlay({
 
     const start = async () => {
       try {
-        await faceRecognition.loadModels(
-          faceRecognition.DEFAULT_MODEL_PATH,
-          onProgress,
-        );
+        await faceRecognition.loadModels((text, prog) => {
+          if (!cancelled) {
+            setStatusText(text);
+            setProgress(prog);
+          }
+        });
         if (!cancelled) onReady();
       } catch (err) {
         if (!cancelled) {
@@ -63,24 +50,9 @@ export function FaceModelLoadingOverlay({
     return () => {
       cancelled = true;
     };
-  }, [visible, onReady, onError, onProgress]);
+  }, [visible, onReady, onError]);
 
   if (!visible) return null;
-
-  const statusText = (() => {
-    switch (phase) {
-      case "checking":
-        return "Memeriksa model yang tersimpan...";
-      case "downloading":
-        return `Mengunduh model pengenalan wajah... (${downloaded} dari ${total})`;
-      case "loading":
-        return "Memuat model ke memori...";
-      case "done":
-        return "Model siap digunakan.";
-      default:
-        return "Mempersiapkan model...";
-    }
-  })();
 
   return (
     <div
@@ -89,11 +61,17 @@ export function FaceModelLoadingOverlay({
         "bg-black/80 backdrop-blur-sm rounded-2xl",
       )}
       aria-live="polite"
-      aria-busy={phase !== "done"}
+      aria-busy={progress < 100}
     >
       <Spinner className="size-10 text-primary" />
       <div className="flex flex-col items-center gap-1 px-4 text-center">
         <p className="text-sm font-semibold text-white">{statusText}</p>
+        <div className="w-48 h-1.5 bg-secondary rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
     </div>
   );

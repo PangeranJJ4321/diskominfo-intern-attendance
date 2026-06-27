@@ -2,12 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { uploadImage } from "@/lib/cloudinary";
-import { uploadSchema } from "@/lib/schemas/upload-schema";
+import { uploadLocalImage } from "@/lib/file-storage";
 
 /**
- * POST: Upload an image to Cloudinary
- * Requires authentication. Keeps Cloudinary credentials server-side only.
+ * POST: Upload an image to local storage
+ * Requires authentication.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,22 +21,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const parsed = uploadSchema.safeParse(body);
+    const formData = await request.formData();
+    const file = formData.get("image") as File | null;
+    const folder = formData.get("folder") as string || "uploads";
 
-    if (!parsed.success) {
+    if (!file) {
       return NextResponse.json(
-        {
-          error: "Invalid request payload",
-          details: parsed.error.format(),
-        },
+        { error: "No image file provided in form data" },
         { status: 400 },
       );
     }
 
-    const { image, folder } = parsed.data;
+    // Convert Web File object to Node.js Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    const result = await uploadImage(image, folder);
+    // Save locally
+    const result = await uploadLocalImage(buffer, folder, file.name);
 
     return NextResponse.json({
       url: result.url,

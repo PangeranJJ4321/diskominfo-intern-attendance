@@ -3,13 +3,16 @@
 import { handleError } from "./utils";
 
 export async function uploadImage(
-  image: string,
+  image: File,
   folder: string
 ): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("image", image);
+  formData.append("folder", folder);
+
   const res = await fetch("/api/upload", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image, folder }),
+    body: formData,
   });
 
   if (!res.ok) {

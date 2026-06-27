@@ -64,15 +64,8 @@ export function EditProfilePictureDialog({
 
       if (uploadedFile) {
         if (uploadedFile.file instanceof File) {
-          // New file uploaded — convert to base64 and upload to Cloudinary
-          const base64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(uploadedFile.file as File);
-          });
-
-          const { url } = await uploadImage(base64, "profile-pictures");
+          // New file uploaded — upload directly
+          const { url } = await uploadImage(uploadedFile.file as File, "profile-pictures");
           newImage = url;
         } else {
           // Existing file retained

@@ -135,6 +135,32 @@ http.createServer = function(requestListener) {
         '.webmanifest': 'application/manifest+json'
       };
 
+      // 0. Serve Persistent Uploads (/uploads/)
+      if (pathname.startsWith('/uploads/')) {
+        // Remove /uploads/ prefix for joining with storage path
+        const fileSubPath = pathname.replace(/^\/uploads\//, '');
+        const isProduction = process.env.NODE_ENV === "production";
+        
+        const defaultUploadDir = isProduction
+          ? path.join(__dirname, '..', 'storage_absensi') // One level up from standalone in cPanel
+          : path.join(__dirname, 'public', 'uploads');    // Local development fallback
+
+        const storagePath = process.env.UPLOAD_DIR 
+          ? process.env.UPLOAD_DIR 
+          : defaultUploadDir;
+          
+        const uploadPath = path.join(storagePath, fileSubPath);
+        
+        if (fs.existsSync(uploadPath) && fs.statSync(uploadPath).isFile()) {
+          const ext = path.extname(uploadPath).toLowerCase();
+          res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.statusCode = 200;
+          fs.createReadStream(uploadPath).pipe(res);
+          return;
+        }
+      }
+
       // 1. Serve file /public
       if (pathname !== '/' && !pathname.startsWith('/_next')) {
         const publicPath = path.join(__dirname, 'public', pathname);

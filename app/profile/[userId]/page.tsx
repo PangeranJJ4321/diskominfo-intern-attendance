@@ -86,7 +86,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     <>
       <Navbar />
       <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
-        <div className="mb-6 hidden md:block">
+        <div className="mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" className="pl-0 hover:bg-transparent">
               <ArrowLeft className="mr-2 size-4" />

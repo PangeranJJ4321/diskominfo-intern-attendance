@@ -25,3 +25,26 @@ export const signUpSchema = z
   });
 
 export type SignUpFormValues = z.infer<typeof signUpSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Silakan masukkan alamat email yang valid."),
+});
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Kata sandi minimal harus 8 karakter."),
+    confirmPassword: z.string().min(1, "Silakan konfirmasi kata sandi Anda."),
+  })
+  .superRefine(({ confirmPassword, password }, ctx) => {
+    if (confirmPassword !== password) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Kata sandi tidak cocok.",
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;

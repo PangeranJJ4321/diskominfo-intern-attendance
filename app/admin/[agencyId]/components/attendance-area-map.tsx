@@ -94,7 +94,7 @@ export default function AttendanceAreaMap({
       </div>
 
       <div className="h-96 min-h-96">
-        <Map center={mapCenter} zoom={16} className="min-h-0">
+        <Map center={mapCenter} zoom={16} scrollWheelZoom={false} className="min-h-0">
           {mapStyle === "street" ? (
             <MapTileLayer />
           ) : (

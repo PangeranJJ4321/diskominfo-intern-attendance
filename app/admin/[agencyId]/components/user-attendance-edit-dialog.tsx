@@ -5,7 +5,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarDays, Clock, FileText, MapPin, Camera } from "lucide-react";
+import { CalendarDays, Clock, FileText, MapPin, Camera, Info } from "lucide-react";
 
 import {
   Dialog,
@@ -50,6 +50,7 @@ export default function UserAttendanceEditDialog({
   const [status, setStatus] = useState<AttendanceStatusType>(
     AttendanceStatus.PRESENT,
   );
+  const [attendanceTime, setAttendanceTime] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [geofence, setGeofence] = useState<GeoJsonObject | null>(null);
@@ -69,14 +70,23 @@ export default function UserAttendanceEditDialog({
   }, [open]);
 
   useEffect(() => {
-    if (open && date && existingAttendance) {
+    if (open && date && existingAttendance && schedule) {
       const timer = setTimeout(() => {
         setStatus(existingAttendance.status);
         setNotes(existingAttendance.notes || "");
+        setAttendanceTime(existingAttendance.attendanceTime || schedule.scheduleStart);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, date, existingAttendance]);
+  }, [open, date, existingAttendance, schedule]);
+
+  const getLateDuration = (time: string, start: string) => {
+    if (!time || !start) return 0;
+    const [h1, m1] = time.split(":").map(Number);
+    const [h2, m2] = start.split(":").map(Number);
+    const diff = (h1 * 60 + m1) - (h2 * 60 + m2);
+    return diff > 0 ? diff : 0;
+  };
 
   /**
    * Handles saving the changes to the attendance record.
@@ -90,8 +100,7 @@ export default function UserAttendanceEditDialog({
     setIsSubmitting(true);
     try {
       const formattedDate = format(date, "yyyy-MM-dd");
-      const timeStr =
-        existingAttendance.attendanceTime || schedule.scheduleStart;
+      const timeStr = attendanceTime || schedule.scheduleStart;
       const timeDate =
         (status === AttendanceStatus.PRESENT ||
           status === AttendanceStatus.LATE) &&
@@ -264,13 +273,41 @@ export default function UserAttendanceEditDialog({
           )}
 
         <form onSubmit={handleSave} className="space-y-4 pt-2">
+          {/* Attendance Time Edit */}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="attendance-time"
+              className="text-xs font-semibold text-foreground/80 flex justify-between"
+            >
+              <span>Jam Presensi</span>
+              {(status === AttendanceStatus.PRESENT || status === AttendanceStatus.LATE) && (
+                <span className="text-muted-foreground font-normal">Sesuai jam di lokasi</span>
+              )}
+            </Label>
+            <div className="flex gap-2">
+              <input
+                id="attendance-time"
+                type="time"
+                value={attendanceTime}
+                onChange={(e) => setAttendanceTime(e.target.value)}
+                disabled={isSubmitting || (status !== AttendanceStatus.PRESENT && status !== AttendanceStatus.LATE)}
+                className="flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+
           {/* Status Selection */}
           <div className="space-y-1.5">
             <Label
               htmlFor="override-status"
-              className="text-xs font-semibold text-foreground/80"
+              className="text-xs font-semibold text-foreground/80 flex items-center justify-between"
             >
-              Status Presensi
+              <span>Status Presensi</span>
+              {status === AttendanceStatus.LATE && (
+                <span className="text-amber-600 font-medium">
+                  (Terlambat {getLateDuration(attendanceTime, schedule.scheduleStart)} menit)
+                </span>
+              )}
             </Label>
             <Select
               value={status}
@@ -294,6 +331,12 @@ export default function UserAttendanceEditDialog({
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-[11px] text-muted-foreground flex items-start gap-1 mt-1">
+              <Info className="size-3 mt-0.5 shrink-0" />
+              <span>
+                Status Terlambat otomatis diberikan jika jam absen melewati batas toleransi ({schedule.lateCutoff}). Admin dapat mengubah status secara manual jika diperlukan.
+              </span>
+            </p>
           </div>
 
           {/* Override Notes */}

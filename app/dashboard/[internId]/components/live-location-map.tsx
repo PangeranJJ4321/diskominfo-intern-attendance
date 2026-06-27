@@ -105,7 +105,7 @@ export default function LiveLocationMap({ geoData }: LiveLocationMapProps) {
       </div>
 
       <div className="h-full w-full">
-        <Map
+        <Map scrollWheelZoom={false}
           center={[0, 0]}
           zoom={16}
           className="h-full w-full rounded-2xl min-h-0"

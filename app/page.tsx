@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollToTopButton } from "@/components/custom/scroll-to-top-button";
 import { ScrollToSectionButton } from "@/components/custom/scroll-to-section-button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import Link from "next/link";
 import {
   ScanFace,
@@ -47,6 +54,16 @@ export default function HomePage() {
   const { data: session, isPending } = useSession();
   const user = session?.user ?? null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initialize on mount
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   /**
    * Redirects authenticated users to /admin or /dashboard
@@ -149,10 +166,16 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background font-sans">
       {/* ── Header / Navigation ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-clear backdrop-blur-md">
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? "bg-background/95 backdrop-blur-md shadow-sm border-b border-border" 
+            : "bg-clear"
+        }`}
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16">
           <div className="flex items-center gap-3">
-            <Logo textClassName="text-background font-bold" />
+            <Logo textClassName={scrolled ? "text-foreground font-bold" : "text-background font-bold"} />
           </div>
 
           {/* Desktop Nav */}
@@ -160,14 +183,22 @@ export default function HomePage() {
             <Button
               variant="ghost"
               onClick={() => scrollToSection("features")}
-              className="text-background hover:text-foreground font-medium"
+              className={`font-medium ${
+                scrolled 
+                  ? "text-foreground hover:text-foreground/80 hover:bg-muted" 
+                  : "text-background hover:text-white/80 hover:bg-white/10"
+              }`}
             >
               Fitur
             </Button>
             <Button
               variant="ghost"
               onClick={() => scrollToSection("how-it-works")}
-              className="text-background hover:text-foreground font-medium"
+              className={`font-medium ${
+                scrolled 
+                  ? "text-foreground hover:text-foreground/80 hover:bg-muted" 
+                  : "text-background hover:text-white/80 hover:bg-white/10"
+              }`}
             >
               Cara Kerja
             </Button>
@@ -180,37 +211,45 @@ export default function HomePage() {
           {/* Mobile menu trigger */}
           <div className="flex items-center gap-2 md:hidden">
             <NavbarAvatar />
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-lg text-foreground hover:bg-muted"
-              aria-label="Toggle menu"
-            >
-              <Menu className="size-5" />
-            </Button>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={`p-1.5 rounded-lg ${
+                    scrolled 
+                      ? "text-foreground hover:bg-muted" 
+                      : "text-background hover:bg-white/10"
+                  }`}
+                  aria-label="Toggle menu"
+                >
+                  <Menu className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 pt-12">
+                <SheetHeader className="text-left mb-6">
+                  <SheetTitle>Menu Navigasi</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col space-y-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => scrollToSection("features")}
+                    className="justify-start text-foreground hover:text-foreground/90 font-medium text-base h-12"
+                  >
+                    Fitur
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => scrollToSection("how-it-works")}
+                    className="justify-start text-foreground hover:text-foreground/90 font-medium text-base h-12"
+                  >
+                    Cara Kerja
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
-
-        {/* Mobile Dropdown Nav */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-b border-border bg-background/95 backdrop-blur-md px-6 py-4 flex flex-col space-y-2">
-            <Button
-              variant="ghost"
-              onClick={() => scrollToSection("features")}
-              className="justify-start text-foreground hover:text-foreground/90"
-            >
-              Fitur
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => scrollToSection("how-it-works")}
-              className="justify-start text-foreground hover:text-foreground/90"
-            >
-              Cara Kerja
-            </Button>
-          </div>
-        )}
       </header>
 
       {/* ════════════════════════════════════════════════════════════════

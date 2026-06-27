@@ -43,6 +43,7 @@ export default function TakeAttendanceFaceCamera({
     null,
   );
   const [modelsReady, setModelsReady] = useState(false);
+  const [hasBlinked, setHasBlinked] = useState(false);
   const setCapture = useFaceCaptureStore((s) => s.setCapture);
 
   const [modelsError, setModelsError] = useState("");
@@ -59,6 +60,7 @@ export default function TakeAttendanceFaceCamera({
     setCameraReady(false);
     setModelsReady(false);
     setModelsError("");
+    setHasBlinked(false);
   }, [fileActions]);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -90,6 +92,78 @@ export default function TakeAttendanceFaceCamera({
     setError(err.message);
     setStatus("Gagal mengakses kamera.");
   }, []);
+
+  // Continuous Blink Detection Loop
+  useEffect(() => {
+    let active = true;
+    let timerId: NodeJS.Timeout;
+
+    const runBlinkDetection = async () => {
+      if (!active || !cameraReady || !modelsReady || hasBlinked || fileState.files[0] || verifying) return;
+      
+      const video = videoRef.current;
+      if (!video || video.readyState < 2) {
+        timerId = setTimeout(runBlinkDetection, 100);
+        return;
+      }
+
+      try {
+        const MAX_DIMENSION = 320; // Downscale further for faster real-time processing
+        let width = video.videoWidth || 640;
+        let height = video.videoHeight || 480;
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          } else {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (ctx) {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+
+        const observation = await faceRecognition.detectFaceObservationFromInput(canvas);
+        if (observation && active) {
+          // Make sure we have the blink detection function available
+          if (typeof faceRecognition.detectBlink === 'function') {
+            const isBlinking = faceRecognition.detectBlink(observation.landmarks);
+            if (isBlinking) {
+              setHasBlinked(true);
+              setStatus("Liveness Terverifikasi! Silakan klik Ambil Foto.");
+              return; // Stop the loop
+            }
+          }
+        }
+      } catch (err) {
+        // Silently ignore background processing errors to not spam the UI
+      }
+
+      if (active) {
+        timerId = setTimeout(runBlinkDetection, 100);
+      }
+    };
+
+    if (cameraReady && modelsReady && !hasBlinked && !fileState.files[0] && !verifying) {
+      setStatus("Tolong kedipkan mata Anda untuk verifikasi liveness.");
+      timerId = setTimeout(runBlinkDetection, 100);
+    }
+
+    return () => {
+      active = false;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [cameraReady, modelsReady, hasBlinked, fileState.files, verifying]);
 
   const capturePhoto = async () => {
     const video = videoRef.current;
@@ -167,6 +241,7 @@ export default function TakeAttendanceFaceCamera({
     setCapturedDescriptor(null);
     setError("");
     setStatus("Menunggu akses kamera...");
+    setHasBlinked(false);
   };
 
   const handleUploadAndVerify = async () => {
@@ -269,8 +344,9 @@ export default function TakeAttendanceFaceCamera({
               <div className="space-y-0.5">
                 <p className="font-semibold text-foreground">{status}</p>
                 <p className="text-[10px] leading-relaxed">
-                  Posisikan wajah Anda pada pencahayaan yang cukup dan lepaskan
-                  kacamata atau masker jika perlu.
+                  {hasBlinked
+                    ? "Wajah Anda telah divalidasi. Anda bisa mengambil foto sekarang."
+                    : "Posisikan wajah Anda pada pencahayaan yang cukup dan lepaskan kacamata atau masker jika perlu."}
                 </p>
               </div>
             </div>
@@ -285,7 +361,7 @@ export default function TakeAttendanceFaceCamera({
               {!fileState.files[0] ? (
                 <Button
                   type="button"
-                  disabled={!cameraReady || verifying}
+                  disabled={!cameraReady || verifying || (!hasBlinked && !fileState.files[0])}
                   loading={verifying}
                   onClick={capturePhoto}
                   className="w-full rounded-xl text-xs h-10 font-bold flex items-center justify-center gap-2"

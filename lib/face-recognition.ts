@@ -13,6 +13,46 @@ export type FaceObservation = {
   };
 };
 
+// EAR Threshold typically ranges from 0.2 to 0.3. 0.25 is a good default.
+const EAR_THRESHOLD = 0.25;
+
+/**
+ * Calculates the Eye Aspect Ratio (EAR) for a given eye.
+ * The EAR is computed as: (||p1-p5|| + ||p2-p4||) / (2 * ||p0-p3||)
+ * where points are ordered clockwise starting from the outer corner.
+ * 
+ * @param eyePoints - Array of 6 FacePoints representing an eye.
+ * @returns The computed EAR.
+ */
+function calculateEAR(eyePoints: FacePoint[]): number {
+  if (eyePoints.length !== 6) return 0;
+
+  const dist = (p1: FacePoint, p2: FacePoint) =>
+    Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+
+  // Vertical distances
+  const v1 = dist(eyePoints[1], eyePoints[5]);
+  const v2 = dist(eyePoints[2], eyePoints[4]);
+  // Horizontal distance
+  const h = dist(eyePoints[0], eyePoints[3]);
+
+  return (v1 + v2) / (2.0 * h);
+}
+
+/**
+ * Detects if a blink has occurred based on the provided landmarks.
+ * 
+ * @param landmarks - The facial landmarks containing leftEye and rightEye.
+ * @returns {boolean} True if the EAR falls below the threshold (blink detected).
+ */
+export function detectBlink(landmarks: FaceObservation["landmarks"]): boolean {
+  const leftEAR = calculateEAR(landmarks.leftEye);
+  const rightEAR = calculateEAR(landmarks.rightEye);
+  const averageEAR = (leftEAR + rightEAR) / 2.0;
+
+  return averageEAR < EAR_THRESHOLD;
+}
+
 let modelsLoaded = false;
 
 /**
@@ -134,6 +174,7 @@ const faceRecognition = {
   loadModels,
   detectFaceObservationFromInput,
   detectDescriptorFromInput,
+  detectBlink,
 };
 
 export default faceRecognition;

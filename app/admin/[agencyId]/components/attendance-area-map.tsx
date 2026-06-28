@@ -15,6 +15,7 @@ import {
   MapDrawUndo,
   MapLocateControl,
   MapTileLayer,
+  MapZoomControl,
 } from "@/components/ui/map";
 import { LocationPermissionDialog } from "@/components/custom/location-permission-dialog";
 
@@ -94,7 +95,7 @@ export default function AttendanceAreaMap({
       </div>
 
       <div className="h-96 min-h-96">
-        <Map center={mapCenter} zoom={16} scrollWheelZoom={false} className="min-h-0">
+        <Map center={mapCenter} zoom={16} scrollWheelZoom={true} className="min-h-0">
           {mapStyle === "street" ? (
             <MapTileLayer />
           ) : (
@@ -116,6 +117,8 @@ export default function AttendanceAreaMap({
           {!hasGeoData && (permissionState === "granted" || permissionState === "unknown") && (
             <AutoFlyToUser />
           )}
+
+          <MapZoomControl position="bottom-3 left-3" />
 
           <MapDrawControl
             initialLayers={draftLayers}

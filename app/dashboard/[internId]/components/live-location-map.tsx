@@ -5,7 +5,7 @@ import { TileLayer, GeoJSON } from "react-leaflet";
 import { MapIcon, Satellite } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Map, MapLocateControl, MapTileLayer } from "@/components/ui/map";
+import { Map, MapLocateControl, MapTileLayer, MapZoomControl } from "@/components/ui/map";
 import { LocationPermissionDialog } from "@/components/custom/location-permission-dialog";
 import { type LiveLocationMapProps } from "@/interfaces/dashboard";
 import { useLocationStore } from "@/stores/useLocationStore";
@@ -105,7 +105,7 @@ export default function LiveLocationMap({ geoData }: LiveLocationMapProps) {
       </div>
 
       <div className="h-full w-full">
-        <Map scrollWheelZoom={false}
+        <Map scrollWheelZoom={true}
           center={[0, 0]}
           zoom={16}
           className="h-full w-full rounded-2xl min-h-0"
@@ -136,6 +136,8 @@ export default function LiveLocationMap({ geoData }: LiveLocationMapProps) {
               setShowPermissionDialog(true);
             }}
           />
+
+          <MapZoomControl position="bottom-3 left-3" />
 
           <AutoClickLocate
             enabled={

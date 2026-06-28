@@ -71,7 +71,7 @@ export function NavbarAvatar() {
   };
 
   // Loading skeleton
-  if (isPending) {
+  if (!mounted || isPending) {
     return (
       <div className="flex items-center gap-4 p-3">
         <Skeleton className="size-8 rounded-full" />

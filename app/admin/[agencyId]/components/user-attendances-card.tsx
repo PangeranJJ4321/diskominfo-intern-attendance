@@ -305,8 +305,8 @@ export default function UserAttendancesCard() {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
       {/* Left Sidebar: Employee List */}
       <div className="lg:col-span-1 relative h-87.5 lg:h-auto lg:min-h-0">
-        <Card className="flex flex-col overflow-hidden p-4 w-full h-full lg:absolute lg:inset-0">
-          <div className="space-y-3 pb-3 border-b border-border/40 shrink-0">
+        <Card className="flex flex-col overflow-hidden p-4 w-full h-full lg:absolute lg:inset-0 bg-background/50 border-border/40 shadow-none">
+          <div className="space-y-3 pb-3 shrink-0">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm text-foreground">
                 Daftar Peserta Magang
@@ -331,7 +331,7 @@ export default function UserAttendancesCard() {
                 placeholder="Cari nama atau email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background/50 border-border rounded-lg text-xs h-9"
+                className="pl-9 bg-muted/20 border-border/30 rounded-lg text-xs h-9 focus-visible:ring-1 focus-visible:ring-red-900"
               />
             </div>
           </div>
@@ -364,18 +364,18 @@ export default function UserAttendancesCard() {
                   <div
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
-                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none border text-left ${
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none text-left border border-transparent ${
                       isSelected
-                        ? "bg-primary/10 border-primary/25"
-                        : "bg-transparent border-transparent hover:bg-muted/40"
+                        ? "bg-red-950/20"
+                        : "hover:bg-muted/10"
                     }`}
                   >
-                    <Avatar className="size-8.5 shrink-0 border border-border/45">
+                    <Avatar className={`size-8.5 shrink-0 border ${isSelected ? "border-red-900/50" : "border-border/30"}`}>
                       <AvatarImage
                         src={user.image || undefined}
                         alt={user.name}
                       />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-extrabold">
+                      <AvatarFallback className={`${isSelected ? "bg-red-950 text-red-400" : "bg-muted text-muted-foreground"} text-xs font-extrabold`}>
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -383,9 +383,12 @@ export default function UserAttendancesCard() {
                       <span className="truncate text-xs font-bold text-foreground">
                         {user.name}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {userShiftNames || "Belum ada shift"}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`size-1.5 rounded-full ${userShiftNames ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+                        <span className="truncate text-[10px] text-muted-foreground">
+                          {userShiftNames || "Belum ada shift"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -396,91 +399,100 @@ export default function UserAttendancesCard() {
       </div>
 
       {/* Right Column: Attendance & Shift Controls */}
-      <Card className="lg:col-span-3 overflow-hidden p-6 flex flex-col min-h-0">
+      <div className="lg:col-span-3 flex flex-col gap-6 min-h-0">
         {selectedUser ? (
-          <div className="space-y-5 flex-1 flex flex-col min-h-0">
-            {/* Top Bar: User Details + Shift Assignment Action */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/20 p-4 rounded-lg border border-border shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar className="size-11 shrink-0 border border-border/60">
-                  <AvatarImage
-                    src={selectedUser.image || undefined}
-                    alt={selectedUser.name}
-                  />
-                  <AvatarFallback className="bg-primary/15 text-primary text-xs font-extrabold">
-                    {getInitials(selectedUser.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col min-w-0">
-                  <h3 className="font-extrabold text-sm text-foreground truncate">
-                    {selectedUser.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {selectedUser.email}
-                  </p>
-                </div>
-              </div>
-
-              {/* Attendance Summary Stats */}
-              <div className="flex items-center gap-3 divide-x divide-border/60 hidden xl:flex">
-                <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Hadir</p>
-                  <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-500">{stats.hadir}</p>
-                </div>
-                <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Terlambat</p>
-                  <p className="text-sm font-extrabold text-amber-600 dark:text-amber-500">{stats.terlambat}</p>
-                </div>
-                <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Izin</p>
-                  <p className="text-sm font-extrabold text-sky-600 dark:text-sky-500">{stats.izin}</p>
-                </div>
-                <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Sakit</p>
-                  <p className="text-sm font-extrabold text-violet-600 dark:text-violet-500">{stats.sakit}</p>
-                </div>
-                <div className="text-center px-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Alpa</p>
-                  <p className="text-sm font-extrabold text-destructive">{stats.alpa}</p>
+          <>
+            {/* Top Card: Summary & Shift Details */}
+            <Card className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-6 shrink-0 bg-background/50 border-border/40 shadow-none">
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-foreground mb-1">
+                  Ringkasan Kehadiran Hari Ini
+                </h4>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Total kehadiran {selectedUser?.name} bulan ini
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
+                    <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                       <span className="size-2 rounded-full bg-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Hadir</p>
+                      <p className="text-lg font-bold text-foreground">{stats.hadir}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
+                    <div className="size-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                       <span className="size-2 rounded-full bg-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Terlambat</p>
+                      <p className="text-lg font-bold text-foreground">{stats.terlambat}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
+                    <div className="size-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
+                       <span className="size-2 rounded-full bg-sky-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Izin</p>
+                      <p className="text-lg font-bold text-foreground">{stats.izin}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
+                    <div className="size-8 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0">
+                       <span className="size-2 rounded-full bg-violet-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Sakit</p>
+                      <p className="text-lg font-bold text-foreground">{stats.sakit}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
+                    <div className="size-8 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                       <span className="size-2 rounded-full bg-destructive" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Alpa</p>
+                      <p className="text-lg font-bold text-foreground">{stats.alpa}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Active Shift Details */}
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-xs text-muted-foreground font-semibold">
-                    Shift Kerja Aktif
+              <div className="xl:w-[240px] xl:border-l xl:border-border/40 xl:pl-6 shrink-0 flex flex-col gap-2 justify-center">
+                <p className="text-[10px] text-muted-foreground font-semibold">
+                  Shift Kerja Aktif
+                </p>
+                {activeShifts.length > 0 ? (
+                  <p className="text-xs font-bold text-emerald-500">
+                    {activeShifts.map((s) => s.name).join(", ")}
                   </p>
-                  {activeShifts.length > 0 ? (
-                    <p className="text-xs font-bold text-foreground">
-                      {activeShifts.map((s) => s.name).join(", ")}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-destructive font-bold">
-                      Belum Ada Shift
-                    </p>
-                  )}
-                </div>
-
+                ) : (
+                  <p className="text-xs text-red-400 font-bold">
+                    Belum Ada Shift Aktif
+                  </p>
+                )}
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setIsAssignDialogOpen(true)}
-                  className="rounded-lg border-border h-9 text-xs flex items-center gap-1 font-semibold"
+                  className="rounded-lg border-border/30 h-8 mt-1 text-xs w-fit bg-muted/10 hover:bg-muted/30 flex items-center gap-1.5"
                 >
-                  <UserCog className="size-4" /> Atur Shift
+                  <UserCog className="size-3.5" /> Atur Shift
                 </Button>
               </div>
-            </div>
+            </Card>
 
-            {/* Attendance Calendar Display */}
-            <div className="flex-1 flex flex-col min-h-0 space-y-4">
+            {/* Bottom Card: Attendance Calendar Display */}
+            <Card className="flex-1 flex flex-col min-h-0 p-5 bg-background/50 border-border/40 shadow-none">
               {/* Calendar Controls */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0 mb-4">
                 <div className="space-y-0.5">
                   <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <CalendarDays className="size-4.5 text-primary/80" />
+                    <CalendarDays className="size-4.5 text-red-400" />
                     {isMobile
                       ? "Riwayat Presensi Mingguan"
                       : "Riwayat Presensi Bulanan"}
@@ -495,20 +507,20 @@ export default function UserAttendancesCard() {
                     variant="outline"
                     size="sm"
                     onClick={handleGoToToday}
-                    className="rounded-lg font-semibold text-xs h-8 px-2.5"
+                    className="rounded-lg font-semibold text-xs h-8 px-3 border-border/30 bg-muted/10 hover:bg-muted/30"
                   >
                     {isMobile ? "Minggu Ini" : "Hari Ini"}
                   </Button>
-                  <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-0.5 shadow-sm">
+                  <div className="flex items-center gap-1 rounded-lg border border-border/30 bg-muted/10 p-0.5">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handlePrevMonth}
-                      className="size-7 rounded-lg"
+                      className="size-7 rounded-md hover:bg-muted/30"
                     >
-                      <ChevronLeft className="size-3.5" />
+                      <ChevronLeft className="size-3.5 text-muted-foreground" />
                     </Button>
-                    <div className="w-36 text-center text-xs font-bold tracking-wide px-1">
+                    <div className="w-32 text-center text-xs font-bold tracking-wide px-1">
                       {isMobile
                         ? formatWeekRange(currentMonth)
                         : format(currentMonth, "MMMM yyyy", { locale: id })}
@@ -517,9 +529,9 @@ export default function UserAttendancesCard() {
                       variant="ghost"
                       size="icon"
                       onClick={handleNextMonth}
-                      className="size-7 rounded-lg"
+                      className="size-7 rounded-md hover:bg-muted/30"
                     >
-                      <ChevronRight className="size-3.5" />
+                      <ChevronRight className="size-3.5 text-muted-foreground" />
                     </Button>
                   </div>
                 </div>
@@ -535,7 +547,7 @@ export default function UserAttendancesCard() {
               />
 
               {/* Attendance Legend */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 justify-center text-xs text-muted-foreground font-semibold shrink-0">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-4 justify-center text-[10px] text-muted-foreground font-semibold shrink-0 border-t border-border/20 mt-4">
                 <span className="flex items-center gap-1">
                   <span className="size-2 rounded-full bg-emerald-500" /> Hadir
                 </span>
@@ -557,18 +569,18 @@ export default function UserAttendancesCard() {
                   Belum Absen
                 </span>
               </div>
-            </div>
-          </div>
+            </Card>
+          </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+          <Card className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 bg-background/50 border-border/40 shadow-none p-12">
             <CalendarDays className="size-10 text-muted-foreground/40" />
             <p className="text-xs">
               Silakan pilih peserta magang di sebelah kiri untuk melihat detail
               presensi.
             </p>
-          </div>
+          </Card>
         )}
-      </Card>
+      </div>
 
       {/* User Shift Assignment Dialog */}
       {selectedUser && (

@@ -55,8 +55,10 @@ export default function HomePage() {
   const user = session?.user ?? null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
@@ -173,7 +175,7 @@ export default function HomePage() {
             : "bg-clear"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16">
+        <div className="mx-auto flex h-16 max-w-7xl w-full items-center justify-between px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           <div className="flex items-center gap-3">
             <Logo textClassName={scrolled ? "text-foreground font-bold" : "text-background font-bold"} />
           </div>
@@ -284,7 +286,7 @@ export default function HomePage() {
 
               {/* CTAs — Fitts: large targets, high contrast primary action */}
               <div className="flex flex-wrap items-center gap-3">
-                {isPending ? (
+                {!mounted || isPending ? (
                   <div className="h-12 w-40 bg-white/10 rounded-xl animate-pulse" />
                 ) : user ? (
                   <Link href="/dashboard">

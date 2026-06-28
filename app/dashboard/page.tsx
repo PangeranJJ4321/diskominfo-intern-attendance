@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { useInternStore } from "@/stores/useInternStore";
+import { useAgencyAccessStore } from "@/stores/useAgencyAccessStore";
 import { Navbar } from "@/components/custom/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -24,6 +25,7 @@ export default function DashboardPage() {
 
   // Zustand store for interns
   const fetchInterns = useInternStore((s) => s.fetchInterns);
+  const fetchAccesses = useAgencyAccessStore((s) => s.fetchAccesses);
 
   useEffect(() => {
     if (sessionPending) return;
@@ -38,7 +40,17 @@ export default function DashboardPage() {
           router.replace(`/dashboard/${intern.id}`);
           return;
         }
-        // No intern data — redirect to profile
+        // Check if they are an admin
+        await fetchAccesses();
+        const freshAccesses = useAgencyAccessStore.getState().accesses;
+        const hasAdminAccess = freshAccesses.some((a) => a.userId === session?.user?.id);
+
+        if (hasAdminAccess) {
+          router.replace("/admin");
+          return;
+        }
+
+        // No intern data and not an admin — redirect to profile
         if (session?.user?.id) {
           router.replace(`/profile/${session.user.id}`);
           return;

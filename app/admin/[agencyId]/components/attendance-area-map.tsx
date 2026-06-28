@@ -121,6 +121,7 @@ export default function AttendanceAreaMap({
           <MapZoomControl position="bottom-3 left-3" />
 
           <MapDrawControl
+            position="top-3 left-3"
             initialLayers={draftLayers}
             onLayersChange={(layers) => {
               const nextLayers: GeoJsonObject[] = [];

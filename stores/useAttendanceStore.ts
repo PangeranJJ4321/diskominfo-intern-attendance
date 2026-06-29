@@ -147,6 +147,7 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
         }));
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
+        throw err;
       }
     },
 
@@ -162,6 +163,7 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
         }));
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
+        throw err;
       }
     },
 

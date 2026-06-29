@@ -43,7 +43,7 @@ export default function TakeAttendanceFaceCamera({
     null,
   );
   const [modelsReady, setModelsReady] = useState(false);
-  const [hasBlinked, setHasBlinked] = useState(false);
+  const [hasSmiled, setHasSmiled] = useState(false);
   const setCapture = useFaceCaptureStore((s) => s.setCapture);
 
   const [modelsError, setModelsError] = useState("");
@@ -60,7 +60,7 @@ export default function TakeAttendanceFaceCamera({
     setCameraReady(false);
     setModelsReady(false);
     setModelsError("");
-    setHasBlinked(false);
+    setHasSmiled(false);
   }, [fileActions]);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -98,12 +98,12 @@ export default function TakeAttendanceFaceCamera({
     let active = true;
     let timerId: NodeJS.Timeout;
 
-    const runBlinkDetection = async () => {
-      if (!active || !cameraReady || !modelsReady || hasBlinked || fileState.files[0] || verifying) return;
+    const runSmileDetection = async () => {
+      if (!active || !cameraReady || !modelsReady || hasSmiled || fileState.files[0] || verifying) return;
       
       const video = videoRef.current;
       if (!video || video.readyState < 2) {
-        timerId = setTimeout(runBlinkDetection, 100);
+        timerId = setTimeout(runSmileDetection, 100);
         return;
       }
 
@@ -135,11 +135,11 @@ export default function TakeAttendanceFaceCamera({
 
         const observation = await faceRecognition.detectFaceObservationFromInput(canvas);
         if (observation && active) {
-          // Make sure we have the blink detection function available
-          if (typeof faceRecognition.detectBlink === 'function') {
-            const isBlinking = faceRecognition.detectBlink(observation.landmarks);
-            if (isBlinking) {
-              setHasBlinked(true);
+          // Make sure we have the smile detection function available
+          if (typeof faceRecognition.detectSmile === 'function') {
+            const isSmiling = faceRecognition.detectSmile(observation.landmarks);
+            if (isSmiling) {
+              setHasSmiled(true);
               setStatus("Liveness Terverifikasi! Silakan klik Ambil Foto.");
               return; // Stop the loop
             }
@@ -150,20 +150,20 @@ export default function TakeAttendanceFaceCamera({
       }
 
       if (active) {
-        timerId = setTimeout(runBlinkDetection, 100);
+        timerId = setTimeout(runSmileDetection, 100);
       }
     };
 
-    if (cameraReady && modelsReady && !hasBlinked && !fileState.files[0] && !verifying) {
-      setStatus("Tolong kedipkan mata Anda untuk verifikasi liveness.");
-      timerId = setTimeout(runBlinkDetection, 100);
+    if (cameraReady && modelsReady && !hasSmiled && !fileState.files[0] && !verifying) {
+      setStatus("Tolong tersenyumlah dengan lebar untuk verifikasi liveness.");
+      timerId = setTimeout(runSmileDetection, 100);
     }
 
     return () => {
       active = false;
       if (timerId) clearTimeout(timerId);
     };
-  }, [cameraReady, modelsReady, hasBlinked, fileState.files, verifying]);
+  }, [cameraReady, modelsReady, hasSmiled, fileState.files, verifying]);
 
   const capturePhoto = async () => {
     const video = videoRef.current;
@@ -241,7 +241,7 @@ export default function TakeAttendanceFaceCamera({
     setCapturedDescriptor(null);
     setError("");
     setStatus("Menunggu akses kamera...");
-    setHasBlinked(false);
+    setHasSmiled(false);
   };
 
   const handleUploadAndVerify = async () => {
@@ -344,8 +344,8 @@ export default function TakeAttendanceFaceCamera({
               <div className="space-y-0.5">
                 <p className="font-semibold text-foreground">{status}</p>
                 <p className="text-[10px] leading-relaxed">
-                  {hasBlinked
-                    ? "Wajah Anda telah divalidasi. Anda bisa mengambil foto sekarang."
+                  {hasSmiled
+                    ? "Senyuman terdeteksi! Wajah Anda telah divalidasi. Anda bisa mengambil foto sekarang."
                     : "Posisikan wajah Anda pada pencahayaan yang cukup dan lepaskan kacamata atau masker jika perlu."}
                 </p>
               </div>
@@ -361,7 +361,7 @@ export default function TakeAttendanceFaceCamera({
               {!fileState.files[0] ? (
                 <Button
                   type="button"
-                  disabled={!cameraReady || verifying || (!hasBlinked && !fileState.files[0])}
+                  disabled={!cameraReady || verifying || (!hasSmiled && !fileState.files[0])}
                   loading={verifying}
                   onClick={capturePhoto}
                   className="w-full rounded-xl text-xs h-10 font-bold flex items-center justify-center gap-2"

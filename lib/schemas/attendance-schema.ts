@@ -6,7 +6,7 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 export const createAttendanceSchema = z.object({
   internId: z.string().min(1, "Intern ID tidak valid."),
-  scheduleId: z.cuid2("Schedule ID tidak valid."),
+  scheduleId: z.string().min(1, "Schedule ID tidak valid."),
   date: z
     .string()
     .regex(dateRegex, "Format tanggal harus YYYY-MM-DD.")
@@ -16,7 +16,7 @@ export const createAttendanceSchema = z.object({
   attendanceTime: z.coerce.date().optional().nullable(),
   attendanceLatitude: z.number().optional().nullable(),
   attendanceLongitude: z.number().optional().nullable(),
-  attendancePhotoUrl: z.url().optional().nullable(),
+  attendancePhotoUrl: z.string().optional().nullable(),
   attendanceFaceDescriptor: z.any().optional().nullable(),
   status: z
     .enum(ATTENDANCE_STATUS_VALUES as [string, ...string[]])

@@ -27,6 +27,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/models/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           {

@@ -53,6 +53,29 @@ export function detectBlink(landmarks: FaceObservation["landmarks"]): boolean {
   return averageEAR < EAR_THRESHOLD;
 }
 
+function distanceBetween(a: FacePoint, b: FacePoint): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getMouthAspectRatio(mouthPoints: FacePoint[]): number {
+  if (mouthPoints.length < 10) return 0;
+  const leftCorner = mouthPoints[0];
+  const rightCorner = mouthPoints[6];
+  const upperLip = mouthPoints[3];
+  const lowerLip = mouthPoints[9];
+
+  const mouthWidth = distanceBetween(leftCorner, rightCorner);
+  const mouthHeight = distanceBetween(upperLip, lowerLip);
+  if (mouthHeight === 0) return 0;
+  return mouthWidth / mouthHeight;
+}
+
+export function detectSmile(landmarks: FaceObservation["landmarks"]): boolean {
+  return getMouthAspectRatio(landmarks.mouth) >= 3.7;
+}
+
 let modelsLoaded = false;
 
 /**
@@ -83,7 +106,7 @@ export async function loadModels(
     const faceapi = await loadFaceApi();
     
     await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl),
+      faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
       faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
       faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl),
     ]);
@@ -128,7 +151,7 @@ async function detectFaceObservationFromInput(
   const detections = await faceApi
     .detectAllFaces(
       input,
-      new faceApi.SsdMobilenetv1Options({ minConfidence: 0.5 }),
+      new faceApi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }),
     )
     .withFaceLandmarks()
     .withFaceDescriptors();
@@ -175,6 +198,7 @@ const faceRecognition = {
   detectFaceObservationFromInput,
   detectDescriptorFromInput,
   detectBlink,
+  detectSmile,
 };
 
 export default faceRecognition;

@@ -11,7 +11,11 @@ import {
   Download,
   Search,
   UserCog,
+  User,
+  Trash2,
+  X,
 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +30,7 @@ import { formatWeekRange } from "@/lib/date-utils";
 import UserAttendanceCreateDialog from "./user-attendance-create-dialog";
 import UserShiftEditDialog from "./user-shift-edit-dialog";
 import ExportAttendanceDialog from "./export-attendance-dialog";
+import InternDeleteButton from "../users/[userId]/intern-delete-button";
 import { getInitials } from "@/lib/string-utils";
 
 // Zustand stores — replace direct API calls
@@ -48,6 +53,8 @@ import { AttendanceStatus } from "@/interfaces/enums";
  */
 export default function UserAttendancesCard() {
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const params = useParams();
 
   // ── Zustand stores ──
   const users = useUserStore((s) => s.users);
@@ -364,7 +371,7 @@ export default function UserAttendancesCard() {
                   <div
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
-                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none text-left border border-transparent ${
+                    className={`group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all select-none text-left border border-transparent ${
                       isSelected
                         ? "bg-red-950/20"
                         : "hover:bg-muted/10"
@@ -390,6 +397,22 @@ export default function UserAttendancesCard() {
                         </span>
                       </div>
                     </div>
+                    {userInternIds[0] && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <InternDeleteButton 
+                          internId={userInternIds[0]} 
+                          agencyId={params.agencyId as string} 
+                          onSuccess={() => {
+                            handleRefreshSuccess();
+                            if (selectedUser?.id === user.id) setSelectedUser(null);
+                          }}
+                        >
+                          <Button variant="ghost" size="icon" className="size-7 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </InternDeleteButton>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -405,9 +428,21 @@ export default function UserAttendancesCard() {
             {/* Top Card: Summary & Shift Details */}
             <Card className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-6 shrink-0 bg-background/50 border-border/40 shadow-none">
               <div className="flex-1">
-                <h4 className="text-sm font-bold text-foreground mb-1">
-                  Ringkasan Kehadiran Hari Ini
-                </h4>
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-bold text-foreground">
+                    Ringkasan Kehadiran Hari Ini
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="h-8 text-xs rounded-md px-3 font-semibold shadow-sm flex items-center gap-1.5"
+                    onClick={() => router.push(`/admin/${params.agencyId}/users/${selectedUser.id}`)}
+                  >
+                    <User className="size-3.5" />
+                    Profil Lengkap
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mb-4">
                   Total kehadiran {selectedUser?.name} bulan ini
                 </p>

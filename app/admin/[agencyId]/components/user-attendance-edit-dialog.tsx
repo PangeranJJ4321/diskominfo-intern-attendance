@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateAttendance } from "@/lib/services/attendances";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
 import type { AttendanceStatusType } from "@/interfaces/enums";
 import { AttendanceStatus } from "@/interfaces/enums";
 import type { UserAttendanceEditDialogProps } from "@/interfaces/admin";
@@ -108,7 +108,8 @@ export default function UserAttendanceEditDialog({
           ? new Date(`${formattedDate}T${timeStr}:00`)
           : null;
 
-      await updateAttendance(existingAttendance.id, {
+      const updateStore = useAttendanceStore.getState().updateAttendance;
+      await updateStore(existingAttendance.id, {
         status,
         attendanceTime: timeDate ? timeDate.toISOString() : null,
         notes: notes.trim() || null,

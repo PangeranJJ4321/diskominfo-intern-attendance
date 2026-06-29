@@ -133,6 +133,22 @@ export default function UserShiftEditDialog({
       const endDate =
         dateRange.to && !isSameDay ? format(dateRange.to, "yyyy-MM-dd") : null;
 
+      // Cek apakah ada penugasan shift yang aktif dan bertabrakan dengan rentang tanggal baru
+      const hasOverlap = userAssignments.some((a) => {
+        const aStart = a.startDate;
+        const aEnd = a.endDate || "9999-12-31";
+        const newStart = startDate;
+        const newEnd = endDate || "9999-12-31";
+        // Kondisi tumpang tindih: StartA <= EndB && EndA >= StartB
+        return aStart <= newEnd && aEnd >= newStart;
+      });
+
+      if (hasOverlap) {
+        if (!window.confirm("PERINGATAN: Karyawan ini sudah memiliki penugasan shift lain pada rentang tanggal tersebut. Menambahkan shift baru dapat menyebabkan jadwal menjadi ganda (dobel). Apakah Anda yakin ingin melanjutkan?")) {
+          return;
+        }
+      }
+
       await createShiftAssignment({
         internId: intern.id,
         shiftId: selectedShiftId,

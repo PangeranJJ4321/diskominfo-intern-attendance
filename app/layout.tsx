@@ -31,7 +31,7 @@ export default function RootLayout({
       className="h-full antialiased"
       suppressHydrationWarning
     >
-      <body className="bg-zinc-50 dark:bg-black min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <PwaProvider>
           <ThemeProvider
             attribute="class"

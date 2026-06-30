@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   Globe,
   Menu,
+  LayoutGrid,
+  BookOpen,
 } from "lucide-react";
 
 /**
@@ -167,87 +169,103 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background font-sans">
-      {/* ── Header / Navigation ── */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled 
-            ? "bg-background/95 backdrop-blur-md shadow-sm border-b border-border" 
-            : "bg-clear"
+            ? "bg-background/95 backdrop-blur-md shadow-sm border-b border-border text-foreground" 
+            : "bg-clear text-white"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-7xl w-full items-center justify-between px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
-          <div className="flex items-center gap-3">
-            <Logo textClassName={scrolled ? "text-foreground font-bold" : "text-background font-bold"} />
+        <div className="max-w-7xl w-full mx-auto flex h-16 items-center justify-between px-4 md:px-8 lg:px-10">
+          {/* Brand Logo */}
+          <div className="flex items-center">
+            <Logo textClassName={scrolled ? "text-primary font-bold transition-colors" : "text-white font-bold transition-colors"} />
           </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              onClick={() => scrollToSection("features")}
-              className={`font-medium ${
-                scrolled 
-                  ? "text-foreground hover:text-foreground/80 hover:bg-muted" 
-                  : "text-background hover:text-white/80 hover:bg-white/10"
-              }`}
-            >
-              Fitur
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => scrollToSection("how-it-works")}
-              className={`font-medium ${
-                scrolled 
-                  ? "text-foreground hover:text-foreground/80 hover:bg-muted" 
-                  : "text-background hover:text-white/80 hover:bg-white/10"
-              }`}
-            >
-              Cara Kerja
-            </Button>
-          </nav>
-
-          <div className="hidden md:flex items-center gap-3">
-            <NavbarAvatar />
+          {/* Desktop Right Nav (Serong ke kanan) */}
+          <div className="hidden md:flex items-center gap-8 h-full">
+            <nav className="flex items-center gap-6">
+              <Link
+                href="#features"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("features");
+                }}
+                className={`flex items-center gap-2 font-medium text-sm transition-all hover:opacity-80 ${
+                  scrolled 
+                    ? "text-foreground" 
+                    : "text-white"
+                }`}
+              >
+                <LayoutGrid className="size-4" />
+                Fitur
+              </Link>
+              <Link
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("how-it-works");
+                }}
+                className={`flex items-center gap-2 font-medium text-sm transition-all hover:opacity-80 ${
+                  scrolled 
+                    ? "text-foreground" 
+                    : "text-white"
+                }`}
+              >
+                <BookOpen className="size-4" />
+                Cara Kerja
+              </Link>
+            </nav>
+            
+            <NavbarAvatar isTransparent={!scrolled} />
           </div>
 
           {/* Mobile menu trigger */}
           <div className="flex items-center gap-2 md:hidden">
-            <NavbarAvatar />
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className={`p-1.5 rounded-lg ${
-                    scrolled 
-                      ? "text-foreground hover:bg-muted" 
-                      : "text-background hover:bg-white/10"
+                <button
+                  className={`p-2.5 rounded-full flex items-center justify-center transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
+                    scrolled
+                      ? "bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-foreground"
+                      : "bg-white/10 hover:bg-white/20 text-white"
                   }`}
                   aria-label="Toggle menu"
                 >
                   <Menu className="size-5" />
-                </Button>
+                </button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 pt-12">
-                <SheetHeader className="text-left mb-6">
-                  <SheetTitle>Menu Navigasi</SheetTitle>
+                <SheetHeader className="text-left mb-4 p-0">
+                  <SheetTitle className="text-lg font-bold text-foreground">Menu Navigasi</SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col space-y-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => scrollToSection("features")}
-                    className="justify-start text-foreground hover:text-foreground/90 font-medium text-base h-12"
+                <div className="flex flex-col gap-1 w-full">
+                  <Link
+                    href="#features"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection("features");
+                    }}
+                    className="flex items-center gap-3 p-3 text-muted-foreground hover:text-foreground font-medium text-base transition-colors rounded-lg hover:bg-muted/50"
                   >
+                    <LayoutGrid className="size-5 text-muted-foreground" />
                     Fitur
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => scrollToSection("how-it-works")}
-                    className="justify-start text-foreground hover:text-foreground/90 font-medium text-base h-12"
+                  </Link>
+                  <Link
+                    href="#how-it-works"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection("how-it-works");
+                    }}
+                    className="flex items-center gap-3 p-3 text-muted-foreground hover:text-foreground font-medium text-base transition-colors rounded-lg hover:bg-muted/50"
                   >
+                    <BookOpen className="size-5 text-muted-foreground" />
                     Cara Kerja
-                  </Button>
+                  </Link>
                 </div>
+                
+                {/* Mobile Auth & Theme Toggle list */}
+                <NavbarAvatar mobile />
               </SheetContent>
             </Sheet>
           </div>
@@ -265,7 +283,7 @@ export default function HomePage() {
         {/* Subtle texture — NOT a blob, just a soft radial to add depth */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08)_0%,transparent_60%)]" />
 
-        <div className="relative z-10 max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32 py-32">
+        <div className="relative z-10 max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-10 py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left — Text content (F-pattern: users scan left first) */}
             <div className="max-w-xl">
@@ -287,12 +305,12 @@ export default function HomePage() {
               {/* CTAs — Fitts: large targets, high contrast primary action */}
               <div className="flex flex-wrap items-center gap-3">
                 {!mounted || isPending ? (
-                  <div className="h-12 w-40 bg-white/10 rounded-xl animate-pulse" />
+                  <div className="h-12 w-40 bg-white/10 rounded-sm animate-pulse" />
                 ) : user ? (
                   <Link href="/dashboard">
                     <Button
                       size="lg"
-                      className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                      className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-sm transition-all"
                     >
                       Masuk ke Portal
                       <ArrowRight className="ml-2 size-4" />
@@ -303,7 +321,7 @@ export default function HomePage() {
                     <Link href="/auth/sign-in">
                       <Button
                         size="lg"
-                        className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                        className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-sm transition-all"
                       >
                         Masuk ke Portal
                         <ArrowRight className="ml-2 size-4" />
@@ -311,7 +329,7 @@ export default function HomePage() {
                     </Link>
                     <ScrollToSectionButton
                       targetId="features"
-                      className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+                      className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-sm hover:bg-white/10 transition-colors cursor-pointer"
                       id="hero-secondary-cta"
                     >
                       Pelajari Fitur
@@ -365,7 +383,7 @@ export default function HomePage() {
           (icon+title+desc grouped), Recognition > Recall (icons).
           ════════════════════════════════════════════════════════════════ */}
       <section id="features" className="w-full py-24 md:py-32 scroll-mt-20">
-        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+        <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-10">
           {/* Section header — left-aligned for F-pattern scanning */}
           <div className="max-w-xl mb-14">
             <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">
@@ -414,7 +432,7 @@ export default function HomePage() {
         id="how-it-works"
         className="w-full py-24 md:py-32 bg-muted/40 scroll-mt-20"
       >
-        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+        <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-10">
           <div className="max-w-xl mb-14">
             <p className="text-sm font-semibold text-secondary uppercase tracking-wider mb-3">
               Cara Kerja
@@ -461,7 +479,7 @@ export default function HomePage() {
           Nielsen #4 Consistency (reuses same gradient).
           ════════════════════════════════════════════════════════════════ */}
       <section className="w-full py-24 md:py-32">
-        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+        <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-10">
           <div className="rounded-2xl bg-linear-to-br from-primary via-red-900 to-secondary p-10 md:p-16">
             <div className="max-w-xl mx-auto text-center">
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
@@ -477,7 +495,7 @@ export default function HomePage() {
                 <Link href="/auth/sign-up">
                   <Button
                     size="lg"
-                    className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-xl transition-all"
+                    className="h-12 px-7 text-base font-semibold bg-white text-primary hover:bg-white/90 rounded-sm transition-all"
                   >
                     Daftar
                     <ArrowRight className="ml-2 size-4" />
@@ -487,7 +505,7 @@ export default function HomePage() {
                   <Button
                     size="lg"
                     variant="ghost"
-                    className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-xl hover:bg-white/10"
+                    className="h-12 px-7 text-base font-medium text-white/80 border border-white/20 rounded-sm hover:bg-white/10"
                   >
                     Masuk
                   </Button>
@@ -504,7 +522,7 @@ export default function HomePage() {
           Gestalt Proximity (grouped columns).
           ════════════════════════════════════════════════════════════════ */}
       <footer className="w-full border-t py-12 bg-card">
-        <div className="max-w-7xl w-full mx-auto px-8 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+        <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-10">
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
             {/* Brand column */}
             <div>

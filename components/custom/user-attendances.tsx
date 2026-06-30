@@ -431,7 +431,7 @@ export default function UserAttendances({
   }
 
   return (
-    <div className="rounded-lg border border-border/30 bg-[#161b22] shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-border/30 bg-card dark:bg-[#161b22] shadow-sm overflow-hidden">
       {/* Calendar Header Days */}
       <div className="grid grid-cols-7 border-b border-border/30 bg-muted/10 text-center text-[10px] font-bold tracking-wider text-muted-foreground uppercase py-3.5">
         {dayLabels.map((dayLabel, index) => (
@@ -505,7 +505,7 @@ export default function UserAttendances({
           return (
             <div
               key={`${formattedDate}-${index}`}
-              className={`flex min-h-[100px] flex-col p-2 sm:p-2.5 transition-all bg-[#0d1117] ${
+              className={`flex min-h-[100px] flex-col p-2 sm:p-2.5 transition-all bg-card dark:bg-[#0d1117] ${
                 !isCurrentMonth
                   ? "opacity-50 select-none pointer-events-none"
                   : ""

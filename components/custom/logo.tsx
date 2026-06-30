@@ -6,7 +6,7 @@ import type { LogoProps } from "@/interfaces/custom";
 export function Logo({
   className,
   iconClassName,
-  textClassName,
+  textClassName = "text-foreground font-bold",
   hideTextOnMobile = false,
   href = "/",
 }: LogoProps) {

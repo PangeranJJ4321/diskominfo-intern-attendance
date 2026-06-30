@@ -56,6 +56,7 @@ Setelah menjalankan `npm run build`, Anda bisa menyalin aset dan membuat file `p
   cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && cp -r prisma .next/standalone/prisma && cp server-cpanel.js .next/standalone/server-cpanel.js && tar -czhvf project.tar.gz -C .next/standalone .
 
   ```
+clear
 
 * **Terminal Command Prompt (CMD)**:
   ```cmd

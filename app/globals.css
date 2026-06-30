@@ -235,6 +235,10 @@
   --background: #f8eaea;
 }
 
+.dark .guest-page {
+  --background: oklch(0.18 0.02 21);
+}
+
 #hero-scroll-indicator {
   display: none !important;
 }

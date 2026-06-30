@@ -68,14 +68,14 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   const isCurrentlyActive = !!activeIntern;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 w-full pb-10">
       {/* Header & Navigation */}
       <div className="flex items-center gap-4 border-b border-border/40 pb-4">
         <Link href={`/admin/${agencyId}/users`} className="p-2 rounded-full hover:bg-muted/50 transition-colors">
           <ArrowLeft className="size-5 text-muted-foreground" />
         </Link>
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Profil Karyawan</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Profil Mahasiswa Intern</h1>
           <p className="text-xs text-muted-foreground">Detail informasi, riwayat shift, dan manajemen biometrik</p>
         </div>
       </div>
@@ -111,7 +111,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
                   <div className="flex items-center gap-2 text-muted-foreground font-medium">
                     <User className="size-4" />
-                    ID Karyawan
+                    ID Mahasiswa Intern
                   </div>
                   <span className="font-mono text-xs text-foreground/80">{user.id.substring(0, 8)}...</span>
                 </div>
@@ -141,7 +141,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 Biometrik Wajah
               </CardTitle>
               <CardDescription className="text-xs">
-                Status pendaftaran pengenalan wajah untuk karyawan ini.
+                Status pendaftaran pengenalan wajah untuk mahasiswa intern ini.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -157,8 +157,8 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {hasFaceData 
-                      ? "Karyawan ini bisa melakukan presensi wajah menggunakan kamera." 
-                      : "Karyawan ini perlu mendaftarkan wajahnya melalui halaman profilnya agar bisa absen."}
+                      ? "Mahasiswa intern ini bisa melakukan presensi wajah menggunakan kamera." 
+                      : "Mahasiswa intern ini perlu mendaftarkan wajahnya melalui halaman profilnya agar bisa absen."}
                   </p>
                 </div>
               </div>
@@ -219,13 +219,13 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             <CardHeader className="pb-4 border-b border-border/40">
               <CardTitle className="text-base font-bold">Riwayat Penugasan Shift</CardTitle>
               <CardDescription className="text-xs">
-                Semua shift yang pernah ditugaskan kepada karyawan ini di instansi Anda.
+                Semua shift yang pernah ditugaskan kepada mahasiswa intern ini di instansi Anda.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {user.interns.flatMap(i => i.shiftAssignments).length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground text-sm">
-                  Belum ada riwayat penugasan shift untuk karyawan ini.
+                  Belum ada riwayat penugasan shift untuk mahasiswa intern ini.
                 </div>
               ) : (
                 <div className="divide-y divide-border/40">

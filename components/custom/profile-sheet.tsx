@@ -90,14 +90,14 @@ export function ProfileSheet({ userId, open, onOpenChange }: ProfileSheetProps) 
           <div className="p-6 flex flex-col gap-6">
             {loading || !user ? (
               <div className="flex flex-col gap-6">
-                <Card className="bg-background/50 border-border/20 shadow-none">
+                <Card className="bg-background/50 border-border/20">
                   <CardContent className="p-6 flex flex-col items-center gap-4">
                     <Skeleton className="h-28 w-28 rounded-full" />
                     <Skeleton className="h-6 w-32" />
                     <Skeleton className="h-4 w-48" />
                   </CardContent>
                 </Card>
-                <Card className="bg-background/50 border-border/20 shadow-none">
+                <Card className="bg-background/50 border-border/20">
                   <CardContent className="p-6 space-y-4">
                     <Skeleton className="h-8 w-48" />
                     <Skeleton className="h-20 w-full" />

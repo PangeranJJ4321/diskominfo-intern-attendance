@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import AgencyDetailsCard from "../components/agency-details-card";
 import AgencyRulesCard from "../components/agency-rules-card";
 import ShareAccessCard from "../components/share-access-card";
 
@@ -18,10 +19,11 @@ export default function SettingsAdminPage({
           Pengaturan Instansi
         </h1>
         <p className="text-muted-foreground text-sm">
-          Atur aturan presensi instansi dan bagikan akses admin ke pengguna lain.
+          Atur detail instansi, aturan presensi, dan bagikan akses admin ke pengguna lain.
         </p>
       </div>
 
+      <AgencyDetailsCard agencyId={agencyId} />
       <AgencyRulesCard agencyId={agencyId} />
       <ShareAccessCard agencyId={agencyId} />
     </div>

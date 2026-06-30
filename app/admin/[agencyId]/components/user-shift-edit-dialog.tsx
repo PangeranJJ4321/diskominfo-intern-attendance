@@ -144,7 +144,7 @@ export default function UserShiftEditDialog({
       });
 
       if (hasOverlap) {
-        if (!window.confirm("PERINGATAN: Karyawan ini sudah memiliki penugasan shift lain pada rentang tanggal tersebut. Menambahkan shift baru dapat menyebabkan jadwal menjadi ganda (dobel). Apakah Anda yakin ingin melanjutkan?")) {
+        if (!window.confirm("PERINGATAN: Mahasiswa intern ini sudah memiliki penugasan shift lain pada rentang tanggal tersebut. Menambahkan shift baru dapat menyebabkan jadwal menjadi ganda (dobel). Apakah Anda yakin ingin melanjutkan?")) {
           return;
         }
       }
@@ -199,7 +199,7 @@ export default function UserShiftEditDialog({
             Atur Shift Kerja — {userName}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Kelola daftar penugasan shift aktif dan riwayat penugasan karyawan.
+            Kelola daftar penugasan shift aktif dan riwayat penugasan mahasiswa intern.
           </DialogDescription>
         </DialogHeader>
 
@@ -229,7 +229,7 @@ export default function UserShiftEditDialog({
             ) : userAssignments.length === 0 ? (
               <div className="text-center py-6 border border-dashed border-border rounded-lg bg-muted/5">
                 <p className="text-xs text-muted-foreground font-medium">
-                  Belum ada penugasan shift untuk karyawan ini.
+                  Belum ada penugasan shift untuk mahasiswa intern ini.
                 </p>
               </div>
             ) : (

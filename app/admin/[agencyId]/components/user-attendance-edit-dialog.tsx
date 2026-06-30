@@ -115,7 +115,7 @@ export default function UserAttendanceEditDialog({
         notes: notes.trim() || null,
       });
 
-      toast.success("Presensi karyawan berhasil diperbarui");
+      toast.success("Presensi mahasiswa intern berhasil diperbarui");
       onSuccess();
       onOpenChange(false);
     } catch (err) {

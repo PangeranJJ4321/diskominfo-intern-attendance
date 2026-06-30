@@ -38,7 +38,7 @@ export default function FaceResetButton({ userId }: FaceResetButtonProps) {
         throw new Error(errorData.error || "Gagal menghapus data wajah");
       }
 
-      toast.success("Data wajah berhasil direset. Karyawan kini dapat mendaftar ulang.");
+      toast.success("Data wajah berhasil direset. Mahasiswa Intern kini dapat mendaftar ulang.");
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -63,7 +63,7 @@ export default function FaceResetButton({ userId }: FaceResetButtonProps) {
             Konfirmasi Reset Wajah
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm font-medium mt-2 text-foreground/80">
-            Tindakan ini akan menghapus semua data biometrik wajah karyawan ini dari sistem. Karyawan harus mendaftarkan ulang wajahnya sebelum bisa melakukan absensi kembali.
+            Tindakan ini akan menghapus semua data biometrik wajah mahasiswa intern ini dari sistem. Mahasiswa Intern harus mendaftarkan ulang wajahnya sebelum bisa melakukan absensi kembali.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-4 gap-2 sm:gap-0">

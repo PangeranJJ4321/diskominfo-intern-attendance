@@ -260,7 +260,7 @@ export default function SchedulesCard({ agencyId }: SchedulesCardProps) {
         </div>
 
         <Tabs defaultValue="holidays" className="w-full space-y-6">
-          <TabsList className="w-full">
+          <TabsList className="justify-start w-fit">
             <TabsTrigger value="holidays">Hari Libur & Cuti</TabsTrigger>
             <TabsTrigger value="weekly">Jadwal Shift Mingguan</TabsTrigger>
           </TabsList>

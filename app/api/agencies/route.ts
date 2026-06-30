@@ -70,7 +70,7 @@ export const GET = withAuth(
  * POST: Create a new agency.
  */
 export const POST = withAuth(
-  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
+  async (request: NextRequest, context: any, { dbUser, ability }: AuthenticatedContext) => {
     const body = await request.json();
     const parsedBody = createAgencySchema.safeParse(body);
 
@@ -84,8 +84,29 @@ export const POST = withAuth(
       );
     }
 
-    const newAgency = await prisma.agency.create({
-      data: parsedBody.data,
+    const newAgency = await prisma.$transaction(async (tx) => {
+      const agency = await tx.agency.create({
+        data: parsedBody.data,
+      });
+
+      // Automatically grant access to the creator
+      await tx.agencyAccess.create({
+        data: {
+          agencyId: agency.id,
+          userId: dbUser.id,
+        },
+      });
+
+      // Pre-initialize default agency rules
+      await tx.agencyRule.create({
+        data: {
+          agencyId: agency.id,
+          requireFaceVerification: true,
+          requireWithinArea: true,
+        },
+      });
+
+      return agency;
     });
 
     return NextResponse.json(newAgency, { status: 201 });

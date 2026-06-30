@@ -25,29 +25,28 @@ export function Navbar() {
 
   // Dynamic links based on user status
   const links = [];
-  if (user) {
-    if (isAdmin) {
-      links.push(
-        { name: "Overview", href: "/admin" },
-      );
-    } else {
-      links.push(
-        { name: "Dashboard Magang", href: `/dashboard` },
-        { name: "Profil Saya", href: `/profile/${user.id}` },
-      );
-    }
-  } else {
+  if (!user) {
     links.push(
       { name: "Beranda", href: "/" },
     );
   }
 
+  const isDashboardOrAdmin = pathname.startsWith("/dashboard") || pathname.startsWith("/admin") || pathname.startsWith("/profile");
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/10 bg-transparent">
-      <div className="max-w-7xl w-full mx-auto flex h-16 items-center justify-between px-4 md:px-8 lg:px-10">
+    <header className={cn(
+      "sticky top-0 z-50 w-full border-b transition-all duration-300",
+      isDashboardOrAdmin 
+        ? "bg-primary text-white border-primary/20" 
+        : "border-border/10 bg-transparent"
+    )}>
+      <div className="w-full flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         {/* ── Brand & Links (GitLab Style) ── */}
         <div className="flex items-center gap-8 h-full">
-          <Logo href={logoHref} />
+          <Logo 
+            href={logoHref} 
+            textClassName={isDashboardOrAdmin ? "text-white font-bold" : "text-foreground font-bold"}
+          />
           {links.length > 0 && (
             <nav className="hidden md:flex items-center gap-6 h-full">
               {links.map((link) => {
@@ -61,10 +60,14 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      "transition-all hover:text-foreground h-full flex items-center px-1 text-base font-medium border-b-2 pt-0.5",
-                      isActive 
-                        ? "text-foreground border-primary font-semibold" 
-                        : "text-muted-foreground border-transparent hover:border-muted-foreground/35"
+                      "transition-all h-full flex items-center px-1 text-base font-medium border-b-2 pt-0.5",
+                      isDashboardOrAdmin
+                        ? (isActive 
+                          ? "text-white border-white font-semibold" 
+                          : "text-white/70 border-transparent hover:text-white hover:border-white/40")
+                        : (isActive 
+                          ? "text-foreground border-primary font-semibold" 
+                          : "text-muted-foreground border-transparent hover:border-muted-foreground/35")
                     )}
                   >
                     {link.name}

@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background guest-page">
       {/* Left Panel — Branding */}
       <div className="hidden md:flex md:w-1/2 bg-linear-to-tl from-primary via-red-900 to-secondary text-white flex-col justify-between p-8 md:p-12">
         <Logo textClassName="text-white font-bold text-lg" />

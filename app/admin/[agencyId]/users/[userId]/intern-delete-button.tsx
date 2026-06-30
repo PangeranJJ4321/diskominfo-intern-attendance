@@ -38,10 +38,10 @@ export default function InternDeleteButton({ internId, agencyId, children, onSuc
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Gagal menghapus profil karyawan");
+        throw new Error(errorData.error || "Gagal menghapus profil mahasiswa intern");
       }
 
-      toast.success("Karyawan berhasil dihapus dari instansi.");
+      toast.success("Mahasiswa Intern berhasil dihapus dari instansi.");
       
       if (onSuccess) {
         onSuccess();
@@ -61,7 +61,7 @@ export default function InternDeleteButton({ internId, agencyId, children, onSuc
         {children || (
           <Button variant="outline" className="w-full text-xs font-semibold h-9 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive">
             <UserMinus className="size-3.5 mr-1.5" />
-            Hapus Karyawan
+            Hapus Mahasiswa Intern
           </Button>
         )}
       </AlertDialogTrigger>
@@ -69,10 +69,10 @@ export default function InternDeleteButton({ internId, agencyId, children, onSuc
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="size-5" />
-            Hapus Karyawan dari Instansi
+            Hapus Mahasiswa Intern dari Instansi
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm font-medium mt-2 text-foreground/80">
-            Tindakan ini akan menghapus permanen profil karyawan ini dari instansi Anda, termasuk semua riwayat presensi dan shift yang terhubung dengannya. Tindakan ini tidak dapat dibatalkan.
+            Tindakan ini akan menghapus permanen profil mahasiswa intern ini dari instansi Anda, termasuk semua riwayat presensi dan shift yang terhubung dengannya. Tindakan ini tidak dapat dibatalkan.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-4 gap-2 sm:gap-0">

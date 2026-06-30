@@ -6,7 +6,9 @@ import {
   MapIcon, 
   CalendarDays, 
   Users, 
-  Settings
+  Settings,
+  GraduationCap,
+  User
 } from "lucide-react";
 import { Logo } from "@/components/custom/logo";
 
@@ -40,6 +42,16 @@ const adminNavigation = [
     icon: CalendarDays,
   },
   {
+    title: "Institusi Asal",
+    url: "institutions",
+    icon: GraduationCap,
+  },
+  {
+    title: "Profil Saya",
+    url: "profile",
+    icon: User,
+  },
+  {
     title: "Pengaturan Instansi",
     url: "settings",
     icon: Settings,
@@ -51,12 +63,9 @@ export function AdminSidebar({ agencyId }: { agencyId: string }) {
 
   return (
     <Sidebar className="border-r-border/5" collapsible="icon">
-      <SidebarHeader className="py-4 px-6 h-[72px] flex justify-center">
-        <Logo href={`/admin/${agencyId}`} hideTextOnMobile={false} />
-      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-white/40 font-semibold tracking-wider uppercase text-[10px]">Menu Utama</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminNavigation.map((item) => {
@@ -68,7 +77,7 @@ export function AdminSidebar({ agencyId }: { agencyId: string }) {
                       asChild 
                       size="lg"
                       isActive={isActive}
-                      className={isActive ? "bg-red-950/40 text-red-400 hover:bg-red-900/50 hover:text-red-300 transition-colors py-2.5" : "text-muted-foreground transition-colors hover:text-foreground py-2.5"}
+                      className={isActive ? "bg-white/15 text-white hover:bg-white/20 font-semibold transition-colors py-2.5" : "text-white/70 hover:text-white hover:bg-white/10 transition-colors py-2.5"}
                     >
                       <Link href={url} className="flex items-center gap-3">
                         <item.icon className="size-5" />

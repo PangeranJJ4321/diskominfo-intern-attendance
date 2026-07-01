@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarDays, Download, Users } from "lucide-react";
+import { CalendarDays, Download, Users, Building2, ChevronsUpDown, Check } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import * as XLSX from "xlsx";
 
@@ -30,6 +30,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import {
   getAttendances,
@@ -54,6 +62,7 @@ export default function ExportAttendanceDialog({
   shifts,
   assignments,
   interns,
+  institutions,
 }: ExportAttendanceDialogProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const today = new Date();
@@ -63,10 +72,18 @@ export default function ExportAttendanceDialog({
     };
   });
 
-  const [exportTarget, setExportTarget] = useState<"all" | "specific">("all");
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedInternId, setSelectedInternId] = useState<string>("");
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>("all");
+  const [exportMode, setExportMode] = useState<"none" | "all" | "specific">("none");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+
+  const filteredUsers = useMemo(() => {
+    if (selectedInstitutionId === "all") return users;
+    return users.filter(user => {
+      return interns.some(i => i.userId === user.id && i.institutionId === selectedInstitutionId);
+    });
+  }, [users, interns, selectedInstitutionId]);
 
   // Formatting date range label display helper
   const dateRangeText = useMemo(() => {
@@ -85,24 +102,14 @@ export default function ExportAttendanceDialog({
 
   // Ensure selectedUserId and selectedInternId have defaults when list of users is populated
   useEffect(() => {
-    if (open && users.length > 0) {
-      const timer = setTimeout(() => {
-        if (!selectedUserId) {
-          setSelectedUserId(users[0].id);
-        }
-        // Map selectedUserId to the first intern of that user
-        if (selectedUserId) {
-          const userInterns = interns.filter(
-            (i) => i.userId === selectedUserId,
-          );
-          if (userInterns.length > 0) {
-            setSelectedInternId((prev) => prev || userInterns[0].id);
-          }
-        }
-      }, 0);
-      return () => clearTimeout(timer);
+    if (open) {
+      // Reset form state when dialog opens
+      setSelectedInstitutionId("all");
+      setExportMode("none");
+      setSelectedUserIds([]);
+      setIsComboboxOpen(false);
     }
-  }, [open, users, selectedUserId, interns, selectedInternId]);
+  }, [open]);
 
   /**
    * Handles the export process to fetch, filter, format and trigger XLSX download.
@@ -115,6 +122,12 @@ export default function ExportAttendanceDialog({
 
     setIsExporting(true);
     try {
+      if (exportMode === "none") {
+        toast.error("Silakan pilih mahasiswa intern yang diekspor terlebih dahulu.");
+        setIsExporting(false);
+        return;
+      }
+
       let data: Attendance[] = [];
       const fetchLimit = 100000; // Fetch all records within a very high limit to ensure completeness
 
@@ -124,22 +137,8 @@ export default function ExportAttendanceDialog({
         ? format(dateRange.to, "yyyy-MM-dd")
         : startDateStr;
 
-      // 2. Fetch attendance records with date range filtering
-      if (exportTarget === "all") {
-        data = await getAttendances(fetchLimit, startDateStr, endDateStr);
-      } else {
-        if (!selectedInternId) {
-          toast.error("Silakan pilih mahasiswa intern terlebih dahulu.");
-          setIsExporting(false);
-          return;
-        }
-        data = await getAttendancesForIntern(
-          selectedInternId,
-          fetchLimit,
-          startDateStr,
-          endDateStr,
-        );
-      }
+      // 2. Fetch all attendance records in range, local filtering will handle the rest
+      data = await getAttendances(fetchLimit, startDateStr, endDateStr);
 
       // 2. Fetch latest schedules
       const schedules = await getSchedules();
@@ -157,13 +156,9 @@ export default function ExportAttendanceDialog({
 
       // 4. Select target users
       const targetUsers =
-        exportTarget === "all"
-          ? users
-          : users.filter((u) => {
-              // For specific export, match by internId mapped to user
-              const intern = interns.find((i) => i.id === selectedInternId);
-              return intern && intern.userId === u.id;
-            });
+        exportMode === "all" || selectedUserIds.length === 0
+          ? filteredUsers
+          : users.filter((u) => selectedUserIds.includes(u.id));
       const todayStr = format(new Date(), "yyyy-MM-dd");
 
       const dataToExport = [];
@@ -327,9 +322,11 @@ export default function ExportAttendanceDialog({
       const toStr = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : fromStr;
 
       const filenamePrefix =
-        exportTarget === "all"
+        exportMode === "all" || selectedUserIds.length === 0
           ? "semua_mahasiswa_intern"
-          : users.find((u) => u.id === selectedUserId)?.name || "mahasiswa_intern";
+          : selectedUserIds.length === 1
+          ? users.find((u) => u.id === selectedUserIds[0])?.name || "mahasiswa_intern"
+          : "beberapa_mahasiswa_intern";
       const sanitizedPrefix = filenamePrefix
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "_");
@@ -351,143 +348,242 @@ export default function ExportAttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto scrollbar-none p-4 sm:p-6">
-        <DialogHeader className="space-y-1.5">
-          <DialogTitle className="text-lg font-bold tracking-tight text-foreground/90 flex items-center gap-2">
-            <Download className="size-5 text-primary" />
-            Ekspor Data Presensi
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground font-medium">
-            Pilih rentang tanggal dan mahasiswa intern untuk mengunduh laporan presensi
-            dalam format Excel (.xlsx).
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 pt-2">
-          {/* Calendar Date Range Selector */}
-          <div className="space-y-1.5 flex flex-col">
-            <Label
-              htmlFor="date-range"
-              className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
-            >
-              <CalendarDays className="size-3.5 text-muted-foreground" />
-              Rentang Tanggal
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date-range"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal rounded-lg bg-background border-border text-xs h-9",
-                    !dateRange && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarDays className="mr-2 size-4 text-muted-foreground" />
-                  {dateRangeText}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0 bg-card border-border rounded-lg"
-                align="start"
-              >
-                <Calendar
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={(range) => setDateRange(range)}
-                  numberOfMonths={1}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Target User Selector */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="export-target"
-              className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
-            >
-              <Users className="size-3.5 text-muted-foreground" />
-              Mahasiswa Intern yang Diekspor
-            </Label>
-            <Select
-              value={exportTarget}
-              onValueChange={(val) =>
-                setExportTarget(val as "all" | "specific")
-              }
-            >
-              <SelectTrigger
-                id="export-target"
-                className="w-full rounded-lg bg-background border-border text-xs h-9"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border rounded-lg">
-                <SelectItem
-                  value="all"
-                  className="text-xs cursor-pointer rounded-md"
-                >
-                  Semua Mahasiswa Intern
-                </SelectItem>
-                <SelectItem
-                  value="specific"
-                  className="text-xs cursor-pointer rounded-md"
-                >
-                  Mahasiswa Intern Tertentu
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Specific User Search Selector */}
-          {exportTarget === "specific" && (
-            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-              <Label
-                htmlFor="select-user"
-                className="text-xs font-semibold text-foreground/80"
-              >
-                Pilih Mahasiswa Intern
-              </Label>
-              <Select
-                value={selectedUserId}
-                onValueChange={(val) => {
-                  setSelectedUserId(val);
-                  // Auto-select first intern for this user
-                  const userInterns = interns.filter((i) => i.userId === val);
-                  setSelectedInternId(userInterns[0]?.id || "");
-                }}
-              >
-                <SelectTrigger
-                  id="select-user"
-                  className="w-full rounded-lg bg-background border-border text-xs h-9"
-                >
-                  <SelectValue placeholder="Pilih Mahasiswa Intern" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border rounded-lg max-h-56">
-                  {users.map((user) => (
-                    <SelectItem
-                      key={user.id}
-                      value={user.id}
-                      className="text-xs cursor-pointer rounded-md"
-                    >
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <DialogContent className="sm:max-w-[900px] w-[95vw] max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0 bg-white dark:bg-zinc-950 border-none rounded-[2rem] shadow-2xl">
+        
+        {/* Main Content - Form */}
+        <div className="flex flex-col flex-1 min-h-0 p-8 sm:p-10 overflow-y-auto scrollbar-none bg-white dark:bg-zinc-950">
+          {/* Header */}
+          <div className="flex items-center gap-6 mb-6">
+            {/* Download Icon with Glow Effect */}
+            <div className="relative w-16 h-16 flex flex-shrink-0 items-center justify-center">
+              {/* Glow background */}
+              <div className="absolute inset-[-10px] bg-red-100/60 dark:bg-primary/20 rounded-full blur-md"></div>
+              {/* Inner dark red circle */}
+              <div className="relative w-14 h-14 rounded-full bg-[#701010] dark:bg-primary shadow-md flex items-center justify-center">
+                <Download className="size-6 text-white" strokeWidth={2.5} />
+              </div>
             </div>
-          )}
-        </div>
+            
+            <div className="space-y-1.5 pr-6">
+              <DialogTitle className="text-[20px] font-bold tracking-tight text-gray-900 dark:text-zinc-100">
+                Ekspor Data Presensi
+              </DialogTitle>
+              <DialogDescription className="text-[14px] text-gray-500 dark:text-zinc-400 font-medium leading-relaxed">
+                Pilih instansi dan mahasiswa intern yang ingin diekspor ke dalam format Excel (.xlsx).
+              </DialogDescription>
+            </div>
+          </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end items-stretch sm:items-center pt-4">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="space-y-6 flex-1">
+            {/* Institution Selector */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#FCEDED] dark:bg-primary/10 flex flex-shrink-0 items-center justify-center mt-2">
+                <Building2 className="size-5 text-[#8B1A1A] dark:text-primary" strokeWidth={2} />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label
+                  htmlFor="institution-target"
+                  className="text-[14px] font-semibold text-gray-900 dark:text-zinc-200 block"
+                >
+                  Nama Institusi atau Universitas
+                </Label>
+                <Select
+                  value={selectedInstitutionId}
+                  onValueChange={(val) => {
+                    setSelectedInstitutionId(val);
+                    setSelectedUserIds([]);
+                  }}
+                >
+                  <SelectTrigger
+                    id="institution-target"
+                    className="w-full rounded-xl bg-white dark:bg-zinc-900 border-[#EAAFAF] dark:border-zinc-800 text-[14px] text-gray-700 dark:text-zinc-300 h-11 px-4 shadow-sm focus:ring-[#8B1A1A]/20"
+                  >
+                    <SelectValue placeholder="Semua Institusi" />
+                  </SelectTrigger>
+                  <SelectContent 
+                    position="popper"
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions={false}
+                    className="bg-white dark:bg-zinc-900 border-red-100 dark:border-zinc-800 rounded-xl max-h-56 w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem value="all" className="text-[14px] text-gray-700 dark:text-zinc-300 cursor-pointer rounded-lg py-3">
+                      Semua Institusi
+                    </SelectItem>
+                    {institutions?.map((inst) => (
+                      <SelectItem key={inst.id} value={inst.id} className="text-[14px] text-gray-700 dark:text-zinc-300 cursor-pointer rounded-lg py-3">
+                        {inst.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Export Mode Selector */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#FCEDED] dark:bg-primary/10 flex flex-shrink-0 items-center justify-center mt-2">
+                <Users className="size-5 text-[#8B1A1A] dark:text-primary" strokeWidth={2} />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label
+                  htmlFor="export-mode"
+                  className="text-[14px] font-semibold text-gray-900 dark:text-zinc-200 block"
+                >
+                  Mahasiswa Intern yang Diekspor
+                </Label>
+                <Select
+                  value={exportMode === "none" ? undefined : exportMode}
+                  onValueChange={(val: "all" | "specific") => {
+                    setExportMode(val);
+                    if (val === "all") setSelectedUserIds([]);
+                  }}
+                >
+                  <SelectTrigger
+                    id="export-mode"
+                    className="w-full rounded-xl bg-white dark:bg-zinc-900 border-[#EAAFAF] dark:border-zinc-800 text-[14px] text-gray-700 dark:text-zinc-300 h-11 px-4 shadow-sm focus:ring-[#8B1A1A]/20"
+                  >
+                    <SelectValue placeholder="Pilih Opsi Ekspor..." />
+                  </SelectTrigger>
+                  <SelectContent 
+                    position="popper"
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions={false}
+                    className="bg-white dark:bg-zinc-900 border-red-100 dark:border-zinc-800 rounded-xl max-h-56 w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem value="all" className="text-[14px] text-gray-700 dark:text-zinc-300 cursor-pointer rounded-lg py-3">
+                      Pilih Semua Mahasiswa
+                    </SelectItem>
+                    <SelectItem value="specific" className="text-[14px] text-gray-700 dark:text-zinc-300 cursor-pointer rounded-lg py-3">
+                      Pilih Mahasiswa Tertentu
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Intern Combobox Selector */}
+            {exportMode === "specific" && (
+              <div className="flex items-start gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="w-12 h-12 flex flex-shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <Label
+                    htmlFor="select-user"
+                    className="text-[14px] font-semibold text-gray-900 dark:text-zinc-200 block"
+                  >
+                    Pilih Mahasiswa Intern
+                  </Label>
+                  <Popover open={isComboboxOpen} onOpenChange={setIsComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isComboboxOpen}
+                        className="w-full justify-between rounded-xl bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 hover:border-[#EAAFAF] dark:hover:border-zinc-700 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 shadow-sm focus:ring-[#8B1A1A]/20 text-[14px] text-gray-700 dark:text-zinc-300 h-11 px-4 font-normal"
+                      >
+                        <span className="truncate">
+                          {selectedUserIds.length === 0
+                            ? "Pilih mahasiswa..."
+                            : selectedUserIds.length === 1
+                            ? filteredUsers.find((user) => user.id === selectedUserIds[0])?.name || "Pilih mahasiswa..."
+                            : `${selectedUserIds.length} Mahasiswa Terpilih`}
+                        </span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-[var(--radix-popover-trigger-width)] p-0 bg-white dark:bg-zinc-900 border-red-100 dark:border-zinc-800 rounded-xl shadow-lg" 
+                      align="start"
+                      side="bottom"
+                      sideOffset={8}
+                      avoidCollisions={false}
+                    >
+                      <Command>
+                        <CommandInput placeholder="Cari nama mahasiswa..." className="text-[14px] text-gray-700 dark:text-zinc-300 h-11" />
+                        <CommandList className="max-h-[220px] overflow-y-auto">
+                          <CommandEmpty className="text-[14px] py-6 text-center text-gray-500 dark:text-zinc-400">Tidak ada mahasiswa ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredUsers.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={user.name}
+                                onSelect={() => {
+                                  setSelectedUserIds((prev) => {
+                                    if (prev.includes(user.id)) {
+                                      return prev.filter((id) => id !== user.id);
+                                    }
+                                    return [...prev, user.id];
+                                  });
+                                }}
+                                className="text-[14px] text-gray-700 dark:text-zinc-300 py-3 cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 size-4 text-[#8B1A1A] dark:text-primary",
+                                    selectedUserIds.includes(user.id) ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {user.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Selected Interns List */}
+                  {selectedUserIds.length > 1 && (
+                    <div className="mt-5 space-y-3">
+                      <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-200 px-1">
+                        Daftar Mahasiswa Intern
+                      </p>
+                      <div className="max-h-[160px] overflow-y-auto scrollbar-thin pr-1 space-y-2">
+                        {selectedUserIds.map((id) => {
+                          const user = filteredUsers.find((u) => u.id === id);
+                          if (!user) return null;
+                          return (
+                            <div key={id} className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/50 shadow-sm">
+                              <span className="text-[14px] text-gray-700 dark:text-zinc-300 font-semibold truncate pr-4">
+                                {user.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedUserIds((prev) => prev.filter((uId) => uId !== id))}
+                                className="text-gray-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 transition-colors focus:outline-none"
+                                title="Hapus pilihan"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Info Alert Box */}
+            <div className="bg-[#FCF9F9] dark:bg-zinc-900/40 rounded-2xl p-4 flex gap-4 items-center border border-gray-100 dark:border-zinc-800/50 mt-6">
+              <div className="w-6 h-6 rounded-full bg-[#FCEDED] dark:bg-primary/10 border border-[#EAAFAF] dark:border-primary/20 flex flex-shrink-0 items-center justify-center">
+                <span className="text-[#8B1A1A] dark:text-primary font-bold text-xs italic">i</span>
+              </div>
+              <p className="text-[14px] text-gray-600 dark:text-zinc-400 font-medium leading-relaxed">
+                Data yang diekspor akan sesuai dengan filter yang Anda pilih.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center mt-8 w-full">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isExporting}
-              className="w-full sm:w-auto rounded-lg font-medium text-xs h-9"
+              className="flex-1 rounded-xl font-semibold text-[#701010] dark:text-primary border-gray-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-primary/10 hover:border-red-200 dark:hover:border-primary/30 hover:text-red-950 dark:hover:text-primary text-[14px] h-[48px] shadow-sm"
             >
               Batal
             </Button>
@@ -495,12 +591,13 @@ export default function ExportAttendanceDialog({
               type="button"
               onClick={handleExport}
               loading={isExporting}
-              className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-semibold rounded-lg text-xs h-9 shadow-sm"
+              className="flex-1 bg-gradient-to-r from-[#8B1A1A] to-[#601010] dark:from-primary dark:to-primary/80 hover:from-[#731515] hover:to-[#500c0c] dark:hover:from-primary/90 dark:hover:to-primary/70 text-white font-semibold rounded-xl text-[14px] h-[48px] shadow-md flex items-center justify-center gap-2"
             >
+              {!isExporting && <Download className="size-5" />}
               Ekspor Data
             </Button>
-          </div>
-        </DialogFooter>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

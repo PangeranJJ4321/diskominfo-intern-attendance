@@ -835,6 +835,7 @@ export default function UserAttendancesCard() {
         shifts={shifts}
         assignments={assignments}
         interns={interns}
+        institutions={institutions}
       />
 
       {/* Bulk Delete Confirmation Dialog */}

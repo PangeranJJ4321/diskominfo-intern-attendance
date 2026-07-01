@@ -7,6 +7,7 @@ import type {
   User,
   Intern,
   ShiftAssignment,
+  Institution,
 } from "./models";
 
 export interface AttendanceAreaMapProps {
@@ -128,4 +129,5 @@ export interface ExportAttendanceDialogProps {
   shifts: Shift[];
   assignments: ShiftAssignment[];
   interns: Intern[];
+  institutions: Institution[];
 }

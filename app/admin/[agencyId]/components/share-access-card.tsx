@@ -67,9 +67,14 @@ export default function ShareAccessCard({ agencyId }: ShareAccessCardProps) {
     loadData();
   }, []);
 
+  const myAgencyAccesses = useMemo(
+    () => accesses.filter((access) => access.agencyId === agencyId),
+    [accesses, agencyId],
+  );
+
   const accessUserIds = useMemo(
-    () => new Set(accesses.map((access) => access.userId)),
-    [accesses],
+    () => new Set(myAgencyAccesses.map((access) => access.userId)),
+    [myAgencyAccesses],
   );
 
   const availableAdmins = useMemo(
@@ -83,10 +88,10 @@ export default function ShareAccessCard({ agencyId }: ShareAccessCardProps) {
 
   const sortedAccesses = useMemo(
     () =>
-      [...accesses].sort((left, right) =>
+      [...myAgencyAccesses].sort((left, right) =>
         (left.user?.name || "").localeCompare(right.user?.name || ""),
       ),
-    [accesses],
+    [myAgencyAccesses],
   );
   /**
    * Adds access for a new administrator.
@@ -145,7 +150,7 @@ export default function ShareAccessCard({ agencyId }: ShareAccessCardProps) {
         currentAccesses.filter((item) => item.id !== access.id),
       );
       toast.success(
-        `Akses admin untuk ${access.user?.name || "Karyawan"} berhasil dihapus`,
+        `Akses admin untuk ${access.user?.name || "Mahasiswa Intern"} berhasil dihapus`,
       );
     } catch (err) {
       const errorMsg =

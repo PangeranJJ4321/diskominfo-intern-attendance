@@ -203,3 +203,16 @@ export async function deleteAgencyArea(agencyId: string): Promise<void> {
   });
   if (!res.ok) await handleError(res, "Gagal menghapus area instansi");
 }
+
+/**
+ * Fetches a specific agency by ID.
+ *
+ * @param {string} id - The agency ID.
+ * @returns {Promise<Agency>} The agency.
+ */
+export async function getAgency(id: string): Promise<Agency> {
+  const res = await fetch(`/api/agencies/${id}`);
+  if (!res.ok) await handleError(res, "Gagal mengambil data instansi");
+  return res.json();
+}
+

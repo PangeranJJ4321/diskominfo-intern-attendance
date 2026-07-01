@@ -5,7 +5,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarDays, Clock, FileText, MapPin, Camera } from "lucide-react";
+import { CalendarDays, Clock, FileText, MapPin, Camera, Info } from "lucide-react";
 
 import {
   Dialog,
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateAttendance } from "@/lib/services/attendances";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
 import type { AttendanceStatusType } from "@/interfaces/enums";
 import { AttendanceStatus } from "@/interfaces/enums";
 import type { UserAttendanceEditDialogProps } from "@/interfaces/admin";
@@ -50,6 +50,7 @@ export default function UserAttendanceEditDialog({
   const [status, setStatus] = useState<AttendanceStatusType>(
     AttendanceStatus.PRESENT,
   );
+  const [attendanceTime, setAttendanceTime] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [geofence, setGeofence] = useState<GeoJsonObject | null>(null);
@@ -69,14 +70,23 @@ export default function UserAttendanceEditDialog({
   }, [open]);
 
   useEffect(() => {
-    if (open && date && existingAttendance) {
+    if (open && date && existingAttendance && schedule) {
       const timer = setTimeout(() => {
         setStatus(existingAttendance.status);
         setNotes(existingAttendance.notes || "");
+        setAttendanceTime(existingAttendance.attendanceTime || schedule.scheduleStart);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, date, existingAttendance]);
+  }, [open, date, existingAttendance, schedule]);
+
+  const getLateDuration = (time: string, start: string) => {
+    if (!time || !start) return 0;
+    const [h1, m1] = time.split(":").map(Number);
+    const [h2, m2] = start.split(":").map(Number);
+    const diff = (h1 * 60 + m1) - (h2 * 60 + m2);
+    return diff > 0 ? diff : 0;
+  };
 
   /**
    * Handles saving the changes to the attendance record.
@@ -90,8 +100,7 @@ export default function UserAttendanceEditDialog({
     setIsSubmitting(true);
     try {
       const formattedDate = format(date, "yyyy-MM-dd");
-      const timeStr =
-        existingAttendance.attendanceTime || schedule.scheduleStart;
+      const timeStr = attendanceTime || schedule.scheduleStart;
       const timeDate =
         (status === AttendanceStatus.PRESENT ||
           status === AttendanceStatus.LATE) &&
@@ -99,13 +108,14 @@ export default function UserAttendanceEditDialog({
           ? new Date(`${formattedDate}T${timeStr}:00`)
           : null;
 
-      await updateAttendance(existingAttendance.id, {
+      const updateStore = useAttendanceStore.getState().updateAttendance;
+      await updateStore(existingAttendance.id, {
         status,
         attendanceTime: timeDate ? timeDate.toISOString() : null,
         notes: notes.trim() || null,
       });
 
-      toast.success("Presensi karyawan berhasil diperbarui");
+      toast.success("Presensi mahasiswa intern berhasil diperbarui");
       onSuccess();
       onOpenChange(false);
     } catch (err) {
@@ -197,6 +207,7 @@ export default function UserAttendanceEditDialog({
                 src={existingAttendance.attendancePhotoUrl}
                 alt="Foto Presensi"
                 fill
+                unoptimized={existingAttendance.attendancePhotoUrl.startsWith('/uploads/')}
                 sizes="(max-width: 640px) calc(95vw - 2rem), 26rem"
                 className="object-cover animate-in fade-in zoom-in-95 duration-200"
               />
@@ -263,79 +274,136 @@ export default function UserAttendanceEditDialog({
             </div>
           )}
 
-        <form onSubmit={handleSave} className="space-y-4 pt-2">
-          {/* Status Selection */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="override-status"
-              className="text-xs font-semibold text-foreground/80"
-            >
-              Status Presensi
-            </Label>
-            <Select
-              value={status}
-              onValueChange={(val) => setStatus(val as AttendanceStatusType)}
-            >
-              <SelectTrigger
-                id="override-status"
-                className="w-full rounded-lg bg-background border-border text-sm"
-              >
-                <SelectValue placeholder="Pilih Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border rounded-lg">
-                {STATUS_OPTIONS.map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className={opt.className}
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Override Notes */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="override-notes"
-              className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
-            >
-              <FileText className="size-3.5" />
-              Catatan / Keterangan Admin
-            </Label>
-            <Textarea
-              id="override-notes"
-              placeholder="Sebutkan alasan override, nomor surat cuti, atau info penunjang lainnya..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full bg-background border-border hover:border-foreground/20 rounded-lg px-3 py-2 text-sm shadow-sm min-h-20"
-            />
-          </div>
-
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end items-stretch sm:items-center pt-2">
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        {existingAttendance.status === AttendanceStatus.PRESENT ? (
+          <div className="pt-6 space-y-4 text-center">
+            <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg border border-emerald-500/20">
+              <p className="text-sm font-medium">
+                Presensi sudah berstatus Hadir.
+              </p>
+              <p className="text-xs mt-1">
+                Waktu dan status kehadiran tidak dapat diubah lagi.
+              </p>
+            </div>
+            <DialogFooter className="sm:justify-center">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
                 className="w-full sm:w-auto rounded-lg font-medium text-xs h-9"
               >
-                Batal
+                Tutup
               </Button>
-              <Button
-                type="submit"
-                loading={isSubmitting}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-semibold rounded-lg text-xs h-9 shadow-sm"
+            </DialogFooter>
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-4 pt-2">
+            {/* Attendance Time Edit */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="attendance-time"
+                className="text-xs font-semibold text-foreground/80 flex justify-between"
               >
-                Simpan Perubahan
-              </Button>
+                <span>Jam Presensi</span>
+                {(status === AttendanceStatus.PRESENT || status === AttendanceStatus.LATE) && (
+                  <span className="text-muted-foreground font-normal">Sesuai jam di lokasi</span>
+                )}
+              </Label>
+              <div className="flex gap-2">
+                <input
+                  id="attendance-time"
+                  type="time"
+                  value={attendanceTime}
+                  onChange={(e) => setAttendanceTime(e.target.value)}
+                  disabled={isSubmitting || (status !== AttendanceStatus.PRESENT && status !== AttendanceStatus.LATE)}
+                  className="flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
             </div>
-          </DialogFooter>
-        </form>
+
+            {/* Status Selection */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="override-status"
+                className="text-xs font-semibold text-foreground/80 flex items-center justify-between"
+              >
+                <span>Status Presensi</span>
+                {status === AttendanceStatus.LATE && (
+                  <span className="text-amber-600 font-medium">
+                    (Terlambat {getLateDuration(attendanceTime, schedule.scheduleStart)} menit)
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={status}
+                onValueChange={(val) => setStatus(val as AttendanceStatusType)}
+              >
+                <SelectTrigger
+                  id="override-status"
+                  className="w-full rounded-lg bg-background border-border text-sm"
+                >
+                  <SelectValue placeholder="Pilih Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border rounded-lg">
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className={opt.className}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground flex items-start gap-1 mt-1">
+                <Info className="size-3 mt-0.5 shrink-0" />
+                <span>
+                  Status Terlambat otomatis diberikan jika jam absen melewati batas toleransi ({schedule.lateCutoff}). Admin dapat mengubah status secara manual jika diperlukan.
+                </span>
+              </p>
+            </div>
+
+            {/* Override Notes */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="override-notes"
+                className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
+              >
+                <FileText className="size-3.5" />
+                Catatan / Keterangan Admin
+              </Label>
+              <Textarea
+                id="override-notes"
+                placeholder="Sebutkan alasan override, nomor surat cuti, atau info penunjang lainnya..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full bg-background border-border hover:border-foreground/20 rounded-lg px-3 py-2 text-sm shadow-sm min-h-20"
+              />
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end items-stretch sm:items-center pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto rounded-lg font-medium text-xs h-9"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-semibold rounded-lg text-xs h-9 shadow-sm"
+                >
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

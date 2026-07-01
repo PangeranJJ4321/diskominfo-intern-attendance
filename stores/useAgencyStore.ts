@@ -22,7 +22,7 @@ interface AgencyState {
 /** Actions exposed by the agency store */
 interface AgencyActions {
   /** Fetch all agencies */
-  fetchAgencies: (limit?: number) => Promise<void>;
+  fetchAgencies: (limit?: number, force?: boolean) => Promise<void>;
   /** Create a new agency */
   createAgency: (name: string) => Promise<void>;
   /** Update an existing agency */
@@ -30,7 +30,7 @@ interface AgencyActions {
   /** Delete an agency */
   deleteAgency: (id: string) => Promise<void>;
   /** Fetch agency rule for a specific agency */
-  fetchAgencyRule: (agencyId: string) => Promise<void>;
+  fetchAgencyRule: (agencyId: string, force?: boolean) => Promise<void>;
   /** Create agency rule for a specific agency */
   createAgencyRule: (
     agencyId: string,
@@ -44,7 +44,7 @@ interface AgencyActions {
   /** Delete agency rule for a specific agency */
   deleteAgencyRule: (agencyId: string) => Promise<void>;
   /** Fetch agency area for a specific agency */
-  fetchAgencyArea: (agencyId: string) => Promise<void>;
+  fetchAgencyArea: (agencyId: string, force?: boolean) => Promise<void>;
   /** Create agency area for a specific agency */
   createAgencyArea: (
     agencyId: string,
@@ -63,14 +63,17 @@ interface AgencyActions {
   clearError: () => void;
 }
 
-export const useAgencyStore = create<AgencyState & AgencyActions>((set) => ({
+export const useAgencyStore = create<AgencyState & AgencyActions>((set, get) => ({
   agencies: [],
   rule: null,
   area: null,
   loading: false,
   error: null,
 
-  fetchAgencies: async (limit = 1000) => {
+  fetchAgencies: async (limit = 1000, force = false) => {
+    const { agencies, loading } = get();
+    if (!force && (agencies.length > 0 || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const agencies = await agencyService.getAgencies(limit);
@@ -119,7 +122,10 @@ export const useAgencyStore = create<AgencyState & AgencyActions>((set) => ({
     }
   },
 
-  fetchAgencyRule: async (agencyId) => {
+  fetchAgencyRule: async (agencyId, force = false) => {
+    const { rule, loading } = get();
+    if (!force && ((rule && rule.agencyId === agencyId) || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const rule = await agencyService.getAgencyRule(agencyId);
@@ -159,7 +165,10 @@ export const useAgencyStore = create<AgencyState & AgencyActions>((set) => ({
     }
   },
 
-  fetchAgencyArea: async (agencyId) => {
+  fetchAgencyArea: async (agencyId, force = false) => {
+    const { area, loading } = get();
+    if (!force && ((area && area.agencyId === agencyId) || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const area = await agencyService.getAgencyArea(agencyId);

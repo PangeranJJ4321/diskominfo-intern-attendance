@@ -1,41 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@/app/generated/prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { prisma } from "./prisma";
 import { nextCookies } from "better-auth/next-js";
-
-/**
- * Creates and configures the MariaDB driver adapter for Prisma.
- *
- * @returns {PrismaMariaDb} Configured driver adapter.
- */
-function getAdapter(): PrismaMariaDb {
-  const mysqlUrl = process.env.DATABASE_URL;
-  if (!mysqlUrl) {
-    throw new Error("DATABASE_URL is not defined");
-  }
-  const parsedUrl = new URL(mysqlUrl);
-  const user = decodeURIComponent(parsedUrl.username);
-  const password = decodeURIComponent(parsedUrl.password);
-  const host = parsedUrl.hostname;
-  const port = parsedUrl.port ? parseInt(parsedUrl.port) : 3306;
-  const database = parsedUrl.pathname.replace(/^\//, '');
-
-  return new PrismaMariaDb({
-    host,
-    port,
-    user,
-    password,
-    database,
-    connectionLimit: 10,
-  });
-}
-
-const adapter = getAdapter();
-const prisma = new PrismaClient({ adapter });
+import nodemailer from "nodemailer";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL,
   database: prismaAdapter(prisma, {
     provider: "mysql",
   }),
@@ -45,6 +15,30 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "465"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Sistem Absensi" <${process.env.SMTP_USER}>`,
+        to: user.email,
+        subject: "Reset Kata Sandi Anda",
+        html: `
+          <p>Halo ${user.name},</p>
+          <p>Anda menerima email ini karena ada permintaan untuk mengatur ulang kata sandi akun Anda.</p>
+          <p>Silakan klik tautan di bawah ini untuk mengatur ulang kata sandi Anda:</p>
+          <a href="${url}" style="padding: 10px 20px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Kata Sandi</a>
+          <p>Jika Anda tidak meminta pengaturan ulang kata sandi, abaikan saja email ini.</p>
+        `,
+      });
+    },
   },
   socialProviders: {
     google: {

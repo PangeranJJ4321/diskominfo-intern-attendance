@@ -21,6 +21,7 @@ interface AgencyHolidayActions {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    force?: boolean,
   ) => Promise<void>;
   /** Create a new holiday */
   createHoliday: (data: Omit<AgencyHoliday, "id">) => Promise<void>;
@@ -37,12 +38,15 @@ interface AgencyHolidayActions {
 
 export const useAgencyHolidayStore = create<
   AgencyHolidayState & AgencyHolidayActions
->((set) => ({
+>((set, get) => ({
   holidays: [],
   loading: false,
   error: null,
 
-  fetchHolidays: async (limit = 1000, startDate, endDate) => {
+  fetchHolidays: async (limit = 1000, startDate, endDate, force = false) => {
+    const { holidays, loading } = get();
+    if (!force && (holidays.length > 0 || loading)) return;
+
     set({ loading: true, error: null });
     try {
       const holidays = await holidayService.getHolidays(

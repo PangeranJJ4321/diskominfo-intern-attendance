@@ -1,10 +1,8 @@
 // app/api/holidays/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { defineAbilityFor } from "@/lib/casl";
 import { updateHolidaySchema } from "@/lib/schemas/holiday-schema";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,38 +11,8 @@ interface RouteParams {
 /**
  * GET: Retrieve a specific Holiday by ID
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Holiday")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -60,50 +28,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(holiday);
-  } catch (error) {
-    console.error("Error fetching holiday:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "Holiday"
+);
 
 /**
  * PATCH: Update a specific Holiday by ID
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("update", "Holiday")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const PATCH = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -137,50 +71,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json(updatedHoliday);
-  } catch (error) {
-    console.error("Error updating holiday:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "update",
+  "Holiday"
+);
 
 /**
  * DELETE: Remove a Holiday by ID
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("delete", "Holiday")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const DELETE = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -200,11 +100,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json({ message: "Holiday deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting holiday:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "delete",
+  "Holiday"
+);

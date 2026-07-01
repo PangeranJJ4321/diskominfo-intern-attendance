@@ -1,10 +1,8 @@
 // app/api/agencies/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { defineAbilityFor } from "@/lib/casl";
 import { updateAgencySchema } from "@/lib/schemas/agency-schema";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,38 +11,8 @@ interface RouteParams {
 /**
  * GET: Retrieve a specific Agency by ID.
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "Agency")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -57,50 +25,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(agency);
-  } catch (error) {
-    console.error("Error fetching agency:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "Agency"
+);
 
 /**
  * PATCH: Update a specific Agency by ID.
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("update", "Agency")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const PATCH = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -143,50 +77,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json(updatedAgency);
-  } catch (error) {
-    console.error("Error updating agency:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "update",
+  "Agency"
+);
 
 /**
  * DELETE: Remove an Agency by ID.
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("delete", "Agency")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const DELETE = withAuth(
+  async (request: NextRequest, { params }: RouteParams, { ability }: AuthenticatedContext) => {
 
     const { id } = await params;
 
@@ -203,11 +103,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json({ message: "Agency deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting agency:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "delete",
+  "Agency"
+);

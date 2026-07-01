@@ -8,6 +8,7 @@ import { Plus, Pencil } from "lucide-react";
 import { useInternStore } from "@/stores/useInternStore";
 import { useAgencyStore } from "@/stores/useAgencyStore";
 import { useInstitutionStore } from "@/stores/useInstitutionStore";
+import { useAgencyAccessStore } from "@/stores/useAgencyAccessStore";
 import { deleteIntern } from "@/lib/services/interns";
 import { InternInfoCard } from "@/components/custom/intern-info-card";
 import { CreateInternDialog } from "./create-intern-dialog";
@@ -95,6 +96,7 @@ export function InternCard({ userId }: InternCardProps) {
           fetchInterns(),
           fetchAgencies(),
           fetchInstitutions(),
+          useAgencyAccessStore.getState().fetchAccesses(),
         ]);
       } catch (err) {
         if (!cancelled) {
@@ -107,11 +109,15 @@ export function InternCard({ userId }: InternCardProps) {
 
       if (cancelled) return;
 
-      // Auto-open create dialog if no interns yet
+      // Auto-open create dialog if no interns yet AND user is not an admin
       const currentInterns = useInternStore
         .getState()
         .interns.filter((i) => i.userId === userId);
-      if (currentInterns.length === 0) {
+      const isAdmin = useAgencyAccessStore
+        .getState()
+        .accesses.some((a) => a.userId === userId);
+        
+      if (currentInterns.length === 0 && !isAdmin) {
         if (!cancelled) setCreateOpen(true);
       }
     })();

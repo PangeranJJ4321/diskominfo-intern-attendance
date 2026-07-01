@@ -17,7 +17,7 @@ function isPointOnSegment(
   const crossProduct =
     (point[1] - start[1]) * (end[0] - start[0]) -
     (point[0] - start[0]) * (end[1] - start[1]);
-  if (Math.abs(crossProduct) > Number.EPSILON) {
+  if (Math.abs(crossProduct) > 1e-7) {
     return false;
   }
   const minX = Math.min(start[0], end[0]);
@@ -25,10 +25,10 @@ function isPointOnSegment(
   const minY = Math.min(start[1], end[1]);
   const maxY = Math.max(start[1], end[1]);
   return (
-    point[0] >= minX - Number.EPSILON &&
-    point[0] <= maxX + Number.EPSILON &&
-    point[1] >= minY - Number.EPSILON &&
-    point[1] <= maxY + Number.EPSILON
+    point[0] >= minX - 1e-7 &&
+    point[0] <= maxX + 1e-7 &&
+    point[1] >= minY - 1e-7 &&
+    point[1] <= maxY + 1e-7
   );
 }
 

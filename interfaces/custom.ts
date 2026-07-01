@@ -42,6 +42,7 @@ export interface LogoProps {
   iconClassName?: string;
   textClassName?: string;
   hideTextOnMobile?: boolean;
+  href?: string;
 }
 
 export interface LocationPermissionDialogProps {

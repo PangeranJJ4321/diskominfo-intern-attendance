@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createAttendance } from "@/lib/services/attendances";
+import { useAttendanceStore } from "@/stores/useAttendanceStore";
 import { getInterns } from "@/lib/services/interns";
 import type { AttendanceStatusType } from "@/interfaces/enums";
 import { AttendanceStatus } from "@/interfaces/enums";
@@ -90,7 +90,8 @@ export default function UserAttendanceCreateDialog({
         return;
       }
 
-      await createAttendance({
+      const createStoreAttendance = useAttendanceStore.getState().createAttendance;
+      await createStoreAttendance({
         internId: intern.id,
         scheduleId: schedule.id,
         date: formattedDate,
@@ -99,7 +100,7 @@ export default function UserAttendanceCreateDialog({
         notes: notes.trim() || null,
       });
 
-      toast.success("Presensi karyawan berhasil ditambahkan");
+      toast.success("Presensi mahasiswa intern berhasil ditambahkan");
       onSuccess();
       onOpenChange(false);
     } catch (err) {

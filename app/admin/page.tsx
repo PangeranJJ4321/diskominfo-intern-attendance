@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function AdminPage() {
   const router = useRouter();
-  const { isPending: sessionPending } = useSession();
+  const { data: session, isPending: sessionPending } = useSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -31,8 +31,11 @@ export default function AdminPage() {
       try {
         await fetchAccesses();
         const freshAccesses = useAgencyAccessStore.getState().accesses;
-        if (freshAccesses.length > 0 && freshAccesses[0].agencyId) {
-          router.replace(`/admin/${freshAccesses[0].agencyId}`);
+        const myAccesses = freshAccesses.filter(
+          (a) => a.userId === session?.user?.id,
+        );
+        if (myAccesses.length > 0 && myAccesses[0].agencyId) {
+          router.replace(`/admin/${myAccesses[0].agencyId}`);
           return;
         }
         setError(
@@ -47,7 +50,7 @@ export default function AdminPage() {
     }
 
     void redirectToFirstAgency();
-  }, [sessionPending, router, fetchAccesses]);
+  }, [sessionPending, session, router, fetchAccesses]);
 
   return (
     <>

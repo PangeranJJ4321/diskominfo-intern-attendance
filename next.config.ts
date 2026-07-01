@@ -6,13 +6,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "res.cloudinary.com",
+        hostname: "picsum.photos",
         port: "",
         pathname: "/**",
       },
       {
         protocol: "https",
-        hostname: "picsum.photos",
+        hostname: "res.cloudinary.com",
         port: "",
         pathname: "/**",
       },
@@ -26,6 +26,15 @@ const nextConfig: NextConfig = {
    */
   async headers() {
     return [
+      {
+        source: "/models/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       {
         source: "/(.*)",
         headers: [

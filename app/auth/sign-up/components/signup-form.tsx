@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -210,9 +211,9 @@ export function SignUpForm({
           </Button>
           <FieldDescription className="text-center">
             Sudah punya akun?{" "}
-            <a href="/auth/sign-in" className="underline underline-offset-4">
+            <Link href="/auth/sign-in" className="underline underline-offset-4">
               Masuk
-            </a>
+            </Link>
           </FieldDescription>
         </Field>
       </FieldGroup>

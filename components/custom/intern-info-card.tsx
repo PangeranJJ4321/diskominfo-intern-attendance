@@ -34,9 +34,12 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
   const fetchAgencyRule = useAgencyStore((s) => s.fetchAgencyRule);
   const ruleLoading = useAgencyStore((s) => s.loading);
 
-  // Fetch interns on mount
+  // Fetch interns on mount if not already loaded
   useEffect(() => {
-    void fetchInterns();
+    const state = useInternStore.getState();
+    if (state.interns.length === 0 && !state.loading) {
+      void fetchInterns();
+    }
   }, [fetchInterns]);
 
   // Find the user's intern
@@ -44,10 +47,16 @@ export function InternInfoCard({ userId }: InternInfoCardProps) {
     return interns.find((i) => i.userId === userId) ?? null;
   }, [interns, userId]);
 
-  // Fetch agency rule when intern is available
+  // Fetch agency rule when intern is available if not already loaded
   useEffect(() => {
     if (intern) {
-      void fetchAgencyRule(intern.agencyId);
+      const state = useAgencyStore.getState();
+      if (
+        (!state.rule || state.rule.agencyId !== intern.agencyId) &&
+        !state.loading
+      ) {
+        void fetchAgencyRule(intern.agencyId);
+      }
     }
   }, [intern, fetchAgencyRule]);
 

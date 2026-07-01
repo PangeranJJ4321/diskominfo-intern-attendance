@@ -431,13 +431,13 @@ export default function UserAttendances({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-border/30 bg-card dark:bg-[#161b22] shadow-sm overflow-hidden">
       {/* Calendar Header Days */}
-      <div className="grid grid-cols-7 border-b border-border bg-muted/20 text-center text-xs font-bold tracking-wider text-muted-foreground uppercase py-3.5">
+      <div className="grid grid-cols-7 border-b border-border/30 bg-muted/10 text-center text-[10px] font-bold tracking-wider text-muted-foreground uppercase py-3.5">
         {dayLabels.map((dayLabel, index) => (
           <div
             key={dayLabel.short}
-            className={index === 0 || index === 6 ? "text-destructive/80" : ""}
+            className={index === 0 || index === 6 ? "text-red-500" : ""}
           >
             <span className="hidden sm:inline">{dayLabel.long}</span>
             <span className="sm:hidden">{dayLabel.short}</span>
@@ -446,7 +446,7 @@ export default function UserAttendances({
       </div>
 
       {/* Calendar Grid Cells */}
-      <div className="grid grid-cols-7 gap-px bg-border/30">
+      <div className="grid grid-cols-7 gap-px bg-border/20">
         {calendarDays.map((calendarDay, index) => {
           const formattedDate = format(calendarDay, "yyyy-MM-dd");
           const isCurrentMonth = isMobile
@@ -505,30 +505,21 @@ export default function UserAttendances({
           return (
             <div
               key={`${formattedDate}-${index}`}
-              className={`flex min-h-28 flex-col justify-between p-2 sm:p-2.5 transition-all bg-card ${
+              className={`flex min-h-[100px] flex-col p-2 sm:p-2.5 transition-all bg-card dark:bg-[#0d1117] ${
                 !isCurrentMonth
-                  ? "bg-muted/10 text-muted-foreground/45 select-none pointer-events-none"
+                  ? "opacity-50 select-none pointer-events-none"
                   : ""
-              } ${isWeekend && isCurrentMonth ? "bg-muted/5" : ""}`}
+              }`}
             >
               {/* Date Indicator */}
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-muted-foreground/60 hidden sm:inline">
-                  {activeAssigns.length > 0 &&
-                    daySchedules.length > 0 &&
-                    isCurrentMonth && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary/5 text-primary/80 font-medium">
-                        Shift Aktif
-                      </span>
-                    )}
-                </span>
+              <div className="flex justify-center items-center mb-2 relative">
                 <span
                   className={`flex size-6.5 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     isTodayDate
                       ? "bg-primary text-primary-foreground shadow-sm font-extrabold scale-105"
                       : isWeekend && isCurrentMonth
-                        ? "text-destructive"
-                        : "text-foreground/80"
+                        ? "text-red-500"
+                        : "text-foreground"
                   }`}
                 >
                   {format(calendarDay, "d")}
@@ -536,7 +527,16 @@ export default function UserAttendances({
               </div>
 
               {/* Attendance Badges / Schedule */}
-              <div className="flex flex-col gap-1.5 overflow-hidden mt-2">
+              <div className="flex flex-col gap-1.5 overflow-hidden flex-1 justify-center items-center text-center">
+                <span className="text-[10px] font-semibold text-muted-foreground/60 hidden sm:block mb-1">
+                  {activeAssigns.length > 0 &&
+                    daySchedules.length > 0 &&
+                    isCurrentMonth && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 font-medium">
+                        Shift Aktif
+                      </span>
+                    )}
+                </span>
                 {isCurrentMonth && (
                   <>
                     {daySchedules.length > 0 ? (

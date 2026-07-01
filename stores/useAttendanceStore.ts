@@ -21,6 +21,7 @@ interface AttendanceActions {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    force?: boolean,
   ) => Promise<void>;
   /** Fetch attendances for a specific intern */
   fetchAttendancesForIntern: (
@@ -28,6 +29,7 @@ interface AttendanceActions {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    force?: boolean,
   ) => Promise<void>;
   /** Fetch attendances for a specific user */
   fetchAttendancesForUser: (
@@ -35,6 +37,7 @@ interface AttendanceActions {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    force?: boolean,
   ) => Promise<void>;
   /** Create a new attendance record */
   createAttendance: (data: Omit<Attendance, "id">) => Promise<void>;
@@ -48,12 +51,15 @@ interface AttendanceActions {
 }
 
 export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
-  (set) => ({
+  (set, get) => ({
     attendances: [],
     loading: false,
     error: null,
 
-    fetchAttendances: async (limit = 1000, startDate, endDate) => {
+    fetchAttendances: async (limit = 1000, startDate, endDate, force = false) => {
+      const { loading } = get();
+      if (!force && loading) return;
+
       set({ loading: true, error: null });
       try {
         const attendances = await attendanceService.getAttendances(
@@ -72,7 +78,11 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
       limit = 1000,
       startDate,
       endDate,
+      force = false,
     ) => {
+      const { loading } = get();
+      if (!force && loading) return;
+
       set({ loading: true, error: null });
       try {
         const fetched = await attendanceService.getAttendancesForIntern(
@@ -100,7 +110,11 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
       limit = 1000,
       startDate,
       endDate,
+      force = false,
     ) => {
+      const { loading } = get();
+      if (!force && loading) return;
+
       set({ loading: true, error: null });
       try {
         const fetched = await attendanceService.getAttendancesForUser(
@@ -133,6 +147,7 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
         }));
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
+        throw err;
       }
     },
 
@@ -148,6 +163,7 @@ export const useAttendanceStore = create<AttendanceState & AttendanceActions>(
         }));
       } catch (err) {
         set({ error: (err as Error).message, loading: false });
+        throw err;
       }
     },
 

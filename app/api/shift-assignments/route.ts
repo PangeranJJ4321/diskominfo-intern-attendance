@@ -1,11 +1,9 @@
 // app/api/shift-assignments/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createDatedQuerySchema } from "@/lib/schemas/query-schema";
-import { defineAbilityFor } from "@/lib/casl";
 import { createShiftAssignmentSchema } from "@/lib/schemas/shift-assignment-schema";
+import { withAuth, AuthenticatedContext } from "@/lib/api-middlewares";
 
 const querySchema = createDatedQuerySchema(
   ["id", "internId", "shiftId", "startDate"],
@@ -36,38 +34,9 @@ const assignmentSelect = {
 /**
  * GET: List all shift assignments with pagination, sorting, search, and optional date range filtering.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("read", "ShiftAssignment")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, context: any, { dbUser, ability }: AuthenticatedContext) => {
+    const session = { user: { id: dbUser.id } };
 
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
@@ -152,50 +121,16 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching shift assignments:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "read",
+  "ShiftAssignment"
+);
 
 /**
  * POST: Create a new shift assignment
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized access" },
-        { status: 401 },
-      );
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { agencyAccesses: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User account not found" },
-        { status: 404 },
-      );
-    }
-
-    const ability = defineAbilityFor(dbUser);
-    if (!ability.can("create", "ShiftAssignment")) {
-      return NextResponse.json(
-        { error: "Forbidden: Missing access credentials." },
-        { status: 403 },
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, context: any, { ability }: AuthenticatedContext) => {
 
     const body = await request.json();
     const parsedBody = createShiftAssignmentSchema.safeParse(body);
@@ -239,11 +174,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(newAssignment, { status: 201 });
-  } catch (error) {
-    console.error("Error creating shift assignment:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  "create",
+  "ShiftAssignment"
+);

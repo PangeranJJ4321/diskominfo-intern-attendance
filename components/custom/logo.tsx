@@ -6,12 +6,13 @@ import type { LogoProps } from "@/interfaces/custom";
 export function Logo({
   className,
   iconClassName,
-  textClassName,
+  textClassName = "text-foreground font-bold",
   hideTextOnMobile = false,
+  href = "/",
 }: LogoProps) {
   return (
     <Link
-      href="/"
+      href={href}
       id="company-logo"
       className={cn(
         "flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80",

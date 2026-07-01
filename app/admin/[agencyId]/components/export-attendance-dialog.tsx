@@ -55,10 +55,12 @@ export default function ExportAttendanceDialog({
   assignments,
   interns,
 }: ExportAttendanceDialogProps) {
-  // Default range picker to May 2026 for demo data consistency
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2026, 4, 1), // May 1, 2026
-    to: new Date(2026, 4, 31), // May 31, 2026
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    return {
+      from: new Date(today.getFullYear(), today.getMonth(), 1),
+      to: new Date(today.getFullYear(), today.getMonth() + 1, 0),
+    };
   });
 
   const [exportTarget, setExportTarget] = useState<"all" | "specific">("all");
@@ -127,7 +129,7 @@ export default function ExportAttendanceDialog({
         data = await getAttendances(fetchLimit, startDateStr, endDateStr);
       } else {
         if (!selectedInternId) {
-          toast.error("Silakan pilih karyawan terlebih dahulu.");
+          toast.error("Silakan pilih mahasiswa intern terlebih dahulu.");
           setIsExporting(false);
           return;
         }
@@ -258,8 +260,8 @@ export default function ExportAttendanceDialog({
                 const notes = attRecord.notes || "";
 
                 dataToExport.push({
-                  "Nama Karyawan": user.name,
-                  "Email Karyawan": user.email,
+                  "Nama Mahasiswa Intern": user.name,
+                  "Email Mahasiswa Intern": user.email,
                   Shift: shiftName,
                   "Jadwal Kerja": schedule.name,
                   Tanggal: dateStr,
@@ -275,8 +277,8 @@ export default function ExportAttendanceDialog({
                 const isPastDate = dateStr < todayStr;
                 if (isPastDate) {
                   dataToExport.push({
-                    "Nama Karyawan": user.name,
-                    "Email Karyawan": user.email,
+                    "Nama Mahasiswa Intern": user.name,
+                    "Email Mahasiswa Intern": user.email,
                     Shift: shiftName,
                     "Jadwal Kerja": schedule.name,
                     Tanggal: dateStr,
@@ -289,8 +291,8 @@ export default function ExportAttendanceDialog({
                   });
                 } else if (dateStr === todayStr) {
                   dataToExport.push({
-                    "Nama Karyawan": user.name,
-                    "Email Karyawan": user.email,
+                    "Nama Mahasiswa Intern": user.name,
+                    "Email Mahasiswa Intern": user.email,
                     Shift: shiftName,
                     "Jadwal Kerja": schedule.name,
                     Tanggal: dateStr,
@@ -326,8 +328,8 @@ export default function ExportAttendanceDialog({
 
       const filenamePrefix =
         exportTarget === "all"
-          ? "semua_karyawan"
-          : users.find((u) => u.id === selectedUserId)?.name || "karyawan";
+          ? "semua_mahasiswa_intern"
+          : users.find((u) => u.id === selectedUserId)?.name || "mahasiswa_intern";
       const sanitizedPrefix = filenamePrefix
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "_");
@@ -356,7 +358,7 @@ export default function ExportAttendanceDialog({
             Ekspor Data Presensi
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground font-medium">
-            Pilih rentang tanggal dan karyawan untuk mengunduh laporan presensi
+            Pilih rentang tanggal dan mahasiswa intern untuk mengunduh laporan presensi
             dalam format Excel (.xlsx).
           </DialogDescription>
         </DialogHeader>
@@ -407,7 +409,7 @@ export default function ExportAttendanceDialog({
               className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
             >
               <Users className="size-3.5 text-muted-foreground" />
-              Karyawan yang Diekspor
+              Mahasiswa Intern yang Diekspor
             </Label>
             <Select
               value={exportTarget}
@@ -426,13 +428,13 @@ export default function ExportAttendanceDialog({
                   value="all"
                   className="text-xs cursor-pointer rounded-md"
                 >
-                  Semua Karyawan
+                  Semua Mahasiswa Intern
                 </SelectItem>
                 <SelectItem
                   value="specific"
                   className="text-xs cursor-pointer rounded-md"
                 >
-                  Karyawan Tertentu
+                  Mahasiswa Intern Tertentu
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -445,7 +447,7 @@ export default function ExportAttendanceDialog({
                 htmlFor="select-user"
                 className="text-xs font-semibold text-foreground/80"
               >
-                Pilih Karyawan
+                Pilih Mahasiswa Intern
               </Label>
               <Select
                 value={selectedUserId}
@@ -460,7 +462,7 @@ export default function ExportAttendanceDialog({
                   id="select-user"
                   className="w-full rounded-lg bg-background border-border text-xs h-9"
                 >
-                  <SelectValue placeholder="Pilih Karyawan" />
+                  <SelectValue placeholder="Pilih Mahasiswa Intern" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border rounded-lg max-h-56">
                   {users.map((user) => (

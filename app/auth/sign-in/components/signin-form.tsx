@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -110,12 +111,12 @@ export function SignInForm({
             <Field data-invalid={fieldState.invalid}>
               <div className="flex items-center justify-between">
                 <FieldLabel htmlFor={field.name}>Kata sandi</FieldLabel>
-                <a
+                <Link
                   href="/auth/forgot-password"
                   className="text-xs text-muted-foreground hover:underline underline-offset-4"
                 >
                   Lupa kata sandi?
-                </a>
+                </Link>
               </div>
               <Input
                 {...field}
@@ -156,9 +157,9 @@ export function SignInForm({
           </Button>
           <FieldDescription className="text-center">
             Belum punya akun?{" "}
-            <a href="/auth/sign-up" className="underline underline-offset-4">
+            <Link href="/auth/sign-up" className="underline underline-offset-4">
               Daftar
-            </a>
+            </Link>
           </FieldDescription>
         </Field>
       </FieldGroup>

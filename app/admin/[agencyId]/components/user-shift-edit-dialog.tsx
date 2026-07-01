@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, Trash2, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Trash2, Plus, Pencil } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
@@ -38,6 +38,7 @@ import {
   getShiftAssignments,
   createShiftAssignment,
   deleteShiftAssignment,
+  updateShiftAssignment,
 } from "@/lib/services/shift-assignments";
 import type { Shift, ShiftAssignment } from "@/interfaces/models";
 import type { UserShiftEditDialogProps } from "@/interfaces/admin";
@@ -56,6 +57,7 @@ export default function UserShiftEditDialog({
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   /**
@@ -79,18 +81,20 @@ export default function UserShiftEditDialog({
         allAssignments.filter((a) => userInternIds.includes(a.internId)),
       );
 
-      // Set default form values
-      if (freshShifts.length > 0) {
-        setSelectedShiftId(freshShifts[0].id);
+      // Set default form values if not currently editing
+      if (!editingId) {
+        if (freshShifts.length > 0) {
+          setSelectedShiftId(freshShifts[0].id);
+        }
+        setDateRange({ from: new Date(), to: undefined });
       }
-      setDateRange({ from: new Date(), to: undefined });
     } catch (err) {
       console.error("Gagal memuat data penugasan shift", err);
       toast.error("Gagal memuat data penugasan shift");
     } finally {
       setIsLoadingData(false);
     }
-  }, [userId]);
+  }, [userId, editingId]);
 
   useEffect(() => {
     if (open) {
@@ -106,7 +110,7 @@ export default function UserShiftEditDialog({
    *
    * @param e - Form event.
    */
-  const handleAddShiftAssignment = async (e: React.FormEvent) => {
+  const handleSubmitAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShiftId || !dateRange?.from) {
       toast.error("Silakan lengkapi data shift");
@@ -133,8 +137,10 @@ export default function UserShiftEditDialog({
       const endDate =
         dateRange.to && !isSameDay ? format(dateRange.to, "yyyy-MM-dd") : null;
 
-      // Cek apakah ada penugasan shift yang aktif dan bertabrakan dengan rentang tanggal baru
+      // Cek apakah ada penugasan shift yang aktif dan bertabrakan dengan rentang tanggal baru (kecuali shift yang sedang diedit)
       const hasOverlap = userAssignments.some((a) => {
+        if (editingId && a.id === editingId) return false;
+        
         const aStart = a.startDate;
         const aEnd = a.endDate || "9999-12-31";
         const newStart = startDate;
@@ -144,30 +150,50 @@ export default function UserShiftEditDialog({
       });
 
       if (hasOverlap) {
-        if (!window.confirm("PERINGATAN: Mahasiswa intern ini sudah memiliki penugasan shift lain pada rentang tanggal tersebut. Menambahkan shift baru dapat menyebabkan jadwal menjadi ganda (dobel). Apakah Anda yakin ingin melanjutkan?")) {
+        if (!window.confirm("PERINGATAN: Mahasiswa intern ini sudah memiliki penugasan shift lain pada rentang tanggal tersebut. Menyimpan shift ini dapat menyebabkan jadwal menjadi ganda (dobel). Apakah Anda yakin ingin melanjutkan?")) {
           return;
         }
       }
 
-      await createShiftAssignment({
-        internId: intern.id,
-        shiftId: selectedShiftId,
-        startDate,
-        endDate,
-      });
-
-      toast.success(`Berhasil menambahkan penugasan shift untuk ${userName}`);
+      if (editingId) {
+        await updateShiftAssignment(editingId, {
+          shiftId: selectedShiftId,
+          startDate,
+          endDate,
+        });
+        toast.success(`Berhasil memperbarui penugasan shift untuk ${userName}`);
+        setEditingId(null);
+      } else {
+        await createShiftAssignment({
+          internId: intern.id,
+          shiftId: selectedShiftId,
+          startDate,
+          endDate,
+        });
+        toast.success(`Berhasil menambahkan penugasan shift untuk ${userName}`);
+      }
+      
+      setDateRange({ from: new Date(), to: undefined });
       await loadData();
       onSuccess();
     } catch (err) {
       const errorMsg =
         err instanceof Error
           ? err.message
-          : "Gagal menambahkan penugasan shift";
+          : "Gagal menyimpan penugasan shift";
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditClick = (assign: ShiftAssignment) => {
+    setEditingId(assign.id);
+    setSelectedShiftId(assign.shiftId);
+    setDateRange({
+      from: parseDateLocal(assign.startDate),
+      to: assign.endDate ? parseDateLocal(assign.endDate) : undefined,
+    });
   };
 
   /**
@@ -263,21 +289,34 @@ export default function UserShiftEditDialog({
                           : "Tanpa batas akhir"}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md shrink-0 transition-colors"
-                      onClick={() => handleDeleteAssignment(assign.id)}
-                      disabled={isDeletingId !== null || isSubmitting}
-                      title="Hapus penugasan"
-                    >
-                      {isDeletingId === assign.id ? (
-                        <Spinner className="size-4" />
-                      ) : (
-                        <Trash2 className="size-4" />
-                      )}
-                    </Button>
+                    <div className="flex items-center shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-primary hover:text-primary hover:bg-primary/10 rounded-md shrink-0 transition-colors mr-1"
+                        onClick={() => handleEditClick(assign)}
+                        disabled={isDeletingId !== null || isSubmitting}
+                        title="Edit penugasan"
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md shrink-0 transition-colors"
+                        onClick={() => handleDeleteAssignment(assign.id)}
+                        disabled={isDeletingId !== null || isSubmitting}
+                        title="Hapus penugasan"
+                      >
+                        {isDeletingId === assign.id ? (
+                          <Spinner className="size-4" />
+                        ) : (
+                          <Trash2 className="size-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -286,11 +325,11 @@ export default function UserShiftEditDialog({
 
           {/* Form to add new assignment */}
           <form
-            onSubmit={handleAddShiftAssignment}
+            onSubmit={handleSubmitAssignment}
             className="space-y-4 pt-4 border-t border-border/40"
           >
             <h4 className="text-xs font-bold text-foreground">
-              Tambah Penugasan Shift Baru
+              {editingId ? "Edit Penugasan Shift" : "Tambah Penugasan Shift Baru"}
             </h4>
 
             {/* Shift Selector */}
@@ -382,20 +421,40 @@ export default function UserShiftEditDialog({
               </Popover>
             </div>
 
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              disabled={
-                !selectedShiftId ||
-                !dateRange?.from ||
-                isSubmitting ||
-                isDeletingId !== null
-              }
-              className="w-full rounded-lg text-xs bg-primary text-primary-foreground font-semibold shadow-sm flex items-center justify-center gap-1.5 h-9"
-            >
-              {!isSubmitting && <Plus className="size-3.5" />}
-              Tambah Penugasan
-            </Button>
+            <div className="flex gap-2 w-full">
+              {editingId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingId(null);
+                    setDateRange({ from: new Date(), to: undefined });
+                    if (shifts.length > 0) setSelectedShiftId(shifts[0].id);
+                  }}
+                  disabled={isSubmitting}
+                  className="w-1/3 rounded-lg text-xs h-9"
+                >
+                  Batal
+                </Button>
+              )}
+              <Button
+                type="submit"
+                loading={isSubmitting}
+                disabled={
+                  !selectedShiftId ||
+                  !dateRange?.from ||
+                  isSubmitting ||
+                  isDeletingId !== null
+                }
+                className={cn(
+                  "rounded-lg text-xs bg-primary text-primary-foreground font-semibold shadow-sm flex items-center justify-center gap-1.5 h-9",
+                  editingId ? "w-2/3" : "w-full"
+                )}
+              >
+                {!isSubmitting && (editingId ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />)}
+                {editingId ? "Update Penugasan" : "Tambah Penugasan"}
+              </Button>
+            </div>
           </form>
         </div>
 

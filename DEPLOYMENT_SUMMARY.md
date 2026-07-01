@@ -55,6 +55,7 @@ Setelah menjalankan `npm run build`, Anda bisa menyalin aset dan membuat file `p
   ```bash
   cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && cp -r prisma .next/standalone/prisma && cp server-cpanel.js .next/standalone/server-cpanel.js && tar -czhvf project.tar.gz -C .next/standalone .
 
+
   ```
 clear
 
@@ -86,6 +87,8 @@ Pastikan folder aplikasi cPanel Anda memiliki struktur seperti ini:
  └── ... (File-file hasil ekstrak project.tar.gz)
 ```
 Tidak perlu melakukan apa-apa lagi! Script wrapper `server-cpanel.js` akan cerdas mencegat rute `/uploads/*` dan otomatis memanggil isi dari direktori eksternal (`storage_absensi`) tersebut.
+
+
 
 ---
 

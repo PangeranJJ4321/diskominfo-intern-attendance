@@ -12,7 +12,7 @@ export default async function AdminAgencyLayout({
   const { agencyId } = await params;
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       <Navbar />
       <SidebarProvider>
         <div className="flex flex-1 overflow-hidden w-full h-[calc(100vh-64px)]">

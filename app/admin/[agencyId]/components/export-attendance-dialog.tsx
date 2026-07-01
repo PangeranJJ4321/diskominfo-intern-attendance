@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarDays, Download, Users } from "lucide-react";
+import { CalendarDays, Download, Users, Check, ChevronsUpDown, X, Building2 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import * as XLSX from "xlsx";
 
@@ -30,6 +30,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import {
   getAttendances,
@@ -54,6 +63,7 @@ export default function ExportAttendanceDialog({
   shifts,
   assignments,
   interns,
+  institutions,
 }: ExportAttendanceDialogProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const today = new Date();
@@ -64,9 +74,11 @@ export default function ExportAttendanceDialog({
   });
 
   const [exportTarget, setExportTarget] = useState<"all" | "specific">("all");
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedInternId, setSelectedInternId] = useState<string>("");
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>("all");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedInternIds, setSelectedInternIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [comboboxOpen, setComboboxOpen] = useState(false);
 
   // Formatting date range label display helper
   const dateRangeText = useMemo(() => {
@@ -82,27 +94,6 @@ export default function ExportAttendanceDialog({
     }
     return "Pilih rentang tanggal";
   }, [dateRange]);
-
-  // Ensure selectedUserId and selectedInternId have defaults when list of users is populated
-  useEffect(() => {
-    if (open && users.length > 0) {
-      const timer = setTimeout(() => {
-        if (!selectedUserId) {
-          setSelectedUserId(users[0].id);
-        }
-        // Map selectedUserId to the first intern of that user
-        if (selectedUserId) {
-          const userInterns = interns.filter(
-            (i) => i.userId === selectedUserId,
-          );
-          if (userInterns.length > 0) {
-            setSelectedInternId((prev) => prev || userInterns[0].id);
-          }
-        }
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [open, users, selectedUserId, interns, selectedInternId]);
 
   /**
    * Handles the export process to fetch, filter, format and trigger XLSX download.
@@ -128,17 +119,16 @@ export default function ExportAttendanceDialog({
       if (exportTarget === "all") {
         data = await getAttendances(fetchLimit, startDateStr, endDateStr);
       } else {
-        if (!selectedInternId) {
-          toast.error("Silakan pilih mahasiswa intern terlebih dahulu.");
+        if (selectedInternIds.length === 0) {
+          toast.error("Silakan pilih minimal satu mahasiswa intern terlebih dahulu.");
           setIsExporting(false);
           return;
         }
-        data = await getAttendancesForIntern(
-          selectedInternId,
-          fetchLimit,
-          startDateStr,
-          endDateStr,
+        const dataPromises = selectedInternIds.map(internId =>
+          getAttendancesForIntern(internId, fetchLimit, startDateStr, endDateStr)
         );
+        const results = await Promise.all(dataPromises);
+        data = results.flat();
       }
 
       // 2. Fetch latest schedules
@@ -156,14 +146,16 @@ export default function ExportAttendanceDialog({
       }
 
       // 4. Select target users
-      const targetUsers =
-        exportTarget === "all"
-          ? users
-          : users.filter((u) => {
-              // For specific export, match by internId mapped to user
-              const intern = interns.find((i) => i.id === selectedInternId);
-              return intern && intern.userId === u.id;
-            });
+      let targetUsers = users;
+      if (selectedInstitutionId !== "all") {
+        targetUsers = targetUsers.filter((u) => {
+          const uInterns = interns.filter((i) => i.userId === u.id);
+          return uInterns.some((i) => i.institutionId === selectedInstitutionId);
+        });
+      }
+      if (exportTarget === "specific") {
+        targetUsers = targetUsers.filter((u) => selectedUserIds.includes(u.id));
+      }
       const todayStr = format(new Date(), "yyyy-MM-dd");
 
       const dataToExport = [];
@@ -248,12 +240,12 @@ export default function ExportAttendanceDialog({
 
                 const lat =
                   attRecord.attendanceLatitude !== null &&
-                  attRecord.attendanceLatitude !== undefined
+                    attRecord.attendanceLatitude !== undefined
                     ? attRecord.attendanceLatitude
                     : "";
                 const lng =
                   attRecord.attendanceLongitude !== null &&
-                  attRecord.attendanceLongitude !== undefined
+                    attRecord.attendanceLongitude !== undefined
                     ? attRecord.attendanceLongitude
                     : "";
                 const photoUrl = attRecord.attendancePhotoUrl || "";
@@ -329,7 +321,9 @@ export default function ExportAttendanceDialog({
       const filenamePrefix =
         exportTarget === "all"
           ? "semua_mahasiswa_intern"
-          : users.find((u) => u.id === selectedUserId)?.name || "mahasiswa_intern";
+          : selectedUserIds.length === 1
+            ? users.find((u) => u.id === selectedUserIds[0])?.name || "mahasiswa_intern"
+            : `mahasiswa_intern_terpilih_${selectedUserIds.length}`;
       const sanitizedPrefix = filenamePrefix
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "_");
@@ -351,64 +345,65 @@ export default function ExportAttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto scrollbar-none p-4 sm:p-6">
-        <DialogHeader className="space-y-1.5">
-          <DialogTitle className="text-lg font-bold tracking-tight text-foreground/90 flex items-center gap-2">
-            <Download className="size-5 text-primary" />
+      <DialogContent className="!w-[90vw] !max-w-[90vw] !h-[90vh] flex flex-col overflow-y-auto scrollbar-none p-4 sm:p-6">
+        <DialogHeader className="space-y-1.5 shrink-0">
+          <DialogTitle className="text-xl font-bold tracking-tight text-foreground/90 flex items-center gap-2">
+            <Download className="size-6 text-primary" />
             Ekspor Data Presensi
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground font-medium">
+          <DialogDescription className="text-sm text-muted-foreground font-medium">
             Pilih rentang tanggal dan mahasiswa intern untuk mengunduh laporan presensi
             dalam format Excel (.xlsx).
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
-          {/* Calendar Date Range Selector */}
+        <div className="space-y-4 pt-2 flex-1">
+          {/* Institution Selector */}
           <div className="space-y-1.5 flex flex-col">
             <Label
-              htmlFor="date-range"
-              className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
+              htmlFor="institution-select"
+              className="text-lg font-semibold text-foreground/80 flex items-center gap-2"
             >
-              <CalendarDays className="size-3.5 text-muted-foreground" />
-              Rentang Tanggal
+              <div className="flex items-center justify-center size-6 rounded bg-foreground/10">
+                <Building2 className="size-3.5 text-foreground/80" />
+              </div>
+              Institusi
             </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date-range"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal rounded-lg bg-background border-border text-xs h-9",
-                    !dateRange && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarDays className="mr-2 size-4 text-muted-foreground" />
-                  {dateRangeText}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0 bg-card border-border rounded-lg"
-                align="start"
+            <Select
+              value={selectedInstitutionId}
+              onValueChange={(val) => {
+                setSelectedInstitutionId(val);
+                setExportTarget("all"); // Reset specific user when institution changes
+                setSelectedUserIds([]);
+                setSelectedInternIds([]);
+              }}
+            >
+              <SelectTrigger
+                id="institution-select"
+                className="w-full rounded-lg bg-background border-border text-lg h-12"
               >
-                <Calendar
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={(range) => setDateRange(range)}
-                  numberOfMonths={1}
-                />
-              </PopoverContent>
-            </Popover>
+                <SelectValue placeholder="Semua Institusi" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border rounded-lg max-h-56">
+                <SelectItem value="all" className="text-lg cursor-pointer rounded-md py-3">
+                  Semua Institusi
+                </SelectItem>
+                {institutions.map((inst) => (
+                  <SelectItem key={inst.id} value={inst.id} className="text-lg cursor-pointer rounded-md py-3">
+                    {inst.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Target User Selector */}
           <div className="space-y-1.5">
             <Label
               htmlFor="export-target"
-              className="text-xs font-semibold text-foreground/80 flex items-center gap-1"
+              className="text-lg font-semibold text-foreground/80 flex items-center gap-1.5"
             >
-              <Users className="size-3.5 text-muted-foreground" />
+              <Users className="size-5 text-muted-foreground" />
               Mahasiswa Intern yang Diekspor
             </Label>
             <Select
@@ -419,20 +414,20 @@ export default function ExportAttendanceDialog({
             >
               <SelectTrigger
                 id="export-target"
-                className="w-full rounded-lg bg-background border-border text-xs h-9"
+                className="w-full rounded-lg bg-background border-border text-lg h-12"
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-card border-border rounded-lg">
                 <SelectItem
                   value="all"
-                  className="text-xs cursor-pointer rounded-md"
+                  className="text-lg cursor-pointer rounded-md py-3"
                 >
                   Semua Mahasiswa Intern
                 </SelectItem>
                 <SelectItem
                   value="specific"
-                  className="text-xs cursor-pointer rounded-md"
+                  className="text-lg cursor-pointer rounded-md py-3"
                 >
                   Mahasiswa Intern Tertentu
                 </SelectItem>
@@ -442,52 +437,135 @@ export default function ExportAttendanceDialog({
 
           {/* Specific User Search Selector */}
           {exportTarget === "specific" && (
-            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200 flex flex-col">
               <Label
                 htmlFor="select-user"
-                className="text-xs font-semibold text-foreground/80"
+                className="text-lg font-semibold text-foreground/80"
               >
                 Pilih Mahasiswa Intern
               </Label>
-              <Select
-                value={selectedUserId}
-                onValueChange={(val) => {
-                  setSelectedUserId(val);
-                  // Auto-select first intern for this user
-                  const userInterns = interns.filter((i) => i.userId === val);
-                  setSelectedInternId(userInterns[0]?.id || "");
-                }}
-              >
-                <SelectTrigger
-                  id="select-user"
-                  className="w-full rounded-lg bg-background border-border text-xs h-9"
-                >
-                  <SelectValue placeholder="Pilih Mahasiswa Intern" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border rounded-lg max-h-56">
-                  {users.map((user) => (
-                    <SelectItem
-                      key={user.id}
-                      value={user.id}
-                      className="text-xs cursor-pointer rounded-md"
+              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboboxOpen}
+                    className="w-full justify-between text-left font-normal rounded-lg bg-background border-border text-base h-11"
+                  >
+                    <span
+                      className={cn(
+                        "truncate",
+                        selectedUserIds.length === 0
+                          ? "text-muted-foreground"
+                          : "text-foreground font-medium"
+                      )}
                     >
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      {selectedUserIds.length > 0
+                        ? `${selectedUserIds.length} Mahasiswa Terpilih`
+                        : "Cari"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 size-5 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Cari nama mahasiswa..." className="h-11 text-base" />
+                    <CommandList className="max-h-[250px] overflow-y-auto scrollbar-thin">
+                      <CommandEmpty className="py-4 text-center text-base text-muted-foreground">
+                        Mahasiswa tidak ditemukan.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {users
+                          .filter(
+                            (u) =>
+                              selectedInstitutionId === "all" ||
+                              interns.some(
+                                (i) =>
+                                  i.userId === u.id &&
+                                  i.institutionId === selectedInstitutionId,
+                              ),
+                          )
+                          .map((user) => {
+                            const isSelected = selectedUserIds.includes(user.id);
+                            return (
+                              <CommandItem
+                                key={user.id}
+                                value={`${user.name} ${user.email}`}
+                                onSelect={() => {
+                                  if (isSelected) {
+                                    setSelectedUserIds((prev) => prev.filter((id) => id !== user.id));
+                                    const userInterns = interns.filter((i) => i.userId === user.id);
+                                    if (userInterns[0]) {
+                                      setSelectedInternIds((prev) => prev.filter((id) => id !== userInterns[0].id));
+                                    }
+                                  } else {
+                                    setSelectedUserIds((prev) => [...prev, user.id]);
+                                    const userInterns = interns.filter((i) => i.userId === user.id);
+                                    if (userInterns[0]) {
+                                      setSelectedInternIds((prev) => [...prev, userInterns[0].id]);
+                                    }
+                                  }
+                                }}
+                                className="text-base cursor-pointer py-2.5 font-medium"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 size-4",
+                                    isSelected ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {user.name}
+                              </CommandItem>
+                            );
+                          })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Selected Blocks */}
+              {selectedUserIds.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3 max-h-[220px] overflow-y-auto scrollbar-thin pr-1">
+                  {selectedUserIds.map((userId) => {
+                    const user = users.find((u) => u.id === userId);
+                    if (!user) return null;
+                    return (
+                      <div
+                        key={user.id}
+                        className="group flex items-center justify-between w-full rounded-md bg-background border border-border text-sm py-1.5 px-2.5 shadow-sm hover:bg-muted/40 transition-colors"
+                      >
+                        <span className="font-medium text-foreground/90 truncate mr-2">{user.name}</span>
+                        <button
+                          type="button"
+                          className="shrink-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors focus:outline-none"
+                          onClick={() => {
+                            setSelectedUserIds((prev) => prev.filter((id) => id !== user.id));
+                            const userInterns = interns.filter((i) => i.userId === user.id);
+                            if (userInterns[0]) {
+                              setSelectedInternIds((prev) => prev.filter((id) => id !== userInterns[0].id));
+                            }
+                          }}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end items-stretch sm:items-center pt-4">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center pt-4 shrink-0 mt-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isExporting}
-              className="w-full sm:w-auto rounded-lg font-medium text-xs h-9"
+              className="w-full sm:w-auto rounded-lg font-medium text-sm h-10 px-6"
             >
               Batal
             </Button>
@@ -495,7 +573,7 @@ export default function ExportAttendanceDialog({
               type="button"
               onClick={handleExport}
               loading={isExporting}
-              className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-semibold rounded-lg text-xs h-9 shadow-sm"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-primary-foreground font-semibold rounded-lg text-sm h-10 px-6 shadow-sm"
             >
               Ekspor Data
             </Button>

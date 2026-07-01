@@ -169,32 +169,34 @@ export default function UserAttendancesCard() {
   // Filter users based on search query, institution, and status
   const filteredUsers = useMemo(() => {
     const agencyInterns = interns.filter((i) => i.agencyId === params.agencyId);
-    
+
     const filteredInterns = agencyInterns.filter((intern) => {
       // Institution filter
       if (selectedInstitutionId !== "all" && intern.institutionId !== selectedInstitutionId) {
         return false;
       }
-      
+
       // Status filter
       const isActive = !intern.finishedAt || new Date(intern.finishedAt) > new Date();
       if (statusFilter === "active" && !isActive) return false;
       if (statusFilter === "inactive" && isActive) return false;
-      
+
       return true;
     });
 
     const allowedUserIds = new Set(filteredInterns.map((i) => i.userId));
-    
+
     const query = searchQuery.trim().toLowerCase();
-    return users.filter((u) => {
-      if (!allowedUserIds.has(u.id)) return false;
-      if (!query) return true;
-      return (
-        (u.name || "").toLowerCase().includes(query) ||
-        (u.email || "").toLowerCase().includes(query)
-      );
-    });
+    return users
+      .filter((u) => {
+        if (!allowedUserIds.has(u.id)) return false;
+        if (!query) return true;
+        return (
+          (u.name || "").toLowerCase().includes(query) ||
+          (u.email || "").toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [users, interns, params.agencyId, searchQuery, selectedInstitutionId, statusFilter]);
 
   // Auto-sync selectedUser with filtered list when filters change
@@ -402,12 +404,12 @@ export default function UserAttendancesCard() {
                 <>
                   <div className="flex items-center gap-2">
                     {filteredUsers.length > 0 && (
-                      <div 
+                      <div
                         onClick={() => {
                           const allSelected = filteredUsers.every((u) => selectedUserIds.has(u.id));
                           setSelectedUserIds(
-                            allSelected 
-                              ? new Set() 
+                            allSelected
+                              ? new Set()
                               : new Set(filteredUsers.map((u) => u.id))
                           );
                         }}
@@ -442,7 +444,7 @@ export default function UserAttendancesCard() {
                 </>
               )}
             </div>
-            
+
             <div className="relative">
               <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
               <Input
@@ -533,14 +535,13 @@ export default function UserAttendancesCard() {
                   <div
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
-                    className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all select-none text-left border border-transparent ${
-                      isSelected
+                    className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all select-none text-left border border-transparent ${isSelected
                         ? "bg-red-950/20"
                         : "hover:bg-muted/10"
-                    }`}
+                      }`}
                   >
                     {/* Checkbox for Bulk Actions */}
-                    <div 
+                    <div
                       onClick={handleCheckboxChange}
                       className="flex items-center justify-center shrink-0 size-4.5 rounded-md border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer"
                     >
@@ -574,9 +575,9 @@ export default function UserAttendancesCard() {
                     </div>
                     {userInternIds[0] && (
                       <div onClick={(e) => e.stopPropagation()}>
-                        <InternDeleteButton 
-                          internId={userInternIds[0]} 
-                          agencyId={params.agencyId as string} 
+                        <InternDeleteButton
+                          internId={userInternIds[0]}
+                          agencyId={params.agencyId as string}
                           onSuccess={() => {
                             handleRefreshSuccess();
                             if (selectedUser?.id === user.id) setSelectedUser(null);
@@ -624,7 +625,7 @@ export default function UserAttendancesCard() {
                 <div className="flex flex-wrap gap-3">
                   <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
                     <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                       <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="size-2 rounded-full bg-emerald-500" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Hadir</p>
@@ -633,7 +634,7 @@ export default function UserAttendancesCard() {
                   </div>
                   <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
                     <div className="size-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                       <span className="size-2 rounded-full bg-amber-500" />
+                      <span className="size-2 rounded-full bg-amber-500" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Terlambat</p>
@@ -642,7 +643,7 @@ export default function UserAttendancesCard() {
                   </div>
                   <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
                     <div className="size-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
-                       <span className="size-2 rounded-full bg-sky-500" />
+                      <span className="size-2 rounded-full bg-sky-500" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Izin</p>
@@ -651,7 +652,7 @@ export default function UserAttendancesCard() {
                   </div>
                   <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
                     <div className="size-8 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0">
-                       <span className="size-2 rounded-full bg-violet-500" />
+                      <span className="size-2 rounded-full bg-violet-500" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Sakit</p>
@@ -660,7 +661,7 @@ export default function UserAttendancesCard() {
                   </div>
                   <div className="flex items-center gap-3 bg-muted/10 border border-border/30 rounded-lg p-2.5 min-w-[120px] flex-1">
                     <div className="size-8 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                       <span className="size-2 rounded-full bg-destructive" />
+                      <span className="size-2 rounded-full bg-destructive" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Alpa</p>
@@ -835,6 +836,7 @@ export default function UserAttendancesCard() {
         shifts={shifts}
         assignments={assignments}
         interns={interns}
+        institutions={institutions}
       />
 
       {/* Bulk Delete Confirmation Dialog */}
